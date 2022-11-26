@@ -6,6 +6,7 @@ type info =
   | InfoConst of string * int
   | InfoVar of string * typ * int * string
   | InfoFun of string * typ * typ list
+  | InfoParam of string * typ
 
 (* Données stockées dans la tds  et dans les AST : pointeur sur une information *)
 type info_ast = info ref  
@@ -44,8 +45,10 @@ let ajouter tds nom info =
   | Courante (_,c) -> Hashtbl.add c nom info
 
 
-(* string -> a Option -> a 
- * nom id -> id dans td ? -> infoId si dans la tds
+(* unwrap : string -> a Option -> a 
+ * Paramètre s : l'identifiant qu'on essaie de unwrap
+ * Paramètre aOpt : une option d'info associé à s
+ * Si l'option est vide, lève une erreur. Sinon, unwrap l'option.
  *)
 let unwrap s aOpt = match aOpt with
  None -> raise (Exceptions_identifiants.IdentifiantNonDeclare s)
@@ -60,6 +63,11 @@ let chercherLocalement tds nom =
 
 
 let chercherLocalementUnsafe tds nom = unwrap nom (chercherLocalement tds nom) 
+
+let absentLocalementUnsafe tds nom =
+  match chercherLocalement tds nom with
+    |None -> ()
+    |Some _ -> raise (Exceptions_identifiants.DoubleDeclaration nom)
 
 (* TESTS *)
 let%test _ = chercherLocalement (creerTDSMere()) "x" = None
@@ -183,6 +191,8 @@ let rec chercherGlobalement tds nom =
 
 let chercherGlobalementUnsafe tds nom = unwrap nom (chercherGlobalement tds nom) 
 
+
+
 (* TESTS *)
 
 let%test _ = chercherGlobalement (creerTDSMere()) "x" = None
@@ -300,6 +310,7 @@ let string_of_info info =
   | InfoVar (n,t,dep,base) -> "Variable "^n^" : "^(string_of_type t)^" "^(string_of_int dep)^"["^base^"]"
   | InfoFun (n,t,tp) -> "Fonction "^n^" : "^(List.fold_right (fun elt tq -> if tq = "" then (string_of_type elt) else (string_of_type elt)^" * "^tq) tp "" )^
                       " -> "^(string_of_type t)
+  | InfoParam (n,t) -> "Paramètre "^n^" : "^(string_of_type t)
 
 (* Affiche la tds locale *)
 let afficher_locale tds =

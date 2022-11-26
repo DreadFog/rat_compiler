@@ -20,7 +20,12 @@ let rec analyse_tds_expression tds e = match e with
   | AstSyntax.Binaire (op, e1, e2) ->
     AstTds.Binaire (op, analyse_tds_expression tds e1, analyse_tds_expression tds e2)
   | AstSyntax.AppelFonction (f, l) ->
-    AstTds.AppelFonction (Tds.chercherGlobalementUnsafe tds f
+    let f_tds = Tds.chercherGlobalementUnsafe tds f in
+    (* On vérifie qu'on appel bien une fonction *)
+    (match info_ast_to_info f_tds with
+      InfoFun(_,_,_) -> ()
+      |_ -> raise (Exceptions_identifiants.MauvaiseUtilisationIdentifiant f));
+    AstTds.AppelFonction ( f_tds
                          , List.map (analyse_tds_expression tds) l)
   | AstSyntax.Unaire (op, e) ->
     AstTds.Unaire (op, analyse_tds_expression tds e) 
@@ -156,27 +161,49 @@ and analyse_tds_bloc tds oia li =
    nli
 
 
+   
+(* snd_zip : ('a*'b) list -> ('c*'d) list -> ('b*'d) lits *)
+(* Paramètres : les listes a fusionnées *)
+(* Fusionne des listes [(ai,bi)] en [(b1,b2)] *)
+(* fzip avec snd mais la gestion de polymorphisme avec fzip n'est bien gérée par caml *)
+let snd_zip l1 l2 = List.combine (List.map snd l1) (List.map snd l2)
+
+(* second : ('a -> 'b) -> 'c*'a -> 'c*'b *)
+(* Application de f sur le second élément d'un couple *)
+let second f (x,y) = (x, f y) 
+
+(* first : ('a -> 'b) -> 'c*'a -> 'c*'b *)
+(* Application de f sur le premier élément d'un couple *)
+let first f (x,y) = (f x, y)
+
 (* analyse_tds_fonction : tds -> AstSyntax.fonction -> AstTds.fonction *)
 (* Paramètre tds : la table des symboles courante *)
 (* Paramètre : la fonction à analyser *)
 (* Vérifie la bonne utilisation des identifiants et tranforme la fonction
 en une fonction de type AstTds.fonction *)
 (* Erreur si mauvaise utilisation des identifiants *)
-let rec fusion l1 l2 = match l1,l2 with
-    [],[] -> []
-    |(_,x1)::q1, (_,x2)::q2 -> (x1,x2) :: fusion q1 q2
-    |_ -> [] (* erreur *)
-
-let analyse_tds_fonction maintds (AstSyntax.Fonction(t,nom,l_param,l_inst)) = 
+let analyse_tds_fonction maintds (AstSyntax.Fonction(t,nom,l_param,l_inst)) =
+  (* On vérifie que la fonction n'est pas déjà déclarée *)
+  Tds.absentLocalementUnsafe maintds nom;
+  (* création de la td fille : tds liée au bloc de la fonction *) 
   let tds_fille = creerTDSFille maintds in
-  let cherche_id = chercherGlobalementUnsafe tds_fille in
-  let l_param_tds = List.map (fun (t,s) -> (t, cherche_id s)) l_param and
-      l_inst_tds = analyse_tds_bloc tds_fille (chercherGlobalement tds_fille nom) l_inst in
-  (* ajouter les paramètres dans la tds fille pour l'analyse du bloc*)
-  let l_param' = fusion l_param l_param_tds in
-  List.fold_right (fun curr () -> ajouter tds_fille (fst curr) (snd curr)) l_param' ();
-  (* ajouter la fonction pour les appels récursifs*)
-  ajouter tds_fille nom (info_to_info_ast (InfoFun (nom, t, List.map fst l_param_tds)));
+
+  let l_param' = List.map (fun (t,s) -> (s, info_to_info_ast (InfoParam(s,t)))) l_param and
+      l_param_tds = List.map (fun (t,s) -> (t, info_to_info_ast (InfoParam(s,t)))) l_param
+  in
+  (* ajouter les paramètres dans la tds fille pour l'analyse du bloc
+   * on fait attention aux possibles doublons
+   * Remarque : ici, choix qu'on peut avoir une variable déclarée dans le bloc englobant et
+   * un paramètre de même nom *)
+  List.fold_right (fun curr () -> Tds.absentLocalementUnsafe tds_fille (fst curr);
+                                  ajouter tds_fille (fst curr) (snd curr))
+                  l_param' ();
+
+  (* ajout de la fonction dans la tds mère *)
+  ajouter maintds nom (info_to_info_ast (InfoFun (nom, t, List.map fst l_param)));
+
+  (* liste des ASTTds instructions *)
+  let l_inst_tds = analyse_tds_bloc tds_fille (chercherGlobalement tds_fille nom) l_inst in
   let nom_tds = chercherGlobalementUnsafe tds_fille nom in
   AstTds.Fonction(t, nom_tds, l_param_tds, l_inst_tds)
 
