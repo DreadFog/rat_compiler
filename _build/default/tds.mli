@@ -9,6 +9,7 @@ type info =
   | InfoVar of string * typ * int * string
   (* Information associée à une fonction : son nom (utile pour l'appel), son type de retour et la liste des types des paramètres *)
   | InfoFun of string * typ * typ list
+  | InfoParam of string * typ
 
 (* Table des symboles *)
 type tds 
@@ -34,15 +35,23 @@ val ajouter : tds -> string -> info_ast -> unit
 (* Recherche les informations d'un identificateur dans la tds locale *)
 (* Ne cherche que dans la tds de plus bas niveau *)
 val chercherLocalement : tds -> string -> info_ast option 
- (* Unwraps the value of chercherLocalement and raises an error if none is returned*)
-  val chercherLocalementUnsafe : tds -> string -> info_ast 
+
+(* Unwraps the value of chercherLocalement and raises an error if none is returned*)
+val chercherLocalementUnsafe : tds -> string -> info_ast 
+
+(* Raises an error if the string already exists in the tds *)
+val absentLocalementUnsafe : tds -> string -> unit
+
 (* Recherche les informations d'un identificateur dans la tds globale *)
 (* Si l'identificateur n'est pas présent dans la tds de plus bas niveau *)
 (* la recherche est effectuée dans sa table mère et ainsi de suite *)
 (* jusqu'à trouver (ou pas) l'identificateur *)
 val chercherGlobalement : tds -> string -> info_ast option 
- (* Unwraps the value of chercherGlobalement and raises an error if none is returned*)
+
+(* Unwraps the value of chercherGlobalement and raises an error if none is returned*)
 val chercherGlobalementUnsafe : tds -> string -> info_ast 
+
+
 (* Affiche la tds locale *)
 val afficher_locale : tds -> unit 
 

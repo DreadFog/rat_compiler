@@ -14,7 +14,13 @@ type t2 = Ast.AstTds.programme
 en une expression de type AstTds.expression *)
 (* Erreur si mauvaise utilisation des identifiants *)
 let rec analyse_tds_expression tds e = match e with
-  | AstSyntax.Ident s -> AstTds.Ident (Tds.chercherGlobalementUnsafe tds s)
+  | AstSyntax.Ident s -> (* vérification qu'on utilise pas un nom de fonction *)
+                        let info_ast_found = Tds.chercherGlobalementUnsafe tds s in
+                        (
+                        match (info_ast_to_info info_ast_found) with 
+                          | InfoFun(f, _, _) -> raise (Exceptions_identifiants.MauvaiseUtilisationIdentifiant f);
+                          | _ -> AstTds.Ident (info_ast_found)
+                        )
   | AstSyntax.Entier i -> AstTds.Entier i
   | AstSyntax.Booleen b -> AstTds.Booleen b
   | AstSyntax.Binaire (op, e1, e2) ->
@@ -23,7 +29,11 @@ let rec analyse_tds_expression tds e = match e with
     let f_tds = Tds.chercherGlobalementUnsafe tds f in
     (* On vérifie qu'on appel bien une fonction *)
     (match info_ast_to_info f_tds with
-      InfoFun(_,_,_) -> ()
+      InfoFun(_,_,arg_list) -> (* Vérification du bon nombre d'arguments *)
+                              if (List.length arg_list = List.length l) 
+                                then () 
+                              else 
+                                raise (Exceptions_identifiants.MauvaiseUtilisationIdentifiant f);
       |_ -> raise (Exceptions_identifiants.MauvaiseUtilisationIdentifiant f));
     AstTds.AppelFonction ( f_tds
                          , List.map (analyse_tds_expression tds) l)
