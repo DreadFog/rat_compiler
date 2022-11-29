@@ -21,24 +21,25 @@ let rec analyse_type_expression e = match e with
   | AstTds.Binaire (op, e1, e2) ->
     let (ne1,te1) = analyse_type_expression e1 in 
     let (ne2,te2) = analyse_type_expression e2 in 
-    if te1 <> te2 then raise (TypeInattendu (te1, te2))
-    else (match (op,te1) with
-      Fraction,Int -> (AstType.Binaire (AstType.Fraction, ne1, ne2), te1)
-      |Plus, Int -> (AstType.Binaire (AstType.PlusInt, ne1, ne2), te1)
-      |Plus, Rat -> (AstType.Binaire (AstType.PlusRat, ne1, ne2), te1)
-      |Mult, Int -> (AstType.Binaire (AstType.MultInt, ne1, ne2), te1)
-      |Mult, Rat -> (AstType.Binaire (AstType.MultRat, ne1, ne2), te1)
-      |Equ, Int -> (AstType.Binaire (AstType.EquInt, ne1, ne2), Bool)
-      |Equ, Bool -> (AstType.Binaire (AstType.EquBool, ne1, ne2), Bool)
-      |Inf, Int -> (AstType.Binaire (AstType.Inf, ne1, ne2), Bool)
-      |_,_ -> raise (TypeBinaireInattendu (op, te1, te2))
-      )
+    if (Type.est_compatible te1 te2) then 
+      (match (op,te1) with
+        Fraction,Int -> (AstType.Binaire (AstType.Fraction, ne1, ne2), Rat)
+        |Plus, Int -> (AstType.Binaire (AstType.PlusInt, ne1, ne2), te1)
+        |Plus, Rat -> (AstType.Binaire (AstType.PlusRat, ne1, ne2), te1)
+        |Mult, Int -> (AstType.Binaire (AstType.MultInt, ne1, ne2), te1)
+        |Mult, Rat -> (AstType.Binaire (AstType.MultRat, ne1, ne2), te1)
+        |Equ, Int -> (AstType.Binaire (AstType.EquInt, ne1, ne2), Bool)
+        |Equ, Bool -> (AstType.Binaire (AstType.EquBool, ne1, ne2), Bool)
+        |Inf, Int -> (AstType.Binaire (AstType.Inf, ne1, ne2), Bool)
+        |_,_ -> raise (TypeBinaireInattendu (op, te1, te2))
+        )   
+    else raise (TypeInattendu (te2, te1))
   | AstTds.Unaire (op, e) -> 
     let (ne, te) = analyse_type_expression e in
     (match (op, te) with
      |Numerateur, Rat -> AstType.Unaire (AstType.Numerateur, ne), Int
      |Denominateur, Rat -> AstType.Unaire (AstType.Denominateur, ne), Int
-     |_ -> raise (TypeInattendu (Rat, te))
+     |_ -> raise (TypeInattendu (te, Rat))
      )
   | AstTds.AppelFonction (f, l) -> 
     match info_ast_to_info f with
@@ -71,11 +72,14 @@ let rec analyse_type_instruction i =
   match i with
   | AstTds.Declaration (t, n, e) ->
      let (ne, te) = analyse_type_expression e in
-     if t = te then (AstType.Declaration (n, ne)) else raise (TypeInattendu(t, te))
+     if (Type.est_compatible t te) then (
+      modifier_type_variable t n; (* modification du type associé*)
+      (AstType.Declaration (n, ne))) 
+    else raise (TypeInattendu(te, t))
   | AstTds.Affectation (n,e) ->
      let (ne, te) = analyse_type_expression e in
      let t = type_of_info_ast n in
-     if t = te then (AstType.Affectation(n, ne)) else raise (TypeInattendu(t,te)) 
+     if (Type.est_compatible t te) then (AstType.Affectation(n, ne)) else raise (TypeInattendu(te,t)) 
   | AstTds.Affichage e ->
      let (ne, te) = analyse_type_expression e in
      (match te with
@@ -91,7 +95,7 @@ let rec analyse_type_instruction i =
   | AstTds.Retour (e,iast) ->
     let (ne, te) = analyse_type_expression e 
     and t = type_of_info_ast iast in
-    if t = te then (AstType.Retour(ne, iast)) else raise (TypeInattendu(t,te)) 
+    if (Type.est_compatible t te) then (AstType.Retour(ne, iast)) else raise (TypeInattendu(te,t)) 
   | AstTds.Empty -> AstType.Empty
 
 (* analyse_tds_bloc : tds -> info_ast option -> AstTds.bloc -> AstTds.bloc *)
