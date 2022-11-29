@@ -28,9 +28,9 @@ let rec analyse_type_expression e = match e with
       |Plus, Rat -> (AstType.Binaire (AstType.PlusRat, ne1, ne2), te1)
       |Mult, Int -> (AstType.Binaire (AstType.MultInt, ne1, ne2), te1)
       |Mult, Rat -> (AstType.Binaire (AstType.MultRat, ne1, ne2), te1)
-      |Equ, Int -> (AstType.Binaire (AstType.EquInt, ne1, ne2), te1)
-      |Equ, Bool -> (AstType.Binaire (AstType.EquBool, ne1, ne2), te1)
-      |Inf, Int -> (AstType.Binaire (AstType.Inf, ne1, ne2), te1)
+      |Equ, Int -> (AstType.Binaire (AstType.EquInt, ne1, ne2), Bool)
+      |Equ, Bool -> (AstType.Binaire (AstType.EquBool, ne1, ne2), Bool)
+      |Inf, Int -> (AstType.Binaire (AstType.Inf, ne1, ne2), Bool)
       |_,_ -> raise (TypeBinaireInattendu (op, te1, te2))
       )
   | AstTds.Unaire (op, e) -> 

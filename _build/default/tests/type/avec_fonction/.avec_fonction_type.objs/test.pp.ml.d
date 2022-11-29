@@ -1,1 +1,1 @@
-tests/type/avec_fonction/test.pp.ml: Compilateur Exceptions Expect_test_collector Filename Inline_test_config Ppx_inline_test_lib Rat Unix
+tests/type/avec_fonction/test.pp.ml: Compilateur Exceptions Exceptions_identifiants Expect_test_collector Filename Inline_test_config Ppx_inline_test_lib Rat Unix
