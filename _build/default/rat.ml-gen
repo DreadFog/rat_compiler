@@ -34,6 +34,10 @@ module Passe = Rat__Passe
 module PasseTdsRat = Rat__PasseTdsRat
 
 
+(** @canonical Rat.PasseTypeRat *)
+module PasseTypeRat = Rat__PasseTypeRat
+
+
 (** @canonical Rat.PrinterAst *)
 module PrinterAst = Rat__PrinterAst
 

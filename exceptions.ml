@@ -1,10 +1,7 @@
 open Type
 open Ast.AstSyntax
 
-(* Exceptions pour la gestion des identificateurs
-exception DoubleDeclaration of string 
-exception IdentifiantNonDeclare of string 
-exception MauvaiseUtilisationIdentifiant of string *)
+exception ErreurInterne
 
 (* Exceptions pour le typage *)
 (* Le premier type est le type réel, le second est le type attendu *)

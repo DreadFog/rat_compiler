@@ -371,3 +371,9 @@ let%test _ =
   | _ -> false
     
    
+  let type_of_info_ast iast =
+    match info_ast_to_info iast with
+      |InfoConst(_,_) -> Int
+      |InfoVar(_,t,_,_) -> t
+      |InfoFun(_,t,_) -> t
+      |InfoParam(_,t) -> t 
