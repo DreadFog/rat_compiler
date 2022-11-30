@@ -33,7 +33,7 @@ let rec analyse_type_expression e = match e with
         |Inf, Int -> (AstType.Binaire (AstType.Inf, ne1, ne2), Bool)
         |_,_ -> raise (TypeBinaireInattendu (op, te1, te2))
         )   
-    else raise (TypeInattendu (te2, te1))
+    else raise (TypeBinaireInattendu (op,te1, te2))
   | AstTds.Unaire (op, e) -> 
     let (ne, te) = analyse_type_expression e in
     (match (op, te) with
@@ -43,7 +43,7 @@ let rec analyse_type_expression e = match e with
      )
   | AstTds.AppelFonction (f, l) -> 
     match info_ast_to_info f with
-      |InfoFun(_,t,lt) -> 
+      |InfoFun(_,t,lt) -> (* Vérification du bon nombre d'arguments *)
           let nl = List.map analyse_type_expression l in
           let type_params = List.map snd nl in
           (* check if all params have a correct type*)
@@ -89,9 +89,18 @@ let rec analyse_type_instruction i =
       |_ -> (raise ErreurInterne)
     )
   | AstTds.Conditionnelle (e,b1,b2) ->
-    AstType.Conditionnelle(fst (analyse_type_expression e), analyse_type_bloc b1, analyse_type_bloc b2)
+    (* Vérification que la conditionnelle est bien booléenne *)
+    let (ne, te) = (analyse_type_expression e) in
+    if (Type.est_compatible te Bool) then 
+      AstType.Conditionnelle(ne, analyse_type_bloc b1, analyse_type_bloc b2)
+  else raise (TypeInattendu(te, Bool))
   | AstTds.TantQue (e,b) ->
-    AstType.TantQue(fst (analyse_type_expression e), analyse_type_bloc b)
+    (* Vérification que la conditionnelle est bien booléenne *)
+
+    let (ne, te) = (analyse_type_expression e) in
+    if (Type.est_compatible te Bool) then 
+      AstType.TantQue(ne, analyse_type_bloc b)
+    else raise (TypeInattendu(te, Bool))
   | AstTds.Retour (e,iast) ->
     let (ne, te) = analyse_type_expression e 
     and t = type_of_info_ast iast in

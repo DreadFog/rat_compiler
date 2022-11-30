@@ -29,14 +29,10 @@ let rec analyse_tds_expression tds e = match e with
     let f_tds = Tds.chercherGlobalementUnsafe tds f in
     (* On vérifie qu'on appel bien une fonction *)
     (match info_ast_to_info f_tds with
-      InfoFun(_,_,arg_list) -> (* Vérification du bon nombre d'arguments *)
-                              if (List.length arg_list = List.length l) 
-                                then () 
-                              else 
-                                raise (Exceptions_identifiants.MauvaiseUtilisationIdentifiant f);
+      InfoFun(_,_,_) -> AstTds.AppelFonction ( f_tds
+                                , List.map (analyse_tds_expression tds) l)
       |_ -> raise (Exceptions_identifiants.MauvaiseUtilisationIdentifiant f));
-    AstTds.AppelFonction ( f_tds
-                         , List.map (analyse_tds_expression tds) l)
+
   | AstSyntax.Unaire (op, e) ->
     AstTds.Unaire (op, analyse_tds_expression tds e) 
 
