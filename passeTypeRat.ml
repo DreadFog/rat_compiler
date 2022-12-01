@@ -104,7 +104,8 @@ let rec analyse_type_instruction i =
   | AstTds.Retour (e,iast) ->
     let (ne, te) = analyse_type_expression e 
     and t = type_of_info_ast iast in
-    if (Type.est_compatible t te) then (AstType.Retour(ne, iast)) else raise (TypeInattendu(te,t)) 
+    if (Type.est_compatible t te) then (AstType.Retour(ne, iast))
+    else raise (TypeInattendu(te,t)) 
   | AstTds.Empty -> AstType.Empty
 
 (* analyse_tds_bloc : tds -> info_ast option -> AstTds.bloc -> AstTds.bloc *)

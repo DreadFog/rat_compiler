@@ -4,6 +4,7 @@ Exceptions_identifiants
 Lexer
 Parser
 Passe
+PassePlacementRat
 PasseTdsRat
 PasseTypeRat
 Rat

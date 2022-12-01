@@ -18,7 +18,9 @@ let rec analyse_tds_expression tds e = match e with
                         let info_ast_found = Tds.chercherGlobalementUnsafe tds s in
                         (
                         match (info_ast_to_info info_ast_found) with 
-                          | InfoFun(f, _, _) -> raise (Exceptions_identifiants.MauvaiseUtilisationIdentifiant f);
+                          | InfoFun(f, _, _) ->
+                              raise (Exceptions_identifiants.MauvaiseUtilisationIdentifiant f);
+                          | InfoConst(_,i) -> AstTds.Entier i
                           | _ -> AstTds.Ident (info_ast_found)
                         )
   | AstSyntax.Entier i -> AstTds.Entier i
