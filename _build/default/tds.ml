@@ -6,7 +6,7 @@ type info =
   | InfoConst of string * int
   | InfoVar of string * typ * int * string
   | InfoFun of string * typ * typ list
-  | InfoParam of string * typ
+  (*| InfoParam of string * typ*)
 
 (* Données stockées dans la tds  et dans les AST : pointeur sur une information *)
 type info_ast = info ref  
@@ -310,7 +310,7 @@ let string_of_info info =
   | InfoVar (n,t,dep,base) -> "Variable "^n^" : "^(string_of_type t)^" "^(string_of_int dep)^"["^base^"]"
   | InfoFun (n,t,tp) -> "Fonction "^n^" : "^(List.fold_right (fun elt tq -> if tq = "" then (string_of_type elt) else (string_of_type elt)^" * "^tq) tp "" )^
                       " -> "^(string_of_type t)
-  | InfoParam (n,t) -> "Paramètre "^n^" : "^(string_of_type t)
+  (*| InfoParam (n,t) -> "Paramètre "^n^" : "^(string_of_type t)*)
 
 (* Affiche la tds locale *)
 let afficher_locale tds =
@@ -376,4 +376,10 @@ let%test _ =
       |InfoConst(_,_) -> Int
       |InfoVar(_,t,_,_) -> t
       |InfoFun(_,t,_) -> t
-      |InfoParam(_,t) -> t 
+      (*|InfoParam(_,t) -> t*) 
+
+(* Récupère les infos d'une info_ast
+let tam_var_of_info_ast iast =
+  match info_ast_to_info iast with
+    InfoVar(_,ty,dep,reg) -> (Type.getTaille ty,dep,reg)
+    |_ -> raise Exceptions.ErreurInterne*)

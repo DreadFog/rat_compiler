@@ -56,8 +56,8 @@ let rec analyse_placement_instruction reg depl i =
 (* Erreur si mauvaise utilisation des identifiants *)
 and analyse_placement_bloc reg depl b = 
   let f (pred, fdepl) inst =
-    let (ni,ti) = analyse_placement_instruction reg fdepl inst in
-    (pred @ [ni], fdepl+ti) in (* a améliorer ? hopefully ocaml fix it*)
+    let (ni,nfdepl) = analyse_placement_instruction reg fdepl inst in
+    (pred @ [ni], nfdepl) in (* a améliorer ? hopefully ocaml fix it*)
   (List.fold_left f ([], depl) b, depl)
 
 (* snd_zip : ('a*'b) list -> ('c*'d) list -> ('b*'d) lits *)
@@ -81,16 +81,23 @@ let first f (x,y) = (f x, y)
 en une fonction de type AstType.fonction *)
 (* Erreur si mauvaise utilisation des identifiants *)
 let analyse_placement_fonction reg (AstType.Fonction(iast,l_param,l_inst)) =
-  let (nb, taille) = analyse_placement_bloc reg 0 l_inst in
+  (* traitement des paramères *)
+  (* f(int a, int b) -> @a : -4LB; @b : -3LB *)
+  let f param fdepl =
+    let taille = Type.getTaille (type_of_info_ast param) in
+     modifier_adresse_variable (fdepl - taille) reg param;
+     fdepl - taille in 
+  let _ = List.fold_right f l_param 0 in
+  (* traitement des instructions *)
+  let (nb, taille) = analyse_placement_bloc reg 3 l_inst in
   (AstPlacement.Fonction(iast, l_param, nb), taille)
-
 
 (* analyser : AstType.programme -> AstPlacement.programme *)
 (* Paramètre : le programme à analyser *)
 (* Vérifie le bon typage des identifiants et tranforme le programme
 en un programme de type AstPlacement.programme *)
 (* Erreur si mauvais typage *)
-let analyser (AstType.Programme (fonctions,prog)) =
+let analyser (AstType.Programme (fonctions,blocs)) =
   let nf = List.map (fun x -> fst (analyse_placement_fonction "LB" x)) fonctions  in
-  let nb = fst (analyse_placement_bloc "SB" 0 prog) in
+  let nb = fst (analyse_placement_bloc "SB" 0 blocs) in
   AstPlacement.Programme (nf,nb)

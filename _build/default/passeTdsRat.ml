@@ -196,8 +196,8 @@ let analyse_tds_fonction maintds (AstSyntax.Fonction(t,nom,l_param,l_inst)) =
   (* création de la td fille : tds liée au bloc de la fonction *) 
   let tds_fille = creerTDSFille maintds in
 
-  let l_param' = List.map (fun (t,s) -> (s, info_to_info_ast (InfoParam(s,t)))) l_param and
-      l_param_tds = List.map (fun (t,s) -> (t, info_to_info_ast (InfoParam(s,t)))) l_param
+  let l_param' = List.map (fun (t,s) -> (s, info_to_info_ast (InfoVar(s,t,0,"")))) l_param and
+      l_param_tds = List.map (fun (t,s) -> (t, info_to_info_ast (InfoVar(s,t,0,"")))) l_param
   in
   (* ajouter les paramètres dans la tds fille pour l'analyse du bloc
    * on fait attention aux possibles doublons
