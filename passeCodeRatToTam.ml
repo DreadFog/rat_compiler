@@ -16,13 +16,41 @@ type t2 = String
 en une expression de type AstTds.expression *)
 (* Erreur si mauvaise utilisation des identifiants *)
 let rec ast_to_tam_expression e = match e with
-  | AstTds.Ident s -> let (taille, depl, reg) = Tds.tam_var_of_info_ast s in 
+  | AstType.Ident s -> let (taille, depl, reg) = Tds.tam_var_of_info_ast s in 
   load taille depl reg
-  | AstTds.Entier i -> 
-  | AstTds.Booleen b -> 
-  | AstTds.Binaire (op, e1, e2) ->
-  | AstTds.Unaire (op, e) -> 
-  | AstTds.AppelFonction (f, l) -> 
+  | AstType.Entier i -> loadl_int i 
+  | AstType.Booleen b -> 
+    loadl_string (string_of_bool b) (* convert to string *)
+    ^ subr "B2I" (* Convert to int *)
+  | AstType.Binaire (op, e1, e2) -> 
+    let ne1 = ast_to_tam_expression e1 in
+    let ne2 = ast_to_tam_expression e2 in
+    ne1 ^ ne2 ^ (
+      match op with
+      | Fraction -> "" (* les deux entiers sont déjà dans l'ordre d'un rationnel *)
+      | PlusInt -> subr "IAdd"
+      | PlusRat -> call "ST" "radd" (* ST est inutile mais cet argument est utile en cas d'appel croisé *)
+      | MultInt -> subr "IMul"
+      | MultRat -> call "ST" "rmul"
+      | EquInt -> subr "IEq"
+      | EquBool -> subr "IEq"
+      | Inf -> subr "ILss"
+    )
+  | AstType.Unaire (op, e) -> 
+    ast_to_tam_expression e (* Met un rat en haut de pile *)
+    ^ (
+      match op with
+      | Numerateur -> load 1 (-1) "ST" (* Met le numérateur en haut de pile *)
+      | Denominateur -> load 1 (-2) "ST" (* Met le dénominateur en haut de pile *)
+    )
+  | AstType.AppelFonction (f, l) -> let info_f = info_ast_to_info f in
+    (match info_f with
+    | InfoFun (name, _, _) ->
+      List.fold_left (fun acc e -> acc ^ ast_to_tam_expression e) "" l
+      ^ call "ST" name
+    | _ -> raise Exceptions.ErreurInterne 
+    )
+      
 
 
 (* analyse_tds_instruction : tds -> info_ast option -> AstPlacement.instruction -> AstPlacement.instruction *)
@@ -41,10 +69,18 @@ let rec ast_to_tam_instruction i =
     ^ ast_to_tam_expression e
     ^ Tam.store taille dep reg
   | AstPlacement.Affectation (iast, e) ->
-    
+    let (taille, dep, reg) = Tds.tam_var_of_info_ast iast in
+    ast_to_tam_expression e
+    ^ Tam.store taille dep reg
   | AstPlacement.AffichageInt e ->
+    ast_to_tam_expression e
+    (* TODO : affichage *)
   | AstPlacement.AffichageRat e ->
+    ast_to_tam_expression e
+    (* TODO : affichage *)
   | AstPlacement.AffichageBool e ->
+    ast_to_tam_expression e
+    (* TODO : affichage *)
   | AstPlacement.Conditionnelle (e,b1,b2) ->
   | AstPlacement.TantQue (e,b) ->
   | AstPlacement.Retour (e,iast) ->
