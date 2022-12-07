@@ -76,5 +76,5 @@ val modifier_adresse_variable : int -> string -> info_ast -> unit
 (* Récupère le type d'une info_ast *)
 val type_of_info_ast : info_ast -> typ
 
-(* Récupère les infos d'une info_ast 
-val tam_var_of_info_ast : info_ast -> int * int * string*)
+(* Récupère les infos d'une info_ast *)
+val tam_var_of_info_ast : info_ast -> int * int * string

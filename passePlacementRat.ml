@@ -54,11 +54,17 @@ let rec analyse_placement_instruction reg depl i =
 (* Paramètre li : liste d'instructions à analyser *)
 (* Vérifie la bonne utilisation des identifiants et tranforme le bloc en un bloc de type AstType.bloc *)
 (* Erreur si mauvaise utilisation des identifiants *)
-and analyse_placement_bloc reg depl b = 
+
+(* and analyse_placement_bloc reg depl b = 
   let f (pred, fdepl) inst =
     let (ni,nfdepl) = analyse_placement_instruction reg fdepl inst in
     (pred @ [ni], nfdepl) in (* a améliorer ? hopefully ocaml fix it*)
-  (List.fold_left f ([], depl) b, depl)
+  (List.fold_left f ([], depl) b, depl) *)
+  and analyse_placement_bloc reg depl b = 
+  let f (pred, taille) inst =
+    let (ni,nfdepl) = analyse_placement_instruction reg (taille+depl) inst in
+    (pred @ [ni], nfdepl-depl) in (* a améliorer ? hopefully ocaml fix it*)
+  (List.fold_left f ([], 0) b, depl)
 
 (* snd_zip : ('a*'b) list -> ('c*'d) list -> ('b*'d) lits *)
 (* Paramètres : les listes a fusionnées *)

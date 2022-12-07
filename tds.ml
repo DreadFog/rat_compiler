@@ -1,5 +1,6 @@
 open Hashtbl
 open Type
+open Exceptions_identifiants
 
 (* Définition du type des informations associées aux identifiants *)
 type info =
@@ -379,7 +380,8 @@ let%test _ =
       (*|InfoParam(_,t) -> t*) 
 
 (* Récupère les infos d'une info_ast
-let tam_var_of_info_ast iast =
+ *)
+ let tam_var_of_info_ast iast =
   match info_ast_to_info iast with
     InfoVar(_,ty,dep,reg) -> (Type.getTaille ty,dep,reg)
-    |_ -> raise Exceptions.ErreurInterne*)
+    |_ -> raise Exceptions_identifiants.ErreurInterne

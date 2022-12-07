@@ -14,15 +14,16 @@ type t2 = Ast.AstTds.programme
 en une expression de type AstTds.expression *)
 (* Erreur si mauvaise utilisation des identifiants *)
 let rec analyse_tds_expression tds e = match e with
-  | AstSyntax.Ident s -> (* vérification qu'on utilise pas un nom de fonction *)
-                        let info_ast_found = Tds.chercherGlobalementUnsafe tds s in
-                        (
-                        match (info_ast_to_info info_ast_found) with 
-                          | InfoFun(f, _, _) ->
-                              raise (Exceptions_identifiants.MauvaiseUtilisationIdentifiant f);
-                          | InfoConst(_,i) -> AstTds.Entier i
-                          | _ -> AstTds.Ident (info_ast_found)
-                        )
+  | AstSyntax.Ident s ->
+    (* vérification qu'on utilise pas un nom de fonction *)
+    let info_ast_found = Tds.chercherGlobalementUnsafe tds s in
+    (
+    match (info_ast_to_info info_ast_found) with 
+      | InfoFun(f, _, _) ->
+          raise (Exceptions_identifiants.MauvaiseUtilisationIdentifiant f);
+      | InfoConst(_,i) -> AstTds.Entier i
+      | _ -> AstTds.Ident (info_ast_found)
+    )
   | AstSyntax.Entier i -> AstTds.Entier i
   | AstSyntax.Booleen b -> AstTds.Booleen b
   | AstSyntax.Binaire (op, e1, e2) ->
@@ -196,16 +197,18 @@ let analyse_tds_fonction maintds (AstSyntax.Fonction(t,nom,l_param,l_inst)) =
   (* création de la td fille : tds liée au bloc de la fonction *) 
   let tds_fille = creerTDSFille maintds in
 
-  let l_param' = List.map (fun (t,s) -> (s, info_to_info_ast (InfoVar(s,t,0,"")))) l_param and
-      l_param_tds = List.map (fun (t,s) -> (t, info_to_info_ast (InfoVar(s,t,0,"")))) l_param
-  in
+  let l_param_tds' =
+    List.map (fun (t,s) -> ((t,s), info_to_info_ast (InfoVar(s,t,0,"")))) l_param in
+  
+  let getSeconds = List.map (fun (c,iast') -> (snd c, iast'))
+  and getFirsts = List.map (fun (c,iast') -> (fst c, iast')) in
   (* ajouter les paramètres dans la tds fille pour l'analyse du bloc
    * on fait attention aux possibles doublons
    * Remarque : ici, choix qu'on peut avoir une variable déclarée dans le bloc englobant et
    * un paramètre de même nom *)
   List.fold_right (fun curr () -> Tds.absentLocalementUnsafe tds_fille (fst curr);
                                   ajouter tds_fille (fst curr) (snd curr))
-                  l_param' ();
+                  (getSeconds l_param_tds') ();
 
   (* ajout de la fonction dans la tds mère *)
   ajouter maintds nom (info_to_info_ast (InfoFun (nom, t, List.map fst l_param)));
@@ -213,7 +216,7 @@ let analyse_tds_fonction maintds (AstSyntax.Fonction(t,nom,l_param,l_inst)) =
   (* liste des ASTTds instructions *)
   let l_inst_tds = analyse_tds_bloc tds_fille (chercherGlobalement tds_fille nom) l_inst in
   let nom_tds = chercherGlobalementUnsafe tds_fille nom in
-  AstTds.Fonction(t, nom_tds, l_param_tds, l_inst_tds)
+  AstTds.Fonction(t, nom_tds, (getFirsts l_param_tds'), l_inst_tds)
 
 
 (* analyser : AstSyntax.programme -> AstTds.programme *)

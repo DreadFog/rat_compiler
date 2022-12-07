@@ -7,8 +7,8 @@ open Tam
 open Code
 
 type t1 = Ast.AstPlacement.programme
-type t2 = String
-(*
+type t2 = string
+
 (* analyse_tds_expression : tds -> AstTds.expression -> AstTds.expression *)
 (* Paramètre tds : la table des symboles courante *)
 (* Paramètre e : l'expression à analyser *)
@@ -16,45 +16,40 @@ type t2 = String
 en une expression de type AstTds.expression *)
 (* Erreur si mauvaise utilisation des identifiants *)
 let rec ast_to_tam_expression e = match e with
-  | AstTds.Ident s -> let (taille, depl, reg) = Tds.tam_var_of_info_ast s in 
-  load taille depl reg
+  | AstType.Ident s -> let (taille, depl, reg) = Tds.tam_var_of_info_ast s in 
+    load taille depl reg
+  | AstType.Entier i -> loadl_int i 
+  | AstType.Booleen b -> loadl_int (Bool.to_int b)
+  | AstType.Binaire (op, e1, e2) -> 
+    let ne1 = ast_to_tam_expression e1
+    and ne2 = ast_to_tam_expression e2 in
+    ne1 ^ ne2 ^ (
+      match op with
+      | Fraction -> "\n" (* les deux entiers sont déjà dans l'ordre d'un rationnel *)
+      | PlusInt -> subr "IAdd"
+      | PlusRat -> call "ST" "radd" (* ST est inutile mais cet argument est utile en cas d'appel croisé *)
+      | MultInt -> subr "IMul"
+      | MultRat -> call "ST" "rmul"
+      | EquInt -> subr "IEq"
+      | EquBool -> subr "IEq"
+      | Inf -> subr "ILss"
+    )
+  | AstType.Unaire (op, e) -> 
+    ast_to_tam_expression e (* Met un rat en haut de pile *)
+    ^ (
+      match op with
+      | Numerateur -> load 1 (-2) "ST" (* Met le numérateur en haut de pile *)
+      | Denominateur -> load 1 (-1) "ST" (* Met le dénominateur en haut de pile *)
+    )
+  | AstType.AppelFonction (f, l) -> let info_f = info_ast_to_info f in
+    (match info_f with
+    | InfoFun (name, _, _) ->
+      List.fold_left (fun acc e -> acc ^ ast_to_tam_expression e) "" l
+      ^ call "ST" name
+    | _ -> raise Exceptions.ErreurInterne 
+    )
+      
 
-  | AstTds.Entier i -> (AstType.Entier i, Int)
-  | AstTds.Booleen b -> (AstType.Booleen b, Bool)
-  | AstTds.Binaire (op, e1, e2) ->
-    let (ne1,te1) = Tds.ast_to_tam_expression e1 in 
-    let (ne2,te2) = Tds.ast_to_tam_expression e2 in 
-    if (Type.est_compatible te1 te2) then 
-      (match (op,te1) with
-        Fraction,Int -> (AstType.Binaire (AstType.Fraction, ne1, ne2), Rat)
-        |Plus, Int -> (AstType.Binaire (AstType.PlusInt, ne1, ne2), te1)
-        |Plus, Rat -> (AstType.Binaire (AstType.PlusRat, ne1, ne2), te1)
-        |Mult, Int -> (AstType.Binaire (AstType.MultInt, ne1, ne2), te1)
-        |Mult, Rat -> (AstType.Binaire (AstType.MultRat, ne1, ne2), te1)
-        |Equ, Int -> (AstType.Binaire (AstType.EquInt, ne1, ne2), Bool)
-        |Equ, Bool -> (AstType.Binaire (AstType.EquBool, ne1, ne2), Bool)
-        |Inf, Int -> (AstType.Binaire (AstType.Inf, ne1, ne2), Bool)
-        |_,_ -> raise (TypeBinaireInattendu (op, te1, te2))
-        )   
-    else raise (TypeBinaireInattendu (op,te1, te2))
-  | AstTds.Unaire (op, e) -> 
-    let (ne, te) = Tds.ast_to_tam_expression e in
-    (match (op, te) with
-     |Numerateur, Rat -> AstType.Unaire (AstType.Numerateur, ne), Int
-     |Denominateur, Rat -> AstType.Unaire (AstType.Denominateur, ne), Int
-     |_ -> raise (TypeInattendu (te, Rat))
-     )
-  | AstTds.AppelFonction (f, l) -> 
-    match info_ast_to_info f with
-      |InfoFun(_,t,lt) -> (* Vérification du bon nombre d'arguments *)
-          let nl = List.map ast_to_tam_expression l in
-          let type_params = List.map snd nl in
-          (* check if all params have a correct type*)
-          if (List.equal (=) lt type_params) then
-            (AstType.AppelFonction (f, List.map fst nl), t)
-          else 
-            raise (TypesParametresInattendus (lt, type_params))
-      |_ -> raise ErreurInterne
 
 (* analyse_tds_instruction : tds -> info_ast option -> AstPlacement.instruction -> AstPlacement.instruction *)
 (* Paramètre tds : la table des symboles courante *)
@@ -68,16 +63,43 @@ let rec ast_to_tam_instruction i =
   match i with
   | AstPlacement.Declaration (iast, e) ->
     let (taille, dep, reg) = Tds.tam_var_of_info_ast iast in
-    Tam.push taille
+    push taille
     ^ ast_to_tam_expression e
-    ^ Tam.store taille
+    ^ store taille dep reg
   | AstPlacement.Affectation (iast, e) ->
+    let (taille, dep, reg) = Tds.tam_var_of_info_ast iast in
+    ast_to_tam_expression e
+    ^ store taille dep reg
   | AstPlacement.AffichageInt e ->
+    ast_to_tam_expression e
+    ^ subr "IOut"
   | AstPlacement.AffichageRat e ->
+    ast_to_tam_expression e
+    ^ call "SB" "ROut"
   | AstPlacement.AffichageBool e ->
+    ast_to_tam_expression e
+    ^ subr "BOut"
   | AstPlacement.Conditionnelle (e,b1,b2) ->
+    label "if"
+    ^ ast_to_tam_expression e
+    ^ jumpif 0 "else"
+    ^ ast_to_tam_bloc b1
+    ^ jump "endIf"
+    ^ label "else"
+    ^ ast_to_tam_bloc b2
+    ^ label "endIf"
   | AstPlacement.TantQue (e,b) ->
-  | AstPlacement.Retour (e,iast) ->
+    label "loop"
+    ^ ast_to_tam_expression e
+    ^ jumpif 0 "endLoop"
+    ^ ast_to_tam_bloc b
+    ^ jump "loop"
+    ^ label "endLoop"
+  | AstPlacement.Retour (e, taille_ret, taille_param) ->
+  (* Rq : pas besoin de pop, le pointeur de pile sera remis au bon endroit 
+     grâce aux instructions d'activation *)
+    ast_to_tam_expression e
+    ^ return taille_ret taille_param
   | AstPlacement.Empty -> ""
 
 (* analyse_tds_bloc : tds -> info_ast option -> AstPlacement.bloc -> AstPlacement.bloc *)
@@ -87,22 +109,9 @@ let rec ast_to_tam_instruction i =
 (* Paramètre li : liste d'instructions à analyser *)
 (* Vérifie la bonne utilisation des identifiants et tranforme le bloc en un bloc de type AstPlacement.bloc *)
 (* Erreur si mauvaise utilisation des identifiants *)
-and ast_to_tam_bloc reg depl b = 
-  
-
-(* snd_zip : ('a*'b) list -> ('c*'d) list -> ('b*'d) lits *)
-(* Paramètres : les listes a fusionnées *)
-(* Fusionne des listes [(ai,bi)] en [(b1,b2)] *)
-(* fzip avec snd mais la gestion de polymorphisme avec fzip n'est bien gérée par caml *)
-let snd_zip l1 l2 = List.combine (List.map snd l1) (List.map snd l2)
-
-(* second : ('a -> 'b) -> 'c*'a -> 'c*'b *)
-(* Application de f sur le second élément d'un couple *)
-let second f (x,y) = (x, f y) 
-
-(* first : ('a -> 'b) -> 'c*'a -> 'c*'b *)
-(* Application de f sur le premier élément d'un couple *)
-let first f (x,y) = (f x, y)
+and ast_to_tam_bloc (l_inst, taille_bloc) =
+  List.fold_left (fun prev_str inst -> prev_str ^ ast_to_tam_instruction inst) "" l_inst
+  ^ pop 0 taille_bloc
 
 (* analyse_tds_fonction : tds -> AstPlacement.fonction -> AstPlacement.fonction *)
 (* Paramètre tds : la table des symboles courante *)
@@ -110,12 +119,23 @@ let first f (x,y) = (f x, y)
 (* Vérifie la bonne utilisation des identifiants et tranforme la fonction
 en une fonction de type AstPlacement.fonction *)
 (* Erreur si mauvaise utilisation des identifiants *)
-let ast_to_tam_fonction reg (AstPlacement.Fonction(iast,l_param,l_inst)) =
+let rec ast_to_tam_fonction (AstPlacement.Fonction(iast,_,l_inst)) =
+  (* Rq : On n'autorise pas les fonctions auxillaires *)
+  match info_ast_to_info iast with 
+  | InfoFun (nom, _, _) -> label nom ^ ast_to_tam_bloc l_inst
+  | _ -> raise ErreurInterne
   
 (* analyser : AstPlacement.programme -> AstPlacement.programme *)
 (* Paramètre : le programme à analyser *)
 (* Vérifie le bon typage des identifiants et tranforme le programme
 en un programme de type AstPlacement.programme *)
 (* Erreur si mauvais typage *)
-let analyser (AstPlacement.Programme (fonctions,blocs)) =
-*)
+let analyser (AstPlacement.Programme (fonctions,bloc)) = 
+  getEntete ()
+  (* Analyse des fonctions *)
+  ^ List.fold_left (fun prev_str func -> prev_str ^ ast_to_tam_fonction func) "" fonctions
+  (* Analyse du bloc *)
+  ^ label "main"
+  ^ ast_to_tam_bloc bloc
+  ^ halt 
+
