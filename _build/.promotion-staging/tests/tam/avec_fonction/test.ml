@@ -55,11 +55,11 @@ let%expect_test "testfun5" =
 
 let%expect_test "testfun6" =
   runtam (pathFichiersRat^"testfun6.rat");
-  [%expect{|Semantic error: asm.SemanticError: Ligne 76 : double déclaration de l'étiquette 'if'.|}]
+  [%expect{|truetrue|}]
 
 let%expect_test "testfuns" =
   runtam (pathFichiersRat^"testfuns.rat");
-  [%expect{| 34 |}]
+  [%expect{| 28 |}]
 
 let%expect_test "factrec" =
   runtam (pathFichiersRat^"factrec.rat");

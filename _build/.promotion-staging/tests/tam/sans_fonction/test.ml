@@ -63,7 +63,7 @@ let%expect_test "testmultrat" =
 
 let%expect_test "testnum" =
   runtam (pathFichiersRat^"testnum.rat");
-  [%expect{| 4 |}]
+  [%expect{| 0 |}]
 
 let%expect_test "testdenom" =
   runtam (pathFichiersRat^"testdenom.rat");
@@ -71,7 +71,7 @@ let%expect_test "testdenom" =
 
 let%expect_test "testwhile1" =
   runtam (pathFichiersRat^"testwhile1.rat");
-  [%expect{| tam.TamException: Tam error : Program has failed due to a memory or stack error |}]
+  [%expect{| 19 |}]
 
 let%expect_test "testif1" =
   runtam (pathFichiersRat^"testif1.rat");
@@ -83,9 +83,9 @@ let%expect_test "testif2" =
 
 let%expect_test "factiter" =
   runtam (pathFichiersRat^"factiter.rat");
-  [%expect{| tam.TamException: Tam error : Program has failed due to a memory or stack error |}]
+  [%expect{| 120 |}]
 
 let%expect_test "complique" =
   runtam (pathFichiersRat^"complique.rat");
-  [%expect{| [9/4][25/49]tam.TamException: Tam error : Program has failed due to a memory or stack error |}]
+  [%expect{| [9/4][27/14][27/16][3/2] |}]
 

@@ -38,8 +38,11 @@ let rec ast_to_tam_expression e = match e with
     ast_to_tam_expression e (* Met un rat en haut de pile *)
     ^ (
       match op with
-      | Numerateur -> load 1 (-2) "ST" (* Met le numérateur en haut de pile *)
-      | Denominateur -> load 1 (-1) "ST" (* Met le dénominateur en haut de pile *)
+      (* idée: on a le résultat en sommet de pile ( -1 et -2 ST
+          si on désire le numérateur, on pop 1 pour avoir ST au bon endroit
+          si on désire le dénominateur, on déplace celui-ci en -2 ST et on pop 1)*)
+      | Numerateur -> pop 0 1
+      | Denominateur -> store 1 (-2) "ST" 
     )
   | AstType.AppelFonction (f, l) -> let info_f = info_ast_to_info f in
     (match info_f with
@@ -80,21 +83,26 @@ let rec ast_to_tam_instruction i =
     ast_to_tam_expression e
     ^ subr "BOut"
   | AstPlacement.Conditionnelle (e,b1,b2) ->
-    label "if"
+    let labIf = getEtiquette ()
+    and labElse = getEtiquette ()
+    and labEndIF = getEtiquette () in
+    label labIf
     ^ ast_to_tam_expression e
-    ^ jumpif 0 "else"
+    ^ jumpif 0 labElse
     ^ ast_to_tam_bloc b1
-    ^ jump "endIf"
-    ^ label "else"
+    ^ jump labEndIF
+    ^ label labElse
     ^ ast_to_tam_bloc b2
-    ^ label "endIf"
+    ^ label labEndIF
   | AstPlacement.TantQue (e,b) ->
-    label "loop"
+    let labLoop = getEtiquette ()
+    and labEndLoop = getEtiquette () in
+    label labLoop
     ^ ast_to_tam_expression e
-    ^ jumpif 0 "endLoop"
+    ^ jumpif 0 labEndLoop
     ^ ast_to_tam_bloc b
-    ^ jump "loop"
-    ^ label "endLoop"
+    ^ jump labLoop
+    ^ label labEndLoop
   | AstPlacement.Retour (e, taille_ret, taille_param) ->
   (* Rq : pas besoin de pop, le pointeur de pile sera remis au bon endroit 
      grâce aux instructions d'activation *)

@@ -1,4 +1,4 @@
-; tests/tam/avec_fonction/fichiersRat/testfun2.rat
+; tests/tam/avec_fonction/fichiersRat/testfuns.rat
 JUMP main
 
 pgcd
@@ -70,15 +70,63 @@ SUBR IMul
 CALL (ST) norm
 RETURN (2) 4
 
-f
-LOAD (1) -1[LB]
-RETURN (1) 1
-POP (0) 0
-main
-LOADL 3
-LOADL 4
+f3
+LOAD (1) -4[LB]
+LOAD (2) -2[LB]
+POP (0) -1
 SUBR IAdd
-CALL (ST) f
-SUBR IOut
+LOAD (1) -3[LB]
+LOAD (2) -2[LB]
+STORE (1) -2[ST]
+POP (0) -1
+SUBR IAdd
+
+RETURN (2) 4
 POP (0) 0
+
+f2
+PUSH 1
+LOAD (2) -4[LB]
+POP (0) -1
+STORE (1) 3[LB]
+PUSH 1
+LOAD (2) -4[LB]
+STORE (1) -2[ST]
+POP (0) -1
+STORE (1) 4[LB]
+PUSH 2
+LOAD (1) 3[LB]
+LOAD (1) 4[LB]
+LOAD (2) -2[LB]
+CALL (ST) f3
+STORE (2) 5[LB]
+LOAD (2) 5[LB]
+RETURN (2) 5
+POP (0) 4
+f1
+PUSH 2
+LOADL 1
+LOAD (2) -3[LB]
+LOAD (1) -4[LB]
+LOAD (1) -1[LB]
+
+CALL (ST) f2
+STORE (2) 3[LB]
+LOAD (2) 3[LB]
+STORE (1) -2[ST]
+POP (0) -1
+RETURN (1) 4
+POP (0) 2
+main
+PUSH 1
+LOADL 13
+LOADL 4
+LOADL 11
+
+LOADL 17
+CALL (ST) f1
+STORE (1) 0[SB]
+LOAD (1) 0[SB]
+SUBR IOut
+POP (0) 1
 HALT
