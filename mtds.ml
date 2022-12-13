@@ -6,7 +6,7 @@ open Exceptions_identifiants
 type 'a info =
   | InfoConst of string * int
   | InfoVar of 'a * typ * int * string
-  | InfoFun of 'a * typ * typ list
+  | InfoFun of 'a * typ * (typ*'a) list
   (*| InfoParam of string * typ*)
 
 (* Données stockées dans la tds  et dans les AST : pointeur sur une information *)
@@ -35,16 +35,6 @@ let unwrap s aOpt print_err = match aOpt with
   |Some a -> a
 
 type 'a t = 'a tds
-
-let return x =
-let c = (create 100) in 
-  (add c x (ref (InfoVar (x, Undefined, 0, ""))));
-  Courante(Nulle, c)
-
-(* Rq : bind inutile pour le moment *)
-let rec ( >>= ) m f = match m with
-Nulle -> Nulle
-| Courante (mere, _) -> Courante (mere >>= f, create 100)
 
 (* Création d'une table des symboles à la racine *)
 let creerTDSMere () = Courante (Nulle, create 100)
@@ -119,17 +109,10 @@ InfoVar(_,ty,dep,reg) -> (Type.getTaille ty,dep,reg)
 
 (* Test pour éviter les warnings *)
 let%test _ = 
-let tds = creerTDSMere() in
-let ix = info_to_info_ast (InfoVar ("x", Rat, 0, "SB")) in
-let iy = info_to_info_ast (InfoVar ("y", Int, 2, "SB")) in
-ajouter tds "x" ix;
-ajouter tds "y" iy;
-let tdsf = creerTDSFille(tds) in
-let ix2 = info_to_info_ast (InfoVar ("x", Bool, 3, "LB")) in
-let iz = info_to_info_ast (InfoVar ("z", Rat, 4, "LB")) in
-ajouter tdsf "x" ix2;
-ajouter tdsf "z" iz;
-absentLocalementUnsafe (fun _ -> "erreur") tdsf "a";
+let _ = creerTDSMere in
+let _ = info_to_info_ast in
+let _ = creerTDSFille in
+let _ = absentLocalementUnsafe in
 let _ = chercherLocalementUnsafe in
 let _ = chercherGlobalementUnsafe in
 let _ = modifier_adresse_variable in
@@ -137,4 +120,4 @@ let _ = modifier_type_fonction in
 let _ = modifier_type_variable in
 let _ = tam_var_of_info_ast in
 let _ = type_of_info_ast in
-chercherLocalement tdsf "a" = None;
+let _ = chercherLocalement
