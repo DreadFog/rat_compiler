@@ -1,11 +1,11 @@
-type typ = Bool | Int | Rat | Pointeur of typ | Undefined
+type typ = Bool | Int | Rat | Undefined
 
 let rec string_of_type t = 
   match t with
   | Bool ->  "Bool"
   | Int  ->  "Int"
   | Rat  ->  "Rat"
-  | Pointeur(dsk) -> "Pointeur of " ^ string_of_type dsk
+  (*| Pointeur(dsk) -> "Pointeur of " ^ string_of_type dsk*)
   | Undefined -> "Undefined"
 
 
@@ -14,7 +14,7 @@ let rec est_compatible t1 t2 =
   | Bool, Bool -> true
   | Int, Int -> true
   | Rat, Rat -> true 
-  | Pointeur(norman), Pointeur(dirtybiology) ->  est_compatible norman dirtybiology (* IT'S A MATCH *)
+  (*| Pointeur(norman), Pointeur(dirtybiology) ->  est_compatible norman dirtybiology (* IT'S A MATCH *)*)
   | _ -> false
 
 let%test _ = est_compatible Bool Bool
@@ -52,10 +52,10 @@ let getTaille t =
   | Int -> 1
   | Bool -> 1
   | Rat -> 2
-  | Pointeur _ -> 1 (* only the address, so size of one *)
+  (*| Pointeur _ -> 1 (* only the address, so size of one *)*)
   | Undefined -> 0
   
 let%test _ = getTaille Int = 1
 let%test _ = getTaille Bool = 1
 let%test _ = getTaille Rat = 2
-let%test _ = getTaille (Pointeur(Int)) = 1
+(*let%test _ = getTaille (Pointeur(Int)) = 1*)

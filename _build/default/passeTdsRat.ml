@@ -1,11 +1,31 @@
-(* Module de la passe de gestion des identifiants *)
+(* (* Module de la passe de gestion des identifiants *)
 (* doit être conforme à l'interface Passe *)
-open Tds
+(* open Tds*)
 open Exceptions_identifiants
 open Ast
+open Mtds
 
 type t1 = Ast.AstSyntax.programme
 type t2 = Ast.AstTds.programme
+  
+(* snd_zip : ('a*'b) list -> ('c*'d) list -> ('b*'d) lits *)
+(* Paramètres : les listes a fusionnées *)
+(* Fusionne des listes [(ai,bi)] en [(b1,b2)] *)
+(* fzip avec snd mais la gestion de polymorphisme avec fzip n'est bien gérée par caml *)
+let snd_zip l1 l2 = List.combine (List.map snd l1) (List.map snd l2)
+
+(* second : ('a -> 'b) -> 'c*'a -> 'c*'b *)
+(* Application de f sur le second élément d'un couple *)
+let second f (x,y) = (x, f y)
+
+(* first : ('a -> 'b) -> 'c*'a -> 'c*'b *)
+(* Application de f sur le premier élément d'un couple *)
+let first f (x,y) = (f x, y)
+
+let rec print_err_ref r:AstSyntax.reference = (match r with
+  |Ident s -> s
+  |Pointeur p -> '*'^print_err_ident p)
+let chercherGlobalementUnsafeIdent = chercherGlobalementUnsafe print_err_ref
 
 (* analyse_tds_expression : tds -> AstSyntax.expression -> AstTds.expression *)
 (* Paramètre tds : la table des symboles courante *)
@@ -25,31 +45,51 @@ let rec analyse_tds_expression tds e = match e with
       | _ -> AstTds.Ident (info_ast_found)
     )*)
   | AstSyntax.Reference r ->
-    (* vérification qu'on utilise pas un nom de fonction *)
-    let info_ast_found = Tds.chercherGlobalementUnsafe tds s in
-    (
-    match (info_ast_to_info info_ast_found) with 
-      | InfoFun(f, _, _) ->
-          raise (Exceptions_identifiants.MauvaiseUtilisationIdentifiant f);
-      | InfoConst(_,i) -> AstTds.Entier i
-      | _ -> AstTds.Ident (info_ast_found)
+    (match r with
+      |Ident s ->
+        (* gestion des constantes *)
+        let info_ast_found = chercherGlobalementUnsafeIdent tds s in
+        (
+        match (info_ast_to_info info_ast_found) with 
+          | InfoConst(_,i) -> AstTds.Entier i
+          | _ -> AstTds.Reference (Ident (info_ast_found))
+        )
+      |_ -> AstTds.Reference (analyse_tds_reference tds r)
     )
+  | AstSyntax.Adr a -> 
+    let info_ast_found = chercherGlobalementUnsafeIdent tds a in
+    (
+      match (info_ast_to_info info_ast_found) with
+        InfoConst(_,_) -> raise Exceptions_identifiants.RefInterdite
+        | _ -> AstTds.Reference (AstTds.Ident (info_ast_found))
+    )
+  | AstSyntax.New t -> AstTds.New t
   | AstSyntax.Entier i -> AstTds.Entier i
   | AstSyntax.Booleen b -> AstTds.Booleen b
   | AstSyntax.Binaire (op, e1, e2) ->
     AstTds.Binaire (op, analyse_tds_expression tds e1, analyse_tds_expression tds e2)
   | AstSyntax.AppelFonction (f, l) ->
-    let f_tds = Tds.chercherGlobalementUnsafe tds f in
+    let f_tds = chercherGlobalementUnsafeIdent tds f in
     (* On vérifie qu'on appel bien une fonction *)
     (match info_ast_to_info f_tds with
       InfoFun(_,_,_) -> AstTds.AppelFonction ( f_tds
                                 , List.map (analyse_tds_expression tds) l)
       |_ -> raise (Exceptions_identifiants.MauvaiseUtilisationIdentifiant f));
-
   | AstSyntax.Unaire (op, e) ->
     AstTds.Unaire (op, analyse_tds_expression tds e) 
+  | AstSyntax.NULL -> AstTds.NULL
 
-(* analyse_tds_instruction : tds -> AstSyntax.instruction -> AstTds.instruction *)
+and analyse_tds_reference tds r = match r with
+  |Ident s ->
+    let info_ast_found = chercherGlobalementUnsafeIdent tds s in
+    (
+    match (info_ast_to_info info_ast_found) with 
+      | InfoConst(_,_) -> (raise Exceptions_identifiants.RefInterdite)
+      | _ -> Ident (info_ast_found)
+    )
+  |Pointeur p -> Pointeur (analyse_tds_reference tds p)
+
+  (* analyse_tds_instruction : tds -> AstSyntax.instruction -> AstTds.instruction *)
 (* Paramètre tds : la table des symboles courante *)
 (* Paramètre i : l'instruction à analyser *)
 (* Vérifie la bonne utilisation des identifiants et tranforme l'instruction *)
@@ -179,22 +219,6 @@ and analyse_tds_bloc tds oia li =
    (* afficher_locale tdsbloc ; *) (* décommenter pour afficher la table locale *)
    nli
 
-
-   
-(* snd_zip : ('a*'b) list -> ('c*'d) list -> ('b*'d) lits *)
-(* Paramètres : les listes a fusionnées *)
-(* Fusionne des listes [(ai,bi)] en [(b1,b2)] *)
-(* fzip avec snd mais la gestion de polymorphisme avec fzip n'est bien gérée par caml *)
-let snd_zip l1 l2 = List.combine (List.map snd l1) (List.map snd l2)
-
-(* second : ('a -> 'b) -> 'c*'a -> 'c*'b *)
-(* Application de f sur le second élément d'un couple *)
-let second f (x,y) = (x, f y) 
-
-(* first : ('a -> 'b) -> 'c*'a -> 'c*'b *)
-(* Application de f sur le premier élément d'un couple *)
-let first f (x,y) = (f x, y)
-
 (* analyse_tds_fonction : tds -> AstSyntax.fonction -> AstTds.fonction *)
 (* Paramètre tds : la table des symboles courante *)
 (* Paramètre : la fonction à analyser *)
@@ -225,7 +249,7 @@ let analyse_tds_fonction maintds (AstSyntax.Fonction(t,nom,l_param,l_inst)) =
 
   (* liste des ASTTds instructions *)
   let l_inst_tds = analyse_tds_bloc tds_fille (chercherGlobalement tds_fille nom) l_inst in
-  let nom_tds = chercherGlobalementUnsafe tds_fille nom in
+  let nom_tds = chercherGlobalementUnsafeIdent tds_fille nom in
   AstTds.Fonction(t, nom_tds, (getFirsts l_param_tds'), l_inst_tds)
 
 
@@ -239,3 +263,4 @@ let analyser (AstSyntax.Programme (fonctions,prog)) =
   let nf = List.map (analyse_tds_fonction tds) fonctions in
   let nb = analyse_tds_bloc tds None prog in
   AstTds.Programme (nf,nb)
+ *)

@@ -17,7 +17,15 @@ end
 module AstSyntax =
 struct
 
-type reference = Reference of string | Pointeur of reference 
+(* Rq : question cruciale : est-ce que int *a c'est ( int * ) a ou int ( *a ) ? 
+        choix : int ( *a ), on traite ( *a )
+        comme l'indentifiant, constitué d'un marqueur : Ident ou Pointeur
+        -> On autorise les fonctions d'ordre supérieur avec les pointeurs mais
+        attention a gérer le LB !!
+        Par contre, on autorise pas les pointeurs dans les paramètres, faudra voir pour les typedef struct
+*)
+
+type reference = Ident of string | Pointeur of reference 
 
 (* Opérateurs unaires de Rat *)
 type unaire = Numerateur | Denominateur
@@ -28,7 +36,7 @@ type binaire = Fraction | Plus | Mult | Equ | Inf
 (* Expressions de Rat *)
 type expression =
   (* Appel de fonction représenté par le nom de la fonction et la liste des paramètres réels *)
-  | AppelFonction of string * expression list
+  | AppelFonction of reference * expression list
   (* Accès à un identifiant représenté par son nom
   | Ident of string *)
   (* Booléen *)
@@ -39,6 +47,7 @@ type expression =
   | Adr of string
   (* Nouveau pointeur *)
   | New of Type.typ
+  | NULL
   (* Référence *)
   | Reference of reference
   (* Opération unaire représentée par l'opérateur et l'opérande *)
@@ -67,7 +76,7 @@ and instruction =
 
 (* Structure des fonctions de Rat *)
 (* type de retour - nom - liste des paramètres (association type et nom) - corps de la fonction *)
-type fonction = Fonction of typ * string * (typ * string) list * bloc
+type fonction = Fonction of typ * reference * (typ * string) list * bloc
 
 (* Structure d'un programme Rat *)
 (* liste de fonction - programme principal *)
@@ -82,7 +91,7 @@ end
 module AstTds =
 struct
 
-  type reference = Reference of Tds.info_ast | Pointeur of reference
+  type reference = Ident of Tds.info_ast | Pointeur of reference
 
   (* Expressions existantes dans notre langage *)
   (* ~ expression de l'AST syntaxique où les noms des identifiants ont été
@@ -94,6 +103,7 @@ struct
     | Entier of int
     | Adr of Tds.info_ast
     | New of Type.typ
+    | NULL
     | Reference of reference
     | Unaire of AstSyntax.unaire * expression
     | Binaire of AstSyntax.binaire * expression * expression
@@ -129,7 +139,7 @@ end
 module AstType =
 struct
 
-type reference = Reference of Tds.info_ast | Pointeur of reference
+type reference = Ident of Tds.info_ast | Pointeur of reference
 (* Opérateurs unaires de Rat - résolution de la surcharge *)
 type unaire = Numerateur | Denominateur
 

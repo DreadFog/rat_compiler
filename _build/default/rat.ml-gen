@@ -22,6 +22,10 @@ module Exceptions_identifiants = Rat__Exceptions_identifiants
 module Lexer = Rat__Lexer
 
 
+(** @canonical Rat.Mtds *)
+module Mtds = Rat__Mtds
+
+
 (** @canonical Rat.Parser *)
 module Parser = Rat__Parser
 

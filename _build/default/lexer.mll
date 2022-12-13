@@ -30,9 +30,8 @@
         "true",    TRUE;
         "false",   FALSE;
         "return",  RETURN;
-        "new",     NEW;
-        "null",    NULL;
-        "pointeur", POINTEUR
+        "new",     NEW; 
+        "null",    NULL 
       ];
     fun id ->
       match Hashtbl.find_opt kws id with

@@ -62,7 +62,6 @@ let chercherLocalement tds nom =
   | Nulle -> None
   | Courante (_,c) ->  find_opt c nom 
 
-
 let chercherLocalementUnsafe tds nom = unwrap nom (chercherLocalement tds nom) 
 
 let absentLocalementUnsafe tds nom =
@@ -188,11 +187,9 @@ let rec chercherGlobalement tds nom =
   | Courante (m,c) ->
     match find_opt c nom with
       | Some _ as i -> i
-      | None -> chercherGlobalement m nom 
+      | None -> chercherGlobalement m nom
 
 let chercherGlobalementUnsafe tds nom = unwrap nom (chercherGlobalement tds nom) 
-
-
 
 (* TESTS *)
 
