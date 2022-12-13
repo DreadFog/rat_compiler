@@ -29,8 +29,8 @@ type binaire = Fraction | Plus | Mult | Equ | Inf
 type expression =
   (* Appel de fonction représenté par le nom de la fonction et la liste des paramètres réels *)
   | AppelFonction of string * expression list
-  (* Accès à un identifiant représenté par son nom *)
-  | Ident of string
+  (* Accès à un identifiant représenté par son nom
+  | Ident of string *)
   (* Booléen *)
   | Booleen of bool
   (* Entier *)
@@ -81,14 +81,19 @@ end
 module AstTds =
 struct
 
+  type reference = Reference of Tds.info_ast | Pointeur of reference
+
   (* Expressions existantes dans notre langage *)
   (* ~ expression de l'AST syntaxique où les noms des identifiants ont été
   remplacés par les informations associées aux identificateurs *)
   type expression =
     | AppelFonction of Tds.info_ast * expression list
-    | Ident of Tds.info_ast (* le nom de l'identifiant est remplacé par ses informations *)
+    (*| Ident of Tds.info_ast  -- le nom de l'identifiant est remplacé par ses informations *)
     | Booleen of bool
     | Entier of int
+    | Adr of Tds.info_ast
+    | New of Type.typ
+    | Reference of reference
     | Unaire of AstSyntax.unaire * expression
     | Binaire of AstSyntax.binaire * expression * expression
 
@@ -99,7 +104,7 @@ struct
   type bloc = instruction list
   and instruction =
     | Declaration of typ * Tds.info_ast * expression (* le nom de l'identifiant est remplacé par ses informations *)
-    | Affectation of  Tds.info_ast * expression (* le nom de l'identifiant est remplacé par ses informations *)
+    | Affectation of Tds.info_ast * expression (* le nom de l'identifiant est remplacé par ses informations *)
     | Affichage of expression
     | Conditionnelle of expression * bloc * bloc
     | TantQue of expression * bloc
