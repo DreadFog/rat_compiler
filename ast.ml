@@ -3,6 +3,7 @@ open Type
 (* Interface des arbres abstraits *)
 module type Ast =
 sig
+   type reference
    type expression
    type instruction
    type fonction
@@ -15,6 +16,8 @@ end
 (* *************************************** *)
 module AstSyntax =
 struct
+
+type reference = Reference of string | Pointeur of reference (* int * a = b ??? *)
 
 (* Opérateurs unaires de Rat *)
 type unaire = Numerateur | Denominateur
@@ -32,18 +35,24 @@ type expression =
   | Booleen of bool
   (* Entier *)
   | Entier of int
+  (* Adresse d'une variable *)
+  | Adr of string
+  (* Nouveau pointeur *)
+  | New of Type.typ
+  (* Référence *)
+  | Reference of reference
   (* Opération unaire représentée par l'opérateur et l'opérande *)
   | Unaire of unaire * expression
   (* Opération binaire représentée par l'opérateur, l'opérande gauche et l'opérande droite *)
   | Binaire of binaire * expression * expression
-
+  
 (* Instructions de Rat *)
 type bloc = instruction list
 and instruction =
   (* Déclaration de variable représentée par son type, son nom et l'expression d'initialisation *)
   | Declaration of typ * string * expression
   (* Affectation d'une variable représentée par son nom et la nouvelle valeur affectée *)
-  | Affectation of string * expression
+  | Affectation of reference * expression 
   (* Déclaration d'une constante représentée par son nom et sa valeur (entier) *)
   | Constante of string * int
   (* Affichage d'une expression *)
