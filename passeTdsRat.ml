@@ -51,6 +51,7 @@ and analyse_tds_reference r = match r with
       | InfoConst(_,i) -> AstTds.Entier i
       | _ -> AstTds.Ident (info_ast_found)
     )
+  | Ast
 (* analyse_tds_instruction : tds -> AstSyntax.instruction -> AstTds.instruction *)
 (* Paramètre tds : la table des symboles courante *)
 (* Paramètre i : l'instruction à analyser *)
