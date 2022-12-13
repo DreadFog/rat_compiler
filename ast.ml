@@ -17,7 +17,7 @@ end
 module AstSyntax =
 struct
 
-type reference = Reference of string | Pointeur of reference (* int * a = b ??? *)
+type reference = Reference of string | Pointeur of reference 
 
 (* Opérateurs unaires de Rat *)
 type unaire = Numerateur | Denominateur
@@ -50,7 +50,8 @@ type expression =
 type bloc = instruction list
 and instruction =
   (* Déclaration de variable représentée par son type, son nom et l'expression d'initialisation *)
-  | Declaration of typ * string * expression
+  (* | Declaration of typ * string * expression *)
+  | Declaration of typ * reference * expression
   (* Affectation d'une variable représentée par son nom et la nouvelle valeur affectée *)
   | Affectation of reference * expression 
   (* Déclaration d'une constante représentée par son nom et sa valeur (entier) *)
@@ -128,6 +129,7 @@ end
 module AstType =
 struct
 
+type reference = Reference of Tds.info_ast | Pointeur of reference
 (* Opérateurs unaires de Rat - résolution de la surcharge *)
 type unaire = Numerateur | Denominateur
 
@@ -138,11 +140,14 @@ type binaire = Fraction | PlusInt | PlusRat | MultInt | MultRat | EquInt | EquBo
 (* = expression de AstTds *)
 type expression =
   | AppelFonction of Tds.info_ast * expression list
-  | Ident of Tds.info_ast
+  (* | Ident of Tds.info_ast *)
   | Booleen of bool
-  | Entier of int
+  | Entier of int 
   | Unaire of unaire * expression
   | Binaire of binaire * expression * expression
+  | Adr of Tds.info_ast
+  | New of Type.typ
+  | Reference of reference
 
 (* instructions existantes Rat *)
 (* = instruction de AstTds + informations associées aux identificateurs, mises à jour *)
@@ -176,7 +181,7 @@ struct
 (* Expressions existantes dans notre langage *)
 (* = expression de AstType  *)
 type expression = AstType.expression
-
+type reference = AstType.reference
 (* instructions existantes dans notre langage *)
 type bloc = instruction list * int (* taille du bloc *)
  and instruction =

@@ -14,7 +14,17 @@ type t2 = Ast.AstTds.programme
 en une expression de type AstTds.expression *)
 (* Erreur si mauvaise utilisation des identifiants *)
 let rec analyse_tds_expression tds e = match e with
-  | AstSyntax.Ident s ->
+  (*| AstSyntax.Ident s ->
+    (* vérification qu'on utilise pas un nom de fonction *)
+    let info_ast_found = Tds.chercherGlobalementUnsafe tds s in
+    (
+    match (info_ast_to_info info_ast_found) with 
+      | InfoFun(f, _, _) ->
+          raise (Exceptions_identifiants.MauvaiseUtilisationIdentifiant f);
+      | InfoConst(_,i) -> AstTds.Entier i
+      | _ -> AstTds.Ident (info_ast_found)
+    )*)
+  | AstSyntax.Reference r ->
     (* vérification qu'on utilise pas un nom de fonction *)
     let info_ast_found = Tds.chercherGlobalementUnsafe tds s in
     (

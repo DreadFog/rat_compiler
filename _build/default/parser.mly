@@ -36,6 +36,10 @@ open Ast.AstSyntax
 %token MULT
 %token INF
 %token EOF
+(* Pointeurs *)
+%token NEW
+%token NULL
+%token ADR
 
 (* Type de l'attribut synthétisé des non-terminaux *)
 %type <programme> prog
@@ -45,6 +49,7 @@ open Ast.AstSyntax
 %type <typ> typ
 %type <typ*string> param
 %type <expression> e 
+%type <reference> r
 
 (* Type et définition de l'axiome *)
 %start <Ast.AstSyntax.programme> main
@@ -61,9 +66,13 @@ param : t=typ n=ID  {(t,n)}
 
 bloc : AO li=i* AF      {li}
 
+r :
+| ident = ID              {Pointeur(Undefined)} (* a = 7 -> *a *)
+| MULT r1 = r             {Pointeur(r1)} (* a = 7; b = *a; c = b *)
+
 i :
 | t=typ n=ID EQUAL e1=e PV          {Declaration (t,n,e1)}
-| n=ID EQUAL e1=e PV                {Affectation (n,e1)}
+| n=r EQUAL e1=e PV                 {Affectation (n,e1)}
 | CONST n=ID EQUAL e=ENTIER PV      {Constante (n,e)}
 | PRINT e1=e PV                     {Affichage (e1)}
 | IF exp=e li1=bloc ELSE li2=bloc   {Conditionnelle (exp,li1,li2)}
@@ -71,9 +80,10 @@ i :
 | RETURN exp=e PV                   {Retour (exp)}
 
 typ :
-| BOOL    {Bool}
-| INT     {Int}
-| RAT     {Rat}
+| BOOL        {Bool}
+| INT         {Int}
+| RAT         {Rat}
+| t=typ r1=r  {t,r} (* int ** a = *b *)
 
 e : 
 | CALL n=ID PO lp=e* PF   {AppelFonction (n,lp)}
@@ -89,5 +99,10 @@ e :
 | PO e1=e EQUAL e2=e PF   {Binaire (Equ,e1,e2)}
 | PO e1=e INF e2=e PF     {Binaire (Inf,e1,e2)}
 | PO exp=e PF             {exp}
+(* pointers *)
+| NEW t=typ               {New (t)}
+| NULL                    {Pointeur(Undefined)}
+| ADR ident=ID            {Adr(ident)}
+| r1=r                    {r}
 
 
