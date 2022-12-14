@@ -22,12 +22,13 @@ let second f (x,y) = (x, f y)
 (* Application de f sur le premier élément d'un couple *)
 let first f (x,y) = (f x, y)
 
-let rec print_err_ref (r:AstSyntax.identifiant) = (match r with
+let rec print_ident (r:AstSyntax.identifiant) = (match r with
   |Symbole s -> s
-  |Pointeur p -> "*"^(print_err_ref p))
+  |Pointeur p -> "*"^(print_ident p))
 
-let chercherGlobalementUnsafeIdent = chercherGlobalementUnsafe print_err_ref
+let chercherGlobalementUnsafeIdent = chercherGlobalementUnsafe print_ident
 
+let absentLocalementUnsafeIdent = absentLocalementUnsafe print_ident
 (* analyse_tds_expression : tds -> AstSyntax.expression -> AstTds.expression *)
 (* Paramètre tds : la table des symboles courante *)
 (* Paramètre e : l'expression à analyser *)
@@ -35,16 +36,6 @@ let chercherGlobalementUnsafeIdent = chercherGlobalementUnsafe print_err_ref
 en une expression de type AstTds.expression *)
 (* Erreur si mauvaise utilisation des identifiants *)
 let rec analyse_tds_expression tds e = match e with
-  (*| AstSyntax.Ident s ->
-    (* vérification qu'on utilise pas un nom de fonction *)
-    let info_ast_found = Tds.chercherGlobalementUnsafe tds s in
-    (
-    match (info_ast_to_info info_ast_found) with 
-      | InfoFun(f, _, _) ->
-          raise (Exceptions_identifiants.MauvaiseUtilisationIdentifiant f);
-      | InfoConst(_,i) -> AstTds.Entier i
-      | _ -> AstTds.Ident (info_ast_found)
-    )*)
   | AstSyntax.Identifiant r ->
     (match r with
       |Symbole _ ->
@@ -53,16 +44,23 @@ let rec analyse_tds_expression tds e = match e with
         (
         match (info_ast_to_info info_ast_found) with 
           | InfoConst(_,i) -> AstTds.Entier i
-          | _ -> AstTds.Identifiant (AstTds.Ident info_ast_found)
+          | InfoFun(f, _, _) ->
+            raise (Exceptions_identifiants.MauvaiseUtilisationIdentifiant (print_ident f));
+          | _ -> AstTds.Identifiant (Iast info_ast_found)
         )
       |_ -> AstTds.Identifiant (analyse_tds_identifiant tds r)
     )
   | AstSyntax.Adr a -> 
-    let info_ast_found = chercherGlobalementUnsafeIdent tds a in
-    (
-      match (info_ast_to_info info_ast_found) with
-        InfoConst(_,_) -> raise Exceptions_identifiants.RefInterdite
-        | _ -> AstTds.Identifiant (AstTds.Ident (info_ast_found))
+    (match a with
+      |Symbole _ ->
+        (* gestion des constantes *)
+        let info_ast_found = chercherGlobalementUnsafeIdent tds a in
+        (
+        match (info_ast_to_info info_ast_found) with 
+          | InfoConst(_,_) -> raise Exceptions_identifiants.RefInterdite
+          | _ -> AstTds.Adr (Iast info_ast_found)
+        )
+      |_ -> AstTds.Adr (analyse_tds_identifiant tds a)
     )
   | AstSyntax.New t -> AstTds.New t
   | AstSyntax.Entier i -> AstTds.Entier i
@@ -73,9 +71,9 @@ let rec analyse_tds_expression tds e = match e with
     let f_tds = chercherGlobalementUnsafeIdent tds f in
     (* On vérifie qu'on appel bien une fonction *)
     (match info_ast_to_info f_tds with
-      InfoFun(_,_,_) -> AstTds.AppelFonction ( f_tds
+      InfoFun(_,_,_) -> AstTds.AppelFonction ( Iast f_tds
                                 , List.map (analyse_tds_expression tds) l)
-      |_ -> raise (Exceptions_identifiants.MauvaiseUtilisationIdentifiant (print_err_ref f)));
+      |_ -> raise (Exceptions_identifiants.MauvaiseUtilisationIdentifiant (print_ident f)));
   | AstSyntax.Unaire (op, e) ->
     AstTds.Unaire (op, analyse_tds_expression tds e) 
   | AstSyntax.NULL -> AstTds.NULL
@@ -86,7 +84,7 @@ and analyse_tds_identifiant tds r = match r with
     (
     match (info_ast_to_info info_ast_found) with 
       | InfoConst(_,_) -> (raise Exceptions_identifiants.RefInterdite)
-      | _ -> Ident (info_ast_found)
+      | _ -> Iast (info_ast_found)
     )
   |Pointeur p -> Pointeur (analyse_tds_identifiant tds p)
 
@@ -130,7 +128,7 @@ let rec analyse_tds_instruction tds oia i =
         | Some _ ->
             (* L'identifiant est trouvé dans la tds locale,
             il a donc déjà été déclaré dans le bloc courant *)
-            raise (DoubleDeclaration (print_err_ref n))
+            raise (DoubleDeclaration (print_ident n))
       end
   | AstSyntax.Affectation (n,e) ->
       begin
@@ -138,7 +136,7 @@ let rec analyse_tds_instruction tds oia i =
         | None ->
           (* L'identifiant n'est pas trouvé dans la tds globale. *)
           
-          raise (IdentifiantNonDeclare (print_err_ref n))
+          raise (IdentifiantNonDeclare (print_ident n))
         | Some info ->
           (* L'identifiant est trouvé dans la tds globale,
           il a donc déjà été déclaré. L'information associée est récupérée. *)
@@ -153,7 +151,7 @@ let rec analyse_tds_instruction tds oia i =
               AstTds.Affectation (info, ne)
             |  _ ->
               (* Modification d'une constante ou d'une fonction *)
-              raise (MauvaiseUtilisationIdentifiant (print_err_ref n))
+              raise (MauvaiseUtilisationIdentifiant (print_ident n))
           end
       end
   | AstSyntax.Constante (n,v) ->
@@ -169,7 +167,7 @@ let rec analyse_tds_instruction tds oia i =
         | Some _ ->
           (* L'identifiant est trouvé dans la tds locale,
           il a donc déjà été déclaré dans le bloc courant *)
-          raise (DoubleDeclaration n)
+          raise (DoubleDeclaration (print_ident n))
       end
   | AstSyntax.Affichage e ->
       (* Vérification de la bonne utilisation des identifiants dans l'expression *)
@@ -206,7 +204,7 @@ let rec analyse_tds_instruction tds oia i =
         AstTds.Retour (ne,ia)
       end
 
-(*
+
 (* analyse_tds_bloc : tds -> info_ast option -> AstSyntax.bloc -> AstTds.bloc *)
 (* Paramètre tds : la table des symboles courante *)
 (* Paramètre oia : None si le bloc li est dans le programme principal,
@@ -230,9 +228,9 @@ and analyse_tds_bloc tds oia li =
 (* Vérifie la bonne utilisation des identifiants et tranforme la fonction
 en une fonction de type AstTds.fonction *)
 (* Erreur si mauvaise utilisation des identifiants *)
-let analyse_tds_fonction maintds (AstSyntax.Fonction(t,nom,l_param,l_inst)) =
+let analyse_tds_fonction maintds (AstSyntax.Fonction(t,id,l_param,l_inst)) =
   (* On vérifie que la fonction n'est pas déjà déclarée *)
-  Tds.absentLocalementUnsafe maintds nom;
+  absentLocalementUnsafeIdent maintds id;
   (* création de la td fille : tds liée au bloc de la fonction *) 
   let tds_fille = creerTDSFille maintds in
 
@@ -245,17 +243,18 @@ let analyse_tds_fonction maintds (AstSyntax.Fonction(t,nom,l_param,l_inst)) =
    * on fait attention aux possibles doublons
    * Remarque : ici, choix qu'on peut avoir une variable déclarée dans le bloc englobant et
    * un paramètre de même nom *)
-  List.fold_right (fun curr () -> Tds.absentLocalementUnsafe tds_fille (fst curr);
+  List.fold_right (fun curr () -> absentLocalementUnsafeIdent tds_fille (fst curr);
                                   ajouter tds_fille (fst curr) (snd curr))
                   (getSeconds l_param_tds') ();
 
   (* ajout de la fonction dans la tds mère *)
-  ajouter maintds nom (info_to_info_ast (InfoFun (nom, t, List.map fst l_param)));
+  ajouter maintds id (info_to_info_ast (InfoFun (id, t, l_param))); (* On conserve aussi l'identifiant
+                                                                       pour garder en mémoire le niveau de pointeur*)
 
   (* liste des ASTTds instructions *)
-  let l_inst_tds = analyse_tds_bloc tds_fille (chercherGlobalement tds_fille nom) l_inst in
-  let nom_tds = chercherGlobalementUnsafeIdent tds_fille nom in
-  AstTds.Fonction(t, nom_tds, (getFirsts l_param_tds'), l_inst_tds)
+  let l_inst_tds = analyse_tds_bloc tds_fille (chercherGlobalement tds_fille id) l_inst in
+  let id_tds = chercherGlobalementUnsafeIdent tds_fille id in
+  AstTds.Fonction(t, id_tds, (getFirsts l_param_tds'), l_inst_tds)
 
 
 (* analyser : AstSyntax.programme -> AstTds.programme *)
@@ -268,4 +267,3 @@ let analyser (AstSyntax.Programme (fonctions,prog)) =
   let nf = List.map (analyse_tds_fonction tds) fonctions in
   let nb = analyse_tds_bloc tds None prog in
   AstTds.Programme (nf,nb)
-*)

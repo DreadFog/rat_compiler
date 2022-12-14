@@ -47,9 +47,9 @@ open Ast.AstSyntax
 %type <fonction> fonc
 %type <instruction> i
 %type <typ> typ
-%type <typ*string> param
-%type <expression> e
 %type <identifiant> r
+%type <typ*identifiant> param
+%type <expression> e
 
 (* Type et définition de l'axiome *)
 %start <Ast.AstSyntax.programme> main
@@ -61,19 +61,19 @@ main : lfi=prog EOF     {lfi}
 prog : lf=fonc* ID li=bloc  {Programme (lf,li)}
 
 r :
-| ident = ID              {Ident ident} (* a = 7 -> *a *)
+| ident = ID              {Symbole ident} (* a = 7 -> *a *)
 | MULT r1 = r             {Pointeur(r1)} (* a = 7; b = *a; c = b *)
 
 fonc : t=typ n=r PO lp=param* PF li=bloc {Fonction(t,n,lp,li)}
 
-param : t=typ n=ID  {(t,n)}
+param : t=typ n=r  {(t,n)}
 
 bloc : AO li=i* AF      {li}
 
 i :
 | t=typ n=r EQUAL e1=e PV           {Declaration (t,n,e1)}
 | n=r EQUAL e1=e PV                 {Affectation (n,e1)}
-| CONST n=ID EQUAL e=ENTIER PV      {Constante (n,e)}
+| CONST n=r EQUAL e=ENTIER PV       {Constante (n,e)}
 | PRINT e1=e PV                     {Affichage (e1)}
 | IF exp=e li1=bloc ELSE li2=bloc   {Conditionnelle (exp,li1,li2)}
 | WHILE exp=e li=bloc               {TantQue (exp,li)}

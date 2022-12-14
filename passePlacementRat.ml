@@ -1,6 +1,7 @@
 (* Module de la passe de gestion du typage *)
 (* doit être conforme à l'interface Passe *)
-open Tds
+
+open Mtds
 open Exceptions
 open Ast
 

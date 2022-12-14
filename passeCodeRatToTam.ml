@@ -1,4 +1,4 @@
-(* Module de la passe de gestion du typage *)
+(* (* Module de la passe de gestion du typage *)
 (* doit être conforme à l'interface Passe *)
 open Tds
 open Exceptions
@@ -147,3 +147,4 @@ let analyser (AstPlacement.Programme (fonctions,bloc)) =
   ^ ast_to_tam_bloc bloc
   ^ halt 
 
+ *)

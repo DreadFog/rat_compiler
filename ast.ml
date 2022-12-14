@@ -65,7 +65,7 @@ and instruction =
   (* Affectation d'une variable représentée par son nom et la nouvelle valeur affectée *)
   | Affectation of identifiant * expression 
   (* Déclaration d'une constante représentée par son nom et sa valeur (entier) *)
-  | Constante of string * int
+  | Constante of identifiant * int
   (* Affichage d'une expression *)
   | Affichage of expression
   (* Conditionnelle représentée par la condition, le bloc then et le bloc else *)
@@ -77,7 +77,7 @@ and instruction =
 
 (* Structure des fonctions de Rat *)
 (* type de retour - nom - liste des paramètres (association type et nom) - corps de la fonction *)
-type fonction = Fonction of typ * identifiant * (typ * string) list * bloc
+type fonction = Fonction of typ * identifiant * (typ * identifiant) list * bloc
 
 (* Structure d'un programme Rat *)
 (* liste de fonction - programme principal *)
@@ -93,7 +93,7 @@ module AstTds =
 struct
   type tds_info_ast = AstSyntax.identifiant Mtds.info_ast
 
-  type identifiant = Ident of tds_info_ast | Pointeur of identifiant
+  type identifiant = Iast of tds_info_ast | Pointeur of identifiant
 
   (* Opérateurs unaires de Rat *)
 
@@ -101,11 +101,11 @@ struct
   (* ~ expression de l'AST syntaxique où les noms des identifiants ont été
   remplacés par les informations associées aux identificateurs *)
   type expression =
-    | AppelFonction of tds_info_ast * expression list
+    | AppelFonction of identifiant * expression list
     (*| Ident of Tds.info_ast  -- le nom de l'identifiant est remplacé par ses informations *)
     | Booleen of bool
     | Entier of int
-    | Adr of tds_info_ast
+    | Adr of identifiant
     | New of Type.typ
     | NULL
     | Identifiant of identifiant
@@ -142,7 +142,7 @@ end
 (* ******************************* *)
 module AstType =
 struct
-type type_info_ast = AstTds.identifiant Mtds.info_ast
+type type_info_ast = AstTds.tds_info_ast
 
 type identifiant = AstTds.identifiant
 (* Opérateurs unaires de Rat - résolution de la surcharge *)
@@ -154,16 +154,16 @@ type binaire = Fraction | PlusInt | PlusRat | MultInt | MultRat | EquInt | EquBo
 (* Expressions existantes dans Rat *)
 (* = expression de AstTds *)
 type expression =
-  | AppelFonction of type_info_ast * expression list
+  | AppelFonction of identifiant * expression list
   (* | Ident of Tds.info_ast *)
   | Booleen of bool
   | Entier of int 
   | Unaire of unaire * expression
   | Binaire of binaire * expression * expression
-  | Adr of type_info_ast
+  | Adr of identifiant
   | New of Type.typ
+  | NULL
   | Identifiant of identifiant
-
 (* instructions existantes Rat *)
 (* = instruction de AstTds + informations associées aux identificateurs, mises à jour *)
 (* + résolution de la surcharge de l'affichage *)
@@ -192,7 +192,7 @@ end
 (* ******************************* *)
 module AstPlacement =
 struct
-type placement_info_ast = AstType.identifiant Mtds.info_ast
+type placement_info_ast = AstTds.tds_info_ast
 
 (* Expressions existantes dans notre langage *)
 (* = expression de AstType  *)

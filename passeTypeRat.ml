@@ -1,12 +1,21 @@
 (* Module de la passe de gestion du typage *)
 (* doit être conforme à l'interface Passe *)
-open Tds
+open Mtds
 open Exceptions
 open Ast
+open Either
 
 type t1 = Ast.AstTds.programme
 type t2 = Ast.AstType.programme
 
+
+let rec getIast ident = match ident with
+  |AstTds.Iast iast -> iast
+  |AstTds.Pointeur p -> getIast p
+
+let rec getTypeOfIast ident = match ident with
+|AstTds.Iast iast -> type_of_info_ast iast
+|AstTds.Pointeur p -> Type.Pointeur (getTypeOfIast p)
 
 (* analyse_tds_expression : tds -> AstTds.expression -> AstTds.expression *)
 (* Paramètre tds : la table des symboles courante *)
@@ -15,9 +24,12 @@ type t2 = Ast.AstType.programme
 en une expression de type AstTds.expression *)
 (* Erreur si mauvaise utilisation des identifiants *)
 let rec analyse_type_expression e = match e with
-  | AstTds.Ident s -> (AstType.Ident s, type_of_info_ast s)
+  | AstTds.Identifiant s -> (AstType.Identifiant s, getTypeOfIast s)
   | AstTds.Entier i -> (AstType.Entier i, Int)
   | AstTds.Booleen b -> (AstType.Booleen b, Bool)
+  | AstTds.NULL -> (AstType.NULL, Pointeur(Undefined))
+  | AstTds.Adr a -> (AstType.Adr a, Pointeur (getTypeOfIast a))
+  | AstTds.New n -> (AstType.New n, n)
   | AstTds.Binaire (op, e1, e2) ->
     let (ne1,te1) = analyse_type_expression e1 in 
     let (ne2,te2) = analyse_type_expression e2 in 
@@ -42,15 +54,16 @@ let rec analyse_type_expression e = match e with
      |_ -> raise (TypeInattendu (te, Rat))
      )
   | AstTds.AppelFonction (f, l) -> 
-    match info_ast_to_info f with
+    match info_ast_to_info (getIast f) with
       |InfoFun(_,t,lt) -> (* Vérification du bon nombre d'arguments *)
           let nl = List.map analyse_type_expression l in
           let type_params = List.map snd nl in
           (* check if all params have a correct type*)
-          if (List.equal (=) lt type_params) then
+          let lt' = List.map fst lt in
+          if (List.equal (=) lt' type_params) then
             (AstType.AppelFonction (f, List.map fst nl), t)
           else 
-            raise (TypesParametresInattendus (lt, type_params))
+            raise (TypesParametresInattendus (lt', type_params))
       |_ -> raise ErreurInterne
 
 
@@ -71,13 +84,13 @@ en une instruction de type AstTds.instruction *)
 let rec analyse_type_instruction i =
   match i with
   | AstTds.Declaration (t, n, e) ->
-     let (ne, te) = analyse_type_expression e in
+     let (ne, te) = analyse_type_expression (Left e) in
      if (Type.est_compatible t te) then (
-      modifier_type_variable t n; (* modification du type associé*)
+      modifier_type_variable t n; (* modification du type associé *)
       (AstType.Declaration (n, ne))) 
     else raise (TypeInattendu(te, t))
   | AstTds.Affectation (n,e) ->
-     let (ne, te) = analyse_type_expression e in
+     let (ne, te) = analyse_type_expression (Right e) in
      let t = type_of_info_ast n in
      if (Type.est_compatible t te) then (AstType.Affectation(n, ne)) else raise (TypeInattendu(te,t)) 
   | AstTds.Affichage e ->
@@ -150,3 +163,4 @@ let analyser (AstTds.Programme (fonctions,prog)) =
   let nf = List.map (analyse_type_fonction ) fonctions in
   let nb = analyse_type_bloc  prog in
   AstType.Programme (nf,nb)
+ 

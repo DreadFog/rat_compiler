@@ -4,7 +4,7 @@ open Exceptions_identifiants
 
 (* Définition du type des informations associées aux identifiants *)
 type 'a info =
-  | InfoConst of string * int
+  | InfoConst of 'a * int
   | InfoVar of 'a * typ * int * string
   | InfoFun of 'a * typ * (typ*'a) list
   (*| InfoParam of string * typ*)
