@@ -1,5 +1,5 @@
 open Hashtbl
-open Type
+(*open Type
 open Exceptions_identifiants
 
 (* Définition du type des informations associées aux identifiants *)
@@ -382,3 +382,4 @@ let%test _ =
   match info_ast_to_info iast with
     InfoVar(_,ty,dep,reg) -> (Type.getTaille ty,dep,reg)
     |_ -> raise Exceptions_identifiants.ErreurInterne
+*)

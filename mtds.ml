@@ -14,16 +14,16 @@ type 'a info_ast = 'a info ref
 
 (* Table des symboles hiérarchique *)
 (* Les tables locales sont codées à l'aide d'une hashtable *)
-type 'a tds =
+type ('a,'b) tds =
   | Nulle
   (* Table courante : la table mère - la table courante *)
-  | Courante of 'a tds * ('a, 'a info_ast) Hashtbl.t
+  | Courante of ('a,'b) tds * ('a,'b) Hashtbl.t
 
  (* Créer une information à associer à l'AST à partir d'une info *)
-let info_to_info_ast = ref
+let info_to_info_ast (i : 'a info) = ref i
 
  (* Récupère l'information associée à un noeud *)
-let info_ast_to_info i = !i
+let info_ast_to_info (i : 'a info_ast) = !i
 
 (* unwrap : string -> a Option -> a 
   * Paramètre s : l'identifiant qu'on essaie de unwrap
@@ -33,8 +33,6 @@ let info_ast_to_info i = !i
 let unwrap s aOpt print_err = match aOpt with
   None -> raise (IdentifiantNonDeclare (print_err s)) 
   |Some a -> a
-
-type 'a t = 'a tds
 
 (* Création d'une table des symboles à la racine *)
 let creerTDSMere () = Courante (Nulle, create 100)
@@ -65,17 +63,17 @@ match tds with
 let chercherLocalementUnsafe print_err tds ident = unwrap ident (chercherLocalement tds ident) print_err
 
 let absentLocalementUnsafe print_err tds nom =
-match chercherLocalement tds nom with
+  match chercherLocalement tds nom with
   |None -> ()
   |Some _ -> raise (Exceptions_identifiants.DoubleDeclaration (print_err nom))
 
 let rec chercherGlobalement tds nom =
-match tds with
-| Nulle -> None
-| Courante (m,c) ->
-  match Hashtbl.find_opt c nom with
-    | Some _ as i -> i
-    | None -> chercherGlobalement m nom
+  match tds with
+  | Nulle -> None
+  | Courante (m,c) ->
+    match Hashtbl.find_opt c nom with
+      | Some _ as i -> i
+      | None -> chercherGlobalement m nom
 
 let chercherGlobalementUnsafe print_err tds nom = unwrap nom (chercherGlobalement tds nom) print_err
 
@@ -120,4 +118,4 @@ let _ = modifier_type_fonction in
 let _ = modifier_type_variable in
 let _ = tam_var_of_info_ast in
 let _ = type_of_info_ast in
-let _ = chercherLocalement
+let _ = chercherLocalement in true

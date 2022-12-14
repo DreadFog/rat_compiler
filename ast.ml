@@ -3,7 +3,7 @@ open Type
 (* Interface des arbres abstraits *)
 module type Ast =
 sig
-   type reference
+   type identifiant
    type expression
    type instruction
    type fonction
@@ -25,7 +25,8 @@ struct
         Par contre, on autorise pas les pointeurs dans les paramètres, faudra voir pour les typedef struct
 *)
 
-type reference = Ident of string | Pointeur of reference 
+type identifiant = Symbole of string | Pointeur of identifiant 
+
 
 (* Opérateurs unaires de Rat *)
 type unaire = Numerateur | Denominateur
@@ -36,7 +37,7 @@ type binaire = Fraction | Plus | Mult | Equ | Inf
 (* Expressions de Rat *)
 type expression =
   (* Appel de fonction représenté par le nom de la fonction et la liste des paramètres réels *)
-  | AppelFonction of reference * expression list
+  | AppelFonction of identifiant * expression list
   (* Accès à un identifiant représenté par son nom
   | Ident of string *)
   (* Booléen *)
@@ -44,12 +45,12 @@ type expression =
   (* Entier *)
   | Entier of int
   (* Adresse d'une variable *)
-  | Adr of string
+  | Adr of identifiant
   (* Nouveau pointeur *)
   | New of Type.typ
   | NULL
   (* Référence *)
-  | Reference of reference
+  | Identifiant of identifiant
   (* Opération unaire représentée par l'opérateur et l'opérande *)
   | Unaire of unaire * expression
   (* Opération binaire représentée par l'opérateur, l'opérande gauche et l'opérande droite *)
@@ -60,9 +61,9 @@ type bloc = instruction list
 and instruction =
   (* Déclaration de variable représentée par son type, son nom et l'expression d'initialisation *)
   (* | Declaration of typ * string * expression *)
-  | Declaration of typ * reference * expression
+  | Declaration of typ * identifiant * expression
   (* Affectation d'une variable représentée par son nom et la nouvelle valeur affectée *)
-  | Affectation of reference * expression 
+  | Affectation of identifiant * expression 
   (* Déclaration d'une constante représentée par son nom et sa valeur (entier) *)
   | Constante of string * int
   (* Affichage d'une expression *)
@@ -76,7 +77,7 @@ and instruction =
 
 (* Structure des fonctions de Rat *)
 (* type de retour - nom - liste des paramètres (association type et nom) - corps de la fonction *)
-type fonction = Fonction of typ * reference * (typ * string) list * bloc
+type fonction = Fonction of typ * identifiant * (typ * string) list * bloc
 
 (* Structure d'un programme Rat *)
 (* liste de fonction - programme principal *)
@@ -90,21 +91,24 @@ end
 (* ********************************************* *)
 module AstTds =
 struct
+  type tds_info_ast = AstSyntax.identifiant Mtds.info_ast
 
-  type reference = Ident of Tds.info_ast | Pointeur of reference
+  type identifiant = Ident of tds_info_ast | Pointeur of identifiant
+
+  (* Opérateurs unaires de Rat *)
 
   (* Expressions existantes dans notre langage *)
   (* ~ expression de l'AST syntaxique où les noms des identifiants ont été
   remplacés par les informations associées aux identificateurs *)
   type expression =
-    | AppelFonction of Tds.info_ast * expression list
+    | AppelFonction of tds_info_ast * expression list
     (*| Ident of Tds.info_ast  -- le nom de l'identifiant est remplacé par ses informations *)
     | Booleen of bool
     | Entier of int
-    | Adr of Tds.info_ast
+    | Adr of tds_info_ast
     | New of Type.typ
     | NULL
-    | Reference of reference
+    | Identifiant of identifiant
     | Unaire of AstSyntax.unaire * expression
     | Binaire of AstSyntax.binaire * expression * expression
 
@@ -114,18 +118,18 @@ struct
   + suppression de nœuds (const) *)
   type bloc = instruction list
   and instruction =
-    | Declaration of typ * Tds.info_ast * expression (* le nom de l'identifiant est remplacé par ses informations *)
-    | Affectation of Tds.info_ast * expression (* le nom de l'identifiant est remplacé par ses informations *)
+    | Declaration of typ * tds_info_ast * expression (* le nom de l'identifiant est remplacé par ses informations *)
+    | Affectation of tds_info_ast * expression (* le nom de l'identifiant est remplacé par ses informations *)
     | Affichage of expression
     | Conditionnelle of expression * bloc * bloc
     | TantQue of expression * bloc
-    | Retour of expression * Tds.info_ast  (* les informations sur la fonction à laquelle est associé le retour *)
+    | Retour of expression * tds_info_ast  (* les informations sur la fonction à laquelle est associé le retour *)
     | Empty (* les nœuds ayant disparus: Const *)
 
 
   (* Structure des fonctions dans notre langage *)
   (* type de retour - informations associées à l'identificateur (dont son nom) - liste des paramètres (association type et information sur les paramètres) - corps de la fonction *)
-  type fonction = Fonction of typ * Tds.info_ast * (typ * Tds.info_ast ) list * bloc
+  type fonction = Fonction of typ * tds_info_ast * (typ * tds_info_ast ) list * bloc
 
   (* Structure d'un programme dans notre langage *)
   type programme = Programme of fonction list * bloc
@@ -138,8 +142,9 @@ end
 (* ******************************* *)
 module AstType =
 struct
+type type_info_ast = AstTds.identifiant Mtds.info_ast
 
-type reference = Ident of Tds.info_ast | Pointeur of reference
+type identifiant = AstTds.identifiant
 (* Opérateurs unaires de Rat - résolution de la surcharge *)
 type unaire = Numerateur | Denominateur
 
@@ -149,33 +154,33 @@ type binaire = Fraction | PlusInt | PlusRat | MultInt | MultRat | EquInt | EquBo
 (* Expressions existantes dans Rat *)
 (* = expression de AstTds *)
 type expression =
-  | AppelFonction of Tds.info_ast * expression list
+  | AppelFonction of type_info_ast * expression list
   (* | Ident of Tds.info_ast *)
   | Booleen of bool
   | Entier of int 
   | Unaire of unaire * expression
   | Binaire of binaire * expression * expression
-  | Adr of Tds.info_ast
+  | Adr of type_info_ast
   | New of Type.typ
-  | Reference of reference
+  | Identifiant of identifiant
 
 (* instructions existantes Rat *)
 (* = instruction de AstTds + informations associées aux identificateurs, mises à jour *)
 (* + résolution de la surcharge de l'affichage *)
 type bloc = instruction list
  and instruction =
-  | Declaration of Tds.info_ast * expression
-  | Affectation of Tds.info_ast * expression
+  | Declaration of type_info_ast * expression
+  | Affectation of type_info_ast * expression
   | AffichageInt of expression
   | AffichageRat of expression
   | AffichageBool of expression
   | Conditionnelle of expression * bloc * bloc
   | TantQue of expression * bloc
-  | Retour of expression * Tds.info_ast
+  | Retour of expression * type_info_ast
   | Empty (* les nœuds ayant disparus: Const *)
 
 (* informations associées à l'identificateur (dont son nom), liste des paramètres, corps *)
-type fonction = Fonction of Tds.info_ast * Tds.info_ast list * bloc
+type fonction = Fonction of type_info_ast * type_info_ast list * bloc
 
 (* Structure d'un programme dans notre langage *)
 type programme = Programme of fonction list * bloc
@@ -187,16 +192,17 @@ end
 (* ******************************* *)
 module AstPlacement =
 struct
+type placement_info_ast = AstType.identifiant Mtds.info_ast
 
 (* Expressions existantes dans notre langage *)
 (* = expression de AstType  *)
 type expression = AstType.expression
-type reference = AstType.reference
+type identifiant = AstTds.identifiant
 (* instructions existantes dans notre langage *)
 type bloc = instruction list * int (* taille du bloc *)
  and instruction =
- | Declaration of Tds.info_ast * expression
- | Affectation of Tds.info_ast * expression
+ | Declaration of placement_info_ast * expression
+ | Affectation of placement_info_ast * expression
  | AffichageInt of expression
  | AffichageRat of expression
  | AffichageBool of expression
@@ -207,7 +213,7 @@ type bloc = instruction list * int (* taille du bloc *)
 
 (* informations associées à l'identificateur (dont son nom), liste de paramètres, corps, expression de retour *)
 (* Plus besoin de la liste des paramètres mais on la garde pour les tests du placements mémoire *)
-type fonction = Fonction of Tds.info_ast * Tds.info_ast list * bloc
+type fonction = Fonction of placement_info_ast * placement_info_ast list * bloc
 
 (* Structure d'un programme dans notre langage *)
 type programme = Programme of fonction list * bloc

@@ -49,7 +49,7 @@ open Ast.AstSyntax
 %type <typ> typ
 %type <typ*string> param
 %type <expression> e
-%type <reference> r
+%type <identifiant> r
 
 (* Type et définition de l'axiome *)
 %start <Ast.AstSyntax.programme> main
@@ -86,7 +86,7 @@ typ :
 (*| t=typ r1=r  {t,r} (* int ** a = *b *) + rq: avant marchait pas, typ doit renvoyer un Type.typ*)
 
 e : 
-| CALL n=ID PO lp=e* PF   {AppelFonction (n,lp)}
+| CALL n=r PO lp=e* PF   {AppelFonction (n,lp)}
 | CO e1=e SLASH e2=e CF   {Binaire(Fraction,e1,e2)}
 (*| n=ID                    {Ident n}*)
 | TRUE                    {Booleen true}
@@ -102,7 +102,7 @@ e :
 (* pointers *)
 | NEW t=typ               {New (t)}
 | NULL                    {NULL}
-| ADR ident=ID            {Adr(ident)}
-| r1=r                    {Reference(r1)}
+| ADR ident=r             {Adr(ident)}
+| r1=r                    {Identifiant(r1)}
 
 

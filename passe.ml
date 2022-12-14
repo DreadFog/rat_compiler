@@ -64,7 +64,7 @@ end
 (* Pour tester les paramètres des fonctions, il est nécessaire de les mettre en retour *)
 module VerifPlacement =
 struct
-  open Tds
+  open Mtds
 
 
   (* Renvoie l'adresse d'une variable dans le cas d'une déclaration *)
@@ -72,7 +72,7 @@ struct
     match i with
     | Ast.AstPlacement.Declaration (info,_) -> 
       begin
-        match Tds.info_ast_to_info info with
+        match Mtds.info_ast_to_info info with
         | InfoVar (n,_,d,r) -> [(n,(d,r))]
         | _ -> []
         end
@@ -82,7 +82,7 @@ struct
 
 
 let analyser_param info =
-  match Tds.info_ast_to_info info with
+  match Mtds.info_ast_to_info info with
   | InfoVar (n,_,d,r) -> [(n,(d,r))]
   | _ -> []
 

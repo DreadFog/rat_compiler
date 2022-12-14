@@ -1,4 +1,4 @@
-open Type 
+(*open Type 
 
 (* Définition du type des informations associées aux identifiants *)
 type info =
@@ -77,4 +77,4 @@ val modifier_adresse_variable : int -> string -> info_ast -> unit
 val type_of_info_ast : info_ast -> typ
 
 (* Récupère les infos d'une info_ast *)
-val tam_var_of_info_ast : info_ast -> int * int * string
+val tam_var_of_info_ast : info_ast -> int * int * string*)
