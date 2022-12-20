@@ -62,11 +62,10 @@ end
 (* Passe AstPlacement.programme -> string *)
 (* Affiche les adresses des variables  *)
 (* Pour tester les paramètres des fonctions, il est nécessaire de les mettre en retour *)
+
 module VerifPlacement =
 struct
   open Mtds
-  open Ast
-
 
   (* Renvoie l'adresse d'une variable dans le cas d'une déclaration *)
   let rec analyser_instruction i = 
@@ -98,6 +97,6 @@ let analyser_param info =
 
   (* Renvoie la suite des adresses des variables déclarées dans les fonctions et dans le programme principal *)
   let analyser (Ast.AstPlacement.Programme (fonctions, (prog,_))) =
-    ((AstSyntax.Symbole "main"), List.flatten (List.map (analyser_instruction) prog))::(List.flatten (List.map (analyser_fonction) fonctions))
+    (("main",Type.Neant), List.flatten (List.map (analyser_instruction) prog))::(List.flatten (List.map (analyser_fonction) fonctions))
 
 end

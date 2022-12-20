@@ -1,4 +1,4 @@
-(* (* Module de la passe de gestion du typage *)
+(* Module de la passe de gestion du typage *)
 (* doit être conforme à l'interface Passe *)
 open Tds
 open Exceptions
@@ -16,7 +16,7 @@ type t2 = string
 en une expression de type AstTds.expression *)
 (* Erreur si mauvaise utilisation des identifiants *)
 let rec ast_to_tam_expression e = match e with
-  | AstType.Ident s -> let (taille, depl, reg) = Tds.tam_var_of_info_ast s in 
+  | AstType.Identifiant s -> let (taille, depl, reg) = Tds.tam_var_of_info_ast s in 
     load taille depl reg
   | AstType.Entier i -> loadl_int i 
   | AstType.Booleen b -> loadl_int (Bool.to_int b)
@@ -147,4 +147,3 @@ let analyser (AstPlacement.Programme (fonctions,bloc)) =
   ^ ast_to_tam_bloc bloc
   ^ halt 
 
- *)

@@ -25,7 +25,7 @@ struct
         Par contre, on autorise pas les pointeurs dans les paramètres, faudra voir pour les typedef struct
 *)
 
-type identifiant = Symbole of string | Pointeur of identifiant 
+type identifiant = string * Type.mark
 
 
 (* Opérateurs unaires de Rat *)
@@ -91,9 +91,9 @@ end
 (* ********************************************* *)
 module AstTds =
 struct
-  type tds_info_ast = AstSyntax.identifiant Mtds.info_ast
+  type tds_info_ast = (AstSyntax.identifiant) Mtds.info_ast
 
-  type identifiant = Iast of tds_info_ast | Pointeur of identifiant
+  type identifiant = tds_info_ast
 
   (* Opérateurs unaires de Rat *)
 

@@ -20,15 +20,11 @@ en une instruction de type AstType.instruction *)
 let rec analyse_placement_instruction reg depl i =
   match i with
   | AstType.Declaration (iast, e) ->
-    let id = (match info_ast_to_info iast with
-              InfoVar(i,_,_,_) -> i
-              |InfoFun(i,_,_) -> i
-              |_ -> raise ErreurInterne) in
-    let is_pointeur = (match id with 
-                       | Symbole _ -> true
-                       | _ -> false
-     ) in
-    let taille = if is_pointeur then 1 else Type.getTaille (type_of_info_ast iast) in
+    let mt = (match info_ast_to_info iast with
+                  InfoVar((_,m),t,_,_) -> t,m
+                  |InfoFun((_,m),t,_) -> t,m
+                  |_ -> raise ErreurInterne) in
+    let taille = Type.getTaille mt in
      modifier_adresse_variable depl reg iast;
      (AstPlacement.Declaration(iast, e), depl+taille)
   | AstType.Affectation (iast, e) ->
@@ -50,11 +46,14 @@ let rec analyse_placement_instruction reg depl i =
     (AstPlacement.TantQue (e, nb), depl)
   | AstType.Retour (e,iast) ->
     (match info_ast_to_info iast with
-      InfoFun(_, ty, param_t) ->
-        let add_tailles = (fun (param, id) taille ->
-          (if (match id with AstSyntax.Pointeur _ -> true | _ -> false) then 1 else Type.getTaille param + taille)) in
+      InfoFun((_,m), ty, param_t) ->
+        let getSeconds = List.map (fun (c,b) -> (c, snd b)) in
+        let add_tailles = (fun param taille -> Type.getTaille param + taille) in
         (*let param_t' = List.map fst param_t in*)
-        (AstPlacement.Retour (e, Type.getTaille ty, List.fold_right add_tailles param_t 0), depl)
+        (AstPlacement.Retour ( e
+                             , Type.getTaille (ty,m)
+                             , List.fold_right add_tailles (getSeconds param_t) 0)
+                             , depl)
       | _ -> raise ErreurInterne);
   | AstType.Empty -> (AstPlacement.Empty, depl)
 
@@ -91,6 +90,11 @@ let second f (x,y) = (x, f y)
 (* Application de f sur le premier élément d'un couple *)
 let first f (x,y) = (f x, y)
 
+let getTypexMarkOfIast iast = match info_ast_to_info iast with
+  InfoVar((_,m),_,_,_) -> (type_of_info_ast iast, m)
+  |InfoFun((_,m),_,_) -> (type_of_info_ast iast, m)
+  |InfoConst(_) -> (type_of_info_ast iast, Type.Neant) 
+
 (* analyse_tds_fonction : tds -> AstType.fonction -> AstType.fonction *)
 (* Paramètre tds : la table des symboles courante *)
 (* Paramètre : la fonction à analyser *)
@@ -101,7 +105,7 @@ let analyse_placement_fonction reg (AstType.Fonction(iast,l_param,l_inst)) =
   (* traitement des paramères *)
   (* f(int a, int b) -> @a : -4LB; @b : -3LB *)
   let f param fdepl =
-    let taille = Type.getTaille (type_of_info_ast param) in
+    let taille = Type.getTaille (getTypexMarkOfIast param) in
      modifier_adresse_variable (fdepl - taille) reg param;
      fdepl - taille in 
   let _ = List.fold_right f l_param 0 in

@@ -4,7 +4,7 @@ open Exceptions_identifiants
 
 (* Définition du type des informations associées aux identifiants *)
 type 'a info =
-  | InfoConst of 'a * int
+  | InfoConst of string * int (* pas de marqueur pour les constantes *)
   | InfoVar of 'a * typ * int * string
   | InfoFun of 'a * typ * (typ*'a) list
   (*| InfoParam of string * typ*)
@@ -98,12 +98,11 @@ match info_ast_to_info iast with
   |InfoVar(_,t,_,_) -> t
   |InfoFun(_,t,_) -> t
 
-(* Récupère les infos d'une info_ast
-*)
+(* Récupère les infos d'une info_ast 
 let tam_var_of_info_ast iast =
-match info_ast_to_info iast with
-InfoVar(_,ty,dep,reg) -> (Type.getTaille ty,dep,reg)
-|_ -> raise Exceptions_identifiants.ErreurInterne
+  match info_ast_to_info iast with
+    InfoVar(_,ty,dep,reg) -> (Type.getTaille ty,dep,reg)
+    |_ -> raise Exceptions_identifiants.ErreurInterne*)
 
 (* Test pour éviter les warnings *)
 let%test _ = 
@@ -116,6 +115,5 @@ let _ = chercherGlobalementUnsafe in
 let _ = modifier_adresse_variable in
 let _ = modifier_type_fonction in
 let _ = modifier_type_variable in
-let _ = tam_var_of_info_ast in
 let _ = type_of_info_ast in
 let _ = chercherLocalement in true

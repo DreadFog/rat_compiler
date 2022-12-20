@@ -2,6 +2,7 @@ open Type
 open Ast.AstSyntax
 
 exception ErreurInterne
+exception MarqueurInattendu
 
 (* Exceptions pour le typage *)
 (* Le premier type est le type réel, le second est le type attendu *)

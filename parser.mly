@@ -4,6 +4,7 @@
 
 open Type
 open Ast.AstSyntax
+open List
 %}
 
 
@@ -61,8 +62,9 @@ main : lfi=prog EOF     {lfi}
 prog : lf=fonc* ID li=bloc  {Programme (lf,li)}
 
 r :
-| ident = ID              {Symbole ident} (* a = 7 -> *a *)
-| MULT r1 = r             {Pointeur(r1)} (* a = 7; b = *a; c = b *)
+(*|ident=ID              {Symbole ident} (* a = 7 -> *a *)*)
+(*| MULT r1 = r             {Pointeur(r1)} (* a = 7; b = *a; c = b *)*)
+|ladr=MULT* ident=ID     {(ident, fold_left (fun x _ -> Pointeur(x)) Neant ladr)}        
 
 fonc : t=typ n=r PO lp=param* PF li=bloc {Fonction(t,n,lp,li)}
 
