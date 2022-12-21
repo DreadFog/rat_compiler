@@ -7,6 +7,7 @@ type token =
   | SLASH
   | RETURN
   | RAT
+  | QMARK
   | PV
   | PRINT
   | PO
@@ -25,6 +26,7 @@ type token =
   | ELSE
   | DENOM
   | CONST
+  | COLON
   | CO
   | CF
   | CALL

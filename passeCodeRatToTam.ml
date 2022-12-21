@@ -51,6 +51,16 @@ let rec ast_to_tam_expression e = match e with
       ^ call "ST" name
     | _ -> raise Exceptions.ErreurInterne 
     )
+  | AstType.Ternaire(e1, e2, e3) -> 
+      let labElse = getEtiquette ()
+      and labEndIF = getEtiquette () in
+      ast_to_tam_expression e1
+      ^ jumpif 0 labElse
+      ^ ast_to_tam_expression e2
+      ^ jump labEndIF
+      ^ label labElse
+      ^ ast_to_tam_expression e3
+      ^ label labEndIF
       
 
 

@@ -38,6 +38,9 @@ let rec analyse_tds_expression tds e = match e with
 
   | AstSyntax.Unaire (op, e) ->
     AstTds.Unaire (op, analyse_tds_expression tds e) 
+  | AstSyntax.Ternaire (e1, e2, e3) -> 
+    AstTds.Ternaire (analyse_tds_expression tds e1, analyse_tds_expression tds e2, analyse_tds_expression tds e3)
+  
 
 (* analyse_tds_instruction : tds -> AstSyntax.instruction -> AstTds.instruction *)
 (* Paramètre tds : la table des symboles courante *)

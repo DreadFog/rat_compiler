@@ -42,7 +42,7 @@ let rec analyse_type_expression e = match e with
      |_ -> raise (TypeInattendu (te, Rat))
      )
   | AstTds.AppelFonction (f, l) -> 
-    match info_ast_to_info f with
+    (match info_ast_to_info f with
       |InfoFun(_,t,lt) -> (* Vérification du bon nombre d'arguments *)
           let nl = List.map analyse_type_expression l in
           let type_params = List.map snd nl in
@@ -51,7 +51,16 @@ let rec analyse_type_expression e = match e with
             (AstType.AppelFonction (f, List.map fst nl), t)
           else 
             raise (TypesParametresInattendus (lt, type_params))
-      |_ -> raise ErreurInterne
+      |_ -> raise ErreurInterne)
+  | AstTds.Ternaire(e1, e2, e3) -> 
+    let (ne1, te1) = analyse_type_expression e1 in
+    let (ne2, te2) = analyse_type_expression e2 in
+    let (ne3, te3) = analyse_type_expression e3 in
+    if (te1 = Bool) then
+      if (Type.est_compatible te2 te3) then
+        (AstType.Ternaire (ne1, ne2, ne3), te2)
+      else raise (TypeInattendu (te3, te2))
+    else raise (TypeInattendu (te1, Bool))
 
 
 (* analyse_tds_instruction : tds -> AstTds.instruction -> AstTds.instruction *)

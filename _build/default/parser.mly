@@ -36,6 +36,9 @@ open Ast.AstSyntax
 %token MULT
 %token INF
 %token EOF
+(* ternaire *)
+%token QMARK
+%token COLON
 
 (* Type de l'attribut synthétisé des non-terminaux *)
 %type <programme> prog
@@ -89,5 +92,6 @@ e :
 | PO e1=e EQUAL e2=e PF   {Binaire (Equ,e1,e2)}
 | PO e1=e INF e2=e PF     {Binaire (Inf,e1,e2)}
 | PO exp=e PF             {exp}
+| PO e1=e QMARK e2=e COLON e3=e PF {Ternaire (e1,e2,e3)}
 
 
