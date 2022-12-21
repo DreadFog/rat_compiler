@@ -39,6 +39,10 @@ open Ast.AstSyntax
 (* ternaire *)
 %token QMARK
 %token COLON
+(* boucles *)
+%token LOOP
+%token BREAK
+%token CONTINUE
 
 (* Type de l'attribut synthétisé des non-terminaux *)
 %type <programme> prog
@@ -70,8 +74,24 @@ i :
 | CONST n=ID EQUAL e=ENTIER PV      {Constante (n,e)}
 | PRINT e1=e PV                     {Affichage (e1)}
 | IF exp=e li1=bloc ELSE li2=bloc   {Conditionnelle (exp,li1,li2)}
+(* IF sans else *)
+| IF exp=e li1=bloc                 {Conditionnelle (exp,li1,[])}
 | WHILE exp=e li=bloc               {TantQue (exp,li)}
 | RETURN exp=e PV                   {Retour (exp)}
+(* Affectation incrémentée *)
+| n=ID PLUS EQUAL e1=e PV           {Affectation (n,Binaire (Plus,Ident n,e1))}
+(* Prise en compte de <variable>++ et ++<variable>*)
+| PLUS PLUS n=ID PV                 {Affectation (n,Binaire (Plus,Ident n,Entier 1))}
+| n=ID PLUS PLUS PV                 {Affectation (n,Binaire (Plus,Ident n,Entier 1))}
+(* Instructions pour les boucles *)
+| n=ID COLON LOOP li=bloc           {Boucle(Some(n),li)}
+| LOOP li=bloc                      {Boucle(None,li)}
+| BREAK n=ID PV                     {Break(Some(n))}
+| BREAK PV                          {Break(None)}
+| CONTINUE n=ID PV                  {Continue(Some(n))}
+| CONTINUE PV                       {Continue(None)}
+
+
 
 typ :
 | BOOL    {Bool}
@@ -92,6 +112,8 @@ e :
 | PO e1=e EQUAL e2=e PF   {Binaire (Equ,e1,e2)}
 | PO e1=e INF e2=e PF     {Binaire (Inf,e1,e2)}
 | PO exp=e PF             {exp}
+(* ternaire *)
 | PO e1=e QMARK e2=e COLON e3=e PF {Ternaire (e1,e2,e3)}
+
 
 

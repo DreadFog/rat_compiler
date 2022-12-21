@@ -56,6 +56,10 @@ and instruction =
   | TantQue of expression * bloc
   (* return d'une fonction *)
   | Retour of expression
+  (*Instructions de boucles *)
+  | Boucle of string option* bloc
+  | Break of string option
+  | Continue of string option
 
 (* Structure des fonctions de Rat *)
 (* type de retour - nom - liste des paramètres (association type et nom) - corps de la fonction *)
@@ -99,7 +103,10 @@ struct
     | TantQue of expression * bloc
     | Retour of expression * Tds.info_ast  (* les informations sur la fonction à laquelle est associé le retour *)
     | Empty (* les nœuds ayant disparus: Const *)
-
+    (*Instructions de boucles *)
+    | Boucle of Tds.info_ast * bloc
+    | Break of Tds.info_ast
+    | Continue of Tds.info_ast
 
   (* Structure des fonctions dans notre langage *)
   (* type de retour - informations associées à l'identificateur (dont son nom) - liste des paramètres (association type et information sur les paramètres) - corps de la fonction *)

@@ -15,6 +15,7 @@ type token =
   | PF
   | NUM
   | MULT
+  | LOOP
   | INT
   | INF
   | IF
@@ -25,11 +26,13 @@ type token =
   | ENTIER of (int)
   | ELSE
   | DENOM
+  | CONTINUE
   | CONST
   | COLON
   | CO
   | CF
   | CALL
+  | BREAK
   | BOOL
   | AO
   | AF

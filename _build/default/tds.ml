@@ -7,8 +7,7 @@ type info =
   | InfoConst of string * int
   | InfoVar of string * typ * int * string
   | InfoFun of string * typ * typ list
-  (*| InfoParam of string * typ*)
-
+  | InfoBoucle of int list
 (* Données stockées dans la tds  et dans les AST : pointeur sur une information *)
 type info_ast = info ref  
 
@@ -311,8 +310,7 @@ let string_of_info info =
   | InfoVar (n,t,dep,base) -> "Variable "^n^" : "^(string_of_type t)^" "^(string_of_int dep)^"["^base^"]"
   | InfoFun (n,t,tp) -> "Fonction "^n^" : "^(List.fold_right (fun elt tq -> if tq = "" then (string_of_type elt) else (string_of_type elt)^" * "^tq) tp "" )^
                       " -> "^(string_of_type t)
-  (*| InfoParam (n,t) -> "Paramètre "^n^" : "^(string_of_type t)*)
-
+  | InfoBoucle (_) -> "Boucle TODO"
 (* Affiche la tds locale *)
 let afficher_locale tds =
   match tds with
@@ -377,7 +375,7 @@ let%test _ =
       |InfoConst(_,_) -> Int
       |InfoVar(_,t,_,_) -> t
       |InfoFun(_,t,_) -> t
-      (*|InfoParam(_,t) -> t*) 
+      |InfoBoucle(_) -> raise Exceptions_identifiants.ErreurInterne
 
 (* Récupère les infos d'une info_ast
  *)
@@ -385,3 +383,10 @@ let%test _ =
   match info_ast_to_info iast with
     InfoVar(_,ty,dep,reg) -> (Type.getTaille ty,dep,reg)
     |_ -> raise Exceptions_identifiants.ErreurInterne
+
+
+(* Ajouter à une infoboucle un nouvel identifiant*)
+let ajouter_liste_boucle i =
+  match !i with 
+  | InfoBoucle intList -> i:=InfoBoucle((List.hd intList + 1)::intList)
+  | _ -> failwith "Appel modifier_liste_boucle sur autre chose qu'une boucle"

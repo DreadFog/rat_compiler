@@ -29,7 +29,11 @@
         "denom",   DENOM;
         "true",    TRUE;
         "false",   FALSE;
-        "return",  RETURN
+        "return",  RETURN;
+        (* pour les loop *)
+        "loop",    LOOP;
+        "break",   BREAK;
+        "continue",CONTINUE;
       ];
     fun id ->
       match Hashtbl.find_opt kws id with
