@@ -27,8 +27,8 @@ let rec analyse_placement_instruction reg depl i =
     let taille = Type.getTaille mt in
      modifier_adresse_variable depl reg iast;
      (AstPlacement.Declaration(iast, e), depl+taille)
-  | AstType.Affectation (iast, e) ->
-     (AstPlacement.Affectation(iast, e), depl)
+  | AstType.Affectation (m, iast, e) ->
+     (AstPlacement.Affectation(m, iast, e), depl)
   | AstType.AffichageInt e ->
      (AstPlacement.AffichageInt e, depl)
   | AstType.AffichageRat e ->
@@ -70,7 +70,7 @@ let rec analyse_placement_instruction reg depl i =
     let (ni,nfdepl) = analyse_placement_instruction reg fdepl inst in
     (pred @ [ni], nfdepl) in (* a améliorer ? hopefully ocaml fix it*)
   (List.fold_left f ([], depl) b, depl) *)
-  and analyse_placement_bloc reg depl b = 
+and analyse_placement_bloc reg depl b = 
   let f (pred, taille) inst =
     let (ni,nfdepl) = analyse_placement_instruction reg (taille+depl) inst in
     (pred @ [ni], nfdepl-depl) in (* a améliorer ? hopefully ocaml fix it*)

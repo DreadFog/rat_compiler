@@ -62,12 +62,12 @@ let rec analyse_tds_expression tds e = match e with
         match (info_ast_to_info info_ast_found) with 
           | InfoConst(_,i) -> AstTds.Entier i
           | InfoFun((f,(_: Type.mark)), _, _) ->
-             raise (Exceptions_identifiants.MauvaiseUtilisationIdentifiant (print_ident f));
-          | InfoVar((s,m),t,d,b) ->
-            AstTds.Identifiant (info_to_info_ast
-                                  (InfoVar((s,gestion_pointeurs m Neant),t,d,b)))
+             raise (MauvaiseUtilisationIdentifiant (print_ident f));
+          | InfoVar(_) ->
+            AstTds.Identifiant (Neant, info_ast_found)
         )
-      |_ -> AstTds.Identifiant (analyse_tds_identifiant tds r)
+      |_ -> let (m,iast) = analyse_tds_identifiant tds r in
+          AstTds.Identifiant (m,iast)
     )
   | AstSyntax.Adr a -> 
     (match a with
@@ -76,10 +76,11 @@ let rec analyse_tds_expression tds e = match e with
         let info_ast_found = chercherGlobalementUnsafeIdent tds s in
         (
         match (info_ast_to_info info_ast_found) with 
-          | InfoConst(_,_) -> raise Exceptions_identifiants.RefInterdite
-          | _ -> AstTds.Adr (info_ast_found)
+          | InfoConst(_,_) -> raise RefInterdite
+          | _ -> AstTds.Adr (Neant, info_ast_found)
         )
-      |_ -> AstTds.Adr (analyse_tds_identifiant tds a)
+      |_ -> let (m,iast) = analyse_tds_identifiant tds a in
+          AstTds.Adr (m, iast)
     )
   | AstSyntax.New t -> AstTds.New t
   | AstSyntax.Entier i -> AstTds.Entier i
@@ -92,7 +93,7 @@ let rec analyse_tds_expression tds e = match e with
     (match info_ast_to_info f_tds with
       InfoFun(_,_,_) -> AstTds.AppelFonction ( f_tds
                                 , List.map (analyse_tds_expression tds) l)
-      |_ -> raise (Exceptions_identifiants.MauvaiseUtilisationIdentifiant (print_ident f)));
+      |_ -> raise (MauvaiseUtilisationIdentifiant (print_ident f)));
   | AstSyntax.Unaire (op, e) ->
     AstTds.Unaire (op, analyse_tds_expression tds e) 
   | AstSyntax.NULL -> AstTds.NULL
@@ -102,10 +103,8 @@ and analyse_tds_identifiant tds ((s,ms)) =
   (
   match (info_ast_to_info info_ast_found) with 
     | InfoConst(_,_) -> (raise Exceptions_identifiants.RefInterdite)
-    | InfoVar((s,m),t,d,b)-> info_to_info_ast
-                              (InfoVar((s,gestion_pointeurs m ms),t,d,b))
-    | InfoFun((s,m),t,l) -> (info_to_info_ast
-                                (InfoFun((s,gestion_pointeurs m ms),t,l)))
+    | InfoVar((_,m),_,_,_)-> (gestion_pointeurs m ms, info_ast_found)
+    | InfoFun((_,m),_,_) -> (gestion_pointeurs m ms, info_ast_found)
   )
 
   (* analyse_tds_instruction : tds -> AstSyntax.instruction -> AstTds.instruction *)
@@ -114,10 +113,12 @@ and analyse_tds_identifiant tds ((s,ms)) =
 (* Vérifie la bonne utilisation des identifiants et tranforme l'instruction *)
 
 
-(* analyse_tds_instruction : tds -> info_ast option -> AstSyntax.instruction -> AstTds.instruction *)
+(* analyse_tds_instruction : tds -> info_ast option -> AstSyntax.instruction
+                                    -> AstTds.instruction *)
 (* Paramètre tds : la table des symboles courante *)
 (* Paramètre oia : None si l'instruction i est dans le bloc principal,
-                   Some ia où ia est l'information associée à la fonction dans laquelle est l'instruction i sinon *)
+                   Some ia où ia est l'information associée à la fonction
+                   dans laquelle est l'instruction i sinon *)
 (* Paramètre i : l'instruction à analyser *)
 (* Vérifie la bonne utilisation des identifiants et tranforme l'instruction
 en une instruction de type AstTds.instruction *)
@@ -158,15 +159,13 @@ let rec analyse_tds_instruction tds oia i =
           il a donc déjà été déclaré. L'information associée est récupérée. *)
           begin
             match info_ast_to_info info with
-            | InfoVar((nv,mv),tv,dv,bv) ->
+            | InfoVar((_,mv),_,_,_) ->
               (* Vérification de la bonne utilisation des identifiants dans l'expression *)
               (* et obtention de l'expression transformée *)
               let ne = analyse_tds_expression tds e in
               (* Renvoie de la nouvelle affectation où le nom a été remplacé par l'information
                  et l'expression remplacée par l'expression issue de l'analyse *)
-              let ninfo = info_to_info_ast
-                      (InfoVar((nv, gestion_pointeurs mv m), tv, dv, bv)) in
-              AstTds.Affectation (ninfo, ne)
+              AstTds.Affectation (gestion_pointeurs mv m, info, ne)
             |  _ ->
               (* Modification d'une constante ou d'une fonction *)
               raise (MauvaiseUtilisationIdentifiant (print_ident n))
@@ -192,7 +191,8 @@ let rec analyse_tds_instruction tds oia i =
       (* Vérification de la bonne utilisation des identifiants dans l'expression *)
       (* et obtention de l'expression transformée *)
       let ne = analyse_tds_expression tds e in
-      (* Renvoie du nouvel affichage où l'expression remplacée par l'expression issue de l'analyse *)
+      (* Renvoie du nouvel affichage où l'expression remplacée par
+        l'expression issue de l'analyse *)
       AstTds.Affichage (ne)
   | AstSyntax.Conditionnelle (c,t,e) ->
       (* Analyse de la condition *)
@@ -227,9 +227,11 @@ let rec analyse_tds_instruction tds oia i =
 (* analyse_tds_bloc : tds -> info_ast option -> AstSyntax.bloc -> AstTds.bloc *)
 (* Paramètre tds : la table des symboles courante *)
 (* Paramètre oia : None si le bloc li est dans le programme principal,
-                   Some ia où ia est l'information associée à la fonction dans laquelle est le bloc li sinon *)
+                   Some ia où ia est l'information associée
+                    à la fonction dans laquelle est le bloc li sinon *)
 (* Paramètre li : liste d'instructions à analyser *)
-(* Vérifie la bonne utilisation des identifiants et tranforme le bloc en un bloc de type AstTds.bloc *)
+(* Vérifie la bonne utilisation des identifiants et tranforme le bloc
+   en un bloc de type AstTds.bloc *)
 (* Erreur si mauvaise utilisation des identifiants *)
 and analyse_tds_bloc tds oia li =
   (* Entrée dans un nouveau bloc, donc création d'une nouvelle tds locale

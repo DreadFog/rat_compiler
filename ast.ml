@@ -47,7 +47,7 @@ type expression =
   (* Adresse d'une variable *)
   | Adr of identifiant
   (* Nouveau pointeur *)
-  | New of Type.typ
+  | New of (Type.typ * Type.mark)
   | NULL
   (* Référence *)
   | Identifiant of identifiant
@@ -105,10 +105,16 @@ struct
     (*| Ident of Tds.info_ast  -- le nom de l'identifiant est remplacé par ses informations *)
     | Booleen of bool
     | Entier of int
-    | Adr of identifiant
-    | New of Type.typ
+    (* mark pour les cas int ** a = ...; ...; b = &( *a ); *)
+    | Adr of mark * identifiant
+    | New of (Type.typ * Type.mark)
     | NULL
-    | Identifiant of identifiant
+    (* 
+       * la marque est la diff entre celle initiale et affectée
+       * ex : int ***a = ...; int **b = *a; alors
+       * l'identifiant correspondant à *a a une mark de 
+       * Pointeur(Pointeur(Neant)) ie ** *)
+    | Identifiant of mark * identifiant
     | Unaire of AstSyntax.unaire * expression
     | Binaire of AstSyntax.binaire * expression * expression
 
@@ -118,13 +124,20 @@ struct
   + suppression de nœuds (const) *)
   type bloc = instruction list
   and instruction =
-    | Declaration of typ * tds_info_ast * expression (* le nom de l'identifiant est remplacé par ses informations *)
-    | Affectation of tds_info_ast * expression (* le nom de l'identifiant est remplacé par ses informations *)
+      (* le nom de l'identifiant est remplacé par ses informations : *)
+    | Declaration of typ * tds_info_ast * expression 
+      (* le nom de l'identifiant est remplacé par ses informations
+       * la marque est la diff entre celle initiale et affectée
+       * ex : int ***a = ...; *a = ...; alors l'affectation correspondant
+       * à *a est Pointeur(Pointeur(Neant)) ie ** *)
+    | Affectation of mark * tds_info_ast * expression 
     | Affichage of expression
     | Conditionnelle of expression * bloc * bloc
     | TantQue of expression * bloc
-    | Retour of expression * tds_info_ast  (* les informations sur la fonction à laquelle est associé le retour *)
-    | Empty (* les nœuds ayant disparus: Const *)
+      (* les informations sur la fonction à laquelle est associé le retour : *)
+    | Retour of expression * tds_info_ast
+      (* les nœuds ayant disparus: Const : *)
+    | Empty 
 
 
   (* Structure des fonctions dans notre langage *)
@@ -160,17 +173,17 @@ type expression =
   | Entier of int 
   | Unaire of unaire * expression
   | Binaire of binaire * expression * expression
-  | Adr of identifiant
-  | New of Type.typ
+  | Adr of mark * identifiant
+  | New of (Type.typ * Type.mark)
   | NULL
-  | Identifiant of identifiant
+  | Identifiant of mark * identifiant
 (* instructions existantes Rat *)
 (* = instruction de AstTds + informations associées aux identificateurs, mises à jour *)
 (* + résolution de la surcharge de l'affichage *)
 type bloc = instruction list
  and instruction =
   | Declaration of type_info_ast * expression
-  | Affectation of type_info_ast * expression
+  | Affectation of mark * type_info_ast * expression
   | AffichageInt of expression
   | AffichageRat of expression
   | AffichageBool of expression
@@ -202,7 +215,7 @@ type identifiant = AstTds.identifiant
 type bloc = instruction list * int (* taille du bloc *)
  and instruction =
  | Declaration of placement_info_ast * expression
- | Affectation of placement_info_ast * expression
+ | Affectation of mark * placement_info_ast * expression
  | AffichageInt of expression
  | AffichageRat of expression
  | AffichageBool of expression

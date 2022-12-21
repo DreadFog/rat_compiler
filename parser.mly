@@ -88,7 +88,7 @@ typ :
 (*| t=typ r1=r  {t,r} (* int ** a = *b *) + rq: avant marchait pas, typ doit renvoyer un Type.typ*)
 
 e : 
-| CALL n=r PO lp=e* PF   {AppelFonction (n,lp)}
+| CALL n=r PO lp=e* PF    {AppelFonction (n,lp)}
 | CO e1=e SLASH e2=e CF   {Binaire(Fraction,e1,e2)}
 (*| n=ID                    {Ident n}*)
 | TRUE                    {Booleen true}
@@ -102,7 +102,7 @@ e :
 | PO e1=e INF e2=e PF     {Binaire (Inf,e1,e2)}
 | PO exp=e PF             {exp}
 (* pointers *)
-| NEW t=typ               {New (t)}
+| NEW t=typ ladr=MULT*    {New (t, fold_left (fun x _ -> Pointeur(x)) Neant ladr)}
 | NULL                    {NULL}
 | ADR ident=r             {Adr(ident)}
 | r1=r                    {Identifiant(r1)}

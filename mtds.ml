@@ -98,12 +98,6 @@ match info_ast_to_info iast with
   |InfoVar(_,t,_,_) -> t
   |InfoFun(_,t,_) -> t
 
-(* Récupère les infos d'une info_ast 
-let tam_var_of_info_ast iast =
-  match info_ast_to_info iast with
-    InfoVar(_,ty,dep,reg) -> (Type.getTaille ty,dep,reg)
-    |_ -> raise Exceptions_identifiants.ErreurInterne*)
-
 (* Test pour éviter les warnings *)
 let%test _ = 
 let _ = creerTDSMere in
