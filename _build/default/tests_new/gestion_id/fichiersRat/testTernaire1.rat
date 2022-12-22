@@ -1,5 +1,0 @@
-main{
-    bool a = true;
-    int b = (a ? 5 : 3);
-    print b;
-}
