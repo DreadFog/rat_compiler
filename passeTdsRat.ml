@@ -67,7 +67,7 @@ let rec analyse_tds_expression tds e = match e with
 (* Vérifie la bonne utilisation des identifiants et tranforme l'instruction
 en une instruction de type AstTds.instruction *)
 (* Erreur si mauvaise utilisation des identifiants *)
-let rec analyse_tds_instruction tds oia iaOptBoucle i =
+let rec analyse_tds_instruction tds oia iaOptBoucle i num_l contexte =
   match i with
   | AstSyntax.Declaration (t, n, e) ->
       begin
@@ -86,7 +86,7 @@ let rec analyse_tds_instruction tds oia iaOptBoucle i =
             ajouter tds n ia;
             (* Renvoie de la nouvelle déclaration où le nom a été remplacé par l'information
             et l'expression remplacée par l'expression issue de l'analyse *)
-            AstTds.Declaration (t, ia, ne)
+            (AstTds.Declaration (t, ia, ne),num_l + 1)
         | Some _ ->
             (* L'identifiant est trouvé dans la tds locale,
             il a donc déjà été déclaré dans le bloc courant *)
@@ -109,7 +109,7 @@ let rec analyse_tds_instruction tds oia iaOptBoucle i =
               let ne = analyse_tds_expression tds e in
               (* Renvoie de la nouvelle affectation où le nom a été remplacé par l'information
                  et l'expression remplacée par l'expression issue de l'analyse *)
-              AstTds.Affectation (info, ne)
+              (AstTds.Affectation (info, ne),num_l + 1)
             |  _ ->
               (* Modification d'une constante ou d'une fonction *)
               raise (MauvaiseUtilisationIdentifiant n)
@@ -124,7 +124,7 @@ let rec analyse_tds_instruction tds oia iaOptBoucle i =
           (* Ajout dans la tds de la constante *)
           ajouter tds n (info_to_info_ast (InfoConst (n,v)));
           (* Suppression du noeud de déclaration des constantes devenu inutile *)
-          AstTds.Empty
+          (AstTds.Empty,num_l + 1)
         | Some _ ->
           (* L'identifiant est trouvé dans la tds locale,
           il a donc déjà été déclaré dans le bloc courant *)
@@ -135,23 +135,23 @@ let rec analyse_tds_instruction tds oia iaOptBoucle i =
       (* et obtention de l'expression transformée *)
       let ne = analyse_tds_expression tds e in
       (* Renvoie du nouvel affichage où l'expression remplacée par l'expression issue de l'analyse *)
-      AstTds.Affichage (ne)
+      (AstTds.Affichage (ne),num_l + 1)
   | AstSyntax.Conditionnelle (c,t,e) ->
       (* Analyse de la condition *)
       let nc = analyse_tds_expression tds c in
       (* Analyse du bloc then *)
-      let tast = analyse_tds_bloc tds oia iaOptBoucle t in
+      let (tast, nl1) = analyse_tds_bloc tds oia iaOptBoucle t (num_l+1) (("bloc then", num_l+1)::contexte) in 
       (* Analyse du bloc else *)
-      let east = analyse_tds_bloc tds oia iaOptBoucle e in
+      let (east, nl2) = analyse_tds_bloc tds oia iaOptBoucle e (nl1+1) (("bloc else",nl1+1)::contexte) in
       (* Renvoie la nouvelle structure de la conditionnelle *)
-      AstTds.Conditionnelle (nc, tast, east)
+      (AstTds.Conditionnelle (nc, tast, east), nl2 + 1)
   | AstSyntax.TantQue (c,b) ->
       (* Analyse de la condition *)
       let nc = analyse_tds_expression tds c in
       (* Analyse du bloc *)
-      let bast = analyse_tds_bloc tds oia iaOptBoucle b in
+      let (bast, nl) = analyse_tds_bloc tds oia iaOptBoucle b (num_l + 1) (("bloc tantQue", num_l + 1)::contexte) in
       (* Renvoie la nouvelle structure de la boucle *)
-      AstTds.TantQue (nc, bast)
+      (AstTds.TantQue (nc, bast), nl + 1)
   | AstSyntax.Retour (e) ->
       begin
       (* On récupère l'information associée à la fonction à laquelle le return est associée *)
@@ -162,7 +162,7 @@ let rec analyse_tds_instruction tds oia iaOptBoucle i =
       | Some ia ->
         (* Analyse de l'expression *)
         let ne = analyse_tds_expression tds e in
-        AstTds.Retour (ne,ia)
+        (AstTds.Retour (ne,ia), num_l + 1)
       end
 
   (*Boucles à la Rust*)
@@ -174,8 +174,8 @@ let rec analyse_tds_instruction tds oia iaOptBoucle i =
         let info = InfoBoucle([id, id^"fin"]) in
         let ia = info_to_info_ast info in
         ajouter tds id ia;
-        let nli = analyse_tds_bloc tds oia (Some ia) li in
-        AstTds.Boucle(ia, nli)
+        let (nli, n_l) = analyse_tds_bloc tds oia (Some ia) li (num_l + 1) (("boucle rust", num_l + 1)::contexte)in
+        (AstTds.Boucle(ia, nli), n_l + 1)
 
       | Some n -> (* boucle avec identifiant *)
         begin
@@ -184,14 +184,14 @@ let rec analyse_tds_instruction tds oia iaOptBoucle i =
             let info = InfoBoucle([n,n^"fin"]) in
             let ia = info_to_info_ast info in
             ajouter tds n ia;
-            let nli = analyse_tds_bloc tds oia (Some ia) li in
-            AstTds.Boucle(ia, nli)
+            let (nli, n_l) = analyse_tds_bloc tds oia (Some ia) li (num_l + 1) (("boucle rust", num_l + 1)::contexte)in
+            (AstTds.Boucle(ia, nli), n_l + 1)
           | Some r -> ( match info_ast_to_info r with 
             | InfoBoucle _ -> (* Boucle ayant déjà le même nom -> nécessité d'avoir des labels uniques *)
             let id = giveID () in
               Tds.ajouter_liste_boucle r id (id^"fin");
-              let nli = analyse_tds_bloc tds oia (Some r) li in
-              AstTds.Boucle(r, nli)
+              let (nli, n_l) = analyse_tds_bloc tds oia (Some r) li (num_l + 1) (("boucle rust", num_l + 1)::contexte)in
+              (AstTds.Boucle(r, nli), n_l + 1)
             | _ -> raise (DoubleDeclaration n))
         end
     end
@@ -205,7 +205,7 @@ let rec analyse_tds_instruction tds oia iaOptBoucle i =
           | Some ia -> 
             begin
               match info_ast_to_info ia with
-                | InfoBoucle l -> AstTds.Break (snd (List.hd l))
+                | InfoBoucle l -> (AstTds.Break (snd (List.hd l)), num_l + 1)
                 | _ -> raise ErreurInterne
             end
         end
@@ -217,7 +217,7 @@ let rec analyse_tds_instruction tds oia iaOptBoucle i =
           | Some (r) ->
             begin
               match info_ast_to_info r with 
-              | InfoBoucle l -> AstTds.Break (snd (List.hd l))
+              | InfoBoucle l -> (AstTds.Break (snd (List.hd l)), num_l + 1)
               | _ -> raise (MauvaiseUtilisationIdentifiant n)
             end
         end
@@ -232,7 +232,7 @@ let rec analyse_tds_instruction tds oia iaOptBoucle i =
           | Some ia -> 
             begin
               match info_ast_to_info ia with
-                | InfoBoucle l -> AstTds.Continue (fst (List.hd l))
+                | InfoBoucle l -> (AstTds.Continue (fst (List.hd l)), num_l + 1)
                 | _ -> raise ErreurInterne
             end
         end
@@ -244,7 +244,7 @@ let rec analyse_tds_instruction tds oia iaOptBoucle i =
           | Some (r) ->
             begin
               match info_ast_to_info r with 
-              | InfoBoucle l -> AstTds.Continue (fst (List.hd l))
+              | InfoBoucle l -> (AstTds.Continue (fst (List.hd l)), num_l + 1)
               | _ -> raise (MauvaiseUtilisationIdentifiant n)
             end
         end
@@ -260,15 +260,18 @@ let rec analyse_tds_instruction tds oia iaOptBoucle i =
 (* Paramètre li : liste d'instructions à analyser *)
 (* Vérifie la bonne utilisation des identifiants et tranforme le bloc en un bloc de type AstTds.bloc *)
 (* Erreur si mauvaise utilisation des identifiants *)
-and analyse_tds_bloc tds oia iaOptBoucle li  =
+and analyse_tds_bloc tds oia iaOptBoucle li nb_l contexte =
   (* Entrée dans un nouveau bloc, donc création d'une nouvelle tds locale
   pointant sur la table du bloc parent *)
   let tdsbloc = creerTDSFille tds in
   (* Analyse des instructions du bloc avec la tds du nouveau bloc.
      Cette tds est modifiée par effet de bord *)
-   let nli = List.map (analyse_tds_instruction tdsbloc oia iaOptBoucle) li in
+   let fonction_fold_left i_c (liste_traitee, acc_l) = 
+    let (ni, nl) = analyse_tds_instruction tdsbloc oia iaOptBoucle i_c acc_l contexte  in
+    (liste_traitee@[ni], nl) in
+    let (nli, nb_lignes) = List.fold_left fonction_fold_left ([], nb_l) li in
    (* afficher_locale tdsbloc ; *) (* décommenter pour afficher la table locale *)
-   nli
+   (nli, nb_lignes)
 
 
    
@@ -292,7 +295,7 @@ let first f (x,y) = (f x, y)
 (* Vérifie la bonne utilisation des identifiants et tranforme la fonction
 en une fonction de type AstTds.fonction *)
 (* Erreur si mauvaise utilisation des identifiants *)
-let analyse_tds_fonction maintds (AstSyntax.Fonction(t,nom,l_param,l_inst)) =
+let analyse_tds_fonction maintds (AstSyntax.Fonction(t,nom,l_param,l_inst)) = (* TODO *)
   (* On vérifie que la fonction n'est pas déjà déclarée *)
   Tds.absentLocalementUnsafe maintds nom;
   (* création de la td fille : tds liée au bloc de la fonction *) 
@@ -328,5 +331,5 @@ en un programme de type AstTds.programme *)
 let analyser (AstSyntax.Programme (fonctions,prog)) =
   let tds = creerTDSMere () in
   let nf = List.map (analyse_tds_fonction tds) fonctions in
-  let nb = analyse_tds_bloc tds None None prog in
+  let (nb, _) = analyse_tds_bloc tds None None prog 0 [("main", 0)] in
   AstTds.Programme (nf,nb)
