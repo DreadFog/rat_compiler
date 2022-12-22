@@ -12,7 +12,7 @@ let giveID =
   let num = ref 0 in
   fun () ->
     num := (!num)+1 ;
-    "ID"^((string_of_int (!num)))
+    "id"^((string_of_int (!num)))
 
 
 
@@ -171,7 +171,7 @@ let rec analyse_tds_instruction tds oia iaOptBoucle i =
       match nOpt with
       | None -> (* boucle sans identifiant *)
         let id = giveID () in
-        let info = InfoBoucle([1]) in
+        let info = InfoBoucle([id, id^"fin"]) in
         let ia = info_to_info_ast info in
         ajouter tds id ia;
         let nli = analyse_tds_bloc tds oia (Some ia) li in
@@ -181,14 +181,15 @@ let rec analyse_tds_instruction tds oia iaOptBoucle i =
         begin
           match chercherGlobalement tds n with
           | None -> 
-            let info = InfoBoucle([1]) in
+            let info = InfoBoucle([n,n^"fin"]) in
             let ia = info_to_info_ast info in
             ajouter tds n ia;
             let nli = analyse_tds_bloc tds oia (Some ia) li in
             AstTds.Boucle(ia, nli)
           | Some r -> ( match info_ast_to_info r with 
-            | InfoBoucle _ -> 
-              Tds.ajouter_liste_boucle r;
+            | InfoBoucle _ -> (* Boucle ayant déjà le même nom -> nécessité d'avoir des labels uniques *)
+            let id = giveID () in
+              Tds.ajouter_liste_boucle r id (id^"fin");
               let nli = analyse_tds_bloc tds oia (Some r) li in
               AstTds.Boucle(r, nli)
             | _ -> raise (DoubleDeclaration n))
@@ -201,7 +202,12 @@ let rec analyse_tds_instruction tds oia iaOptBoucle i =
         begin
           match iaOptBoucle with 
           | None -> raise BreakHorsBoucle
-          | Some ia -> AstTds.Break ia
+          | Some ia -> 
+            begin
+              match info_ast_to_info ia with
+                | InfoBoucle l -> AstTds.Break (snd (List.hd l))
+                | _ -> raise ErreurInterne
+            end
         end
 
       | Some(n) -> (* break avec identifiant *)
@@ -211,7 +217,7 @@ let rec analyse_tds_instruction tds oia iaOptBoucle i =
           | Some (r) ->
             begin
               match info_ast_to_info r with 
-              | InfoBoucle _ -> AstTds.Break r
+              | InfoBoucle l -> AstTds.Break (snd (List.hd l))
               | _ -> raise (MauvaiseUtilisationIdentifiant n)
             end
         end
@@ -223,7 +229,12 @@ let rec analyse_tds_instruction tds oia iaOptBoucle i =
         begin
           match iaOptBoucle with 
           | None -> raise ContinueHorsBoucle
-          | Some ia -> AstTds.Continue ia
+          | Some ia -> 
+            begin
+              match info_ast_to_info ia with
+                | InfoBoucle l -> AstTds.Continue (fst (List.hd l))
+                | _ -> raise ErreurInterne
+            end
         end
 
       | Some(n) -> (* continue avec identifiant *)
@@ -233,7 +244,7 @@ let rec analyse_tds_instruction tds oia iaOptBoucle i =
           | Some (r) ->
             begin
               match info_ast_to_info r with 
-              | InfoBoucle _ -> AstTds.Continue r
+              | InfoBoucle l -> AstTds.Continue (fst (List.hd l))
               | _ -> raise (MauvaiseUtilisationIdentifiant n)
             end
         end
@@ -304,7 +315,7 @@ let analyse_tds_fonction maintds (AstSyntax.Fonction(t,nom,l_param,l_inst)) =
   ajouter maintds nom (info_to_info_ast (InfoFun (nom, t, List.map fst l_param)));
 
   (* liste des ASTTds instructions *)
-  let l_inst_tds = analyse_tds_bloc tds_fille (chercherGlobalement tds_fille nom) l_inst in
+  let l_inst_tds = analyse_tds_bloc tds_fille (chercherGlobalement tds_fille nom) None l_inst in
   let nom_tds = chercherGlobalementUnsafe tds_fille nom in
   AstTds.Fonction(t, nom_tds, (getFirsts l_param_tds'), l_inst_tds)
 

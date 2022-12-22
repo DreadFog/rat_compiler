@@ -119,6 +119,21 @@ let rec ast_to_tam_instruction i =
     ast_to_tam_expression e
     ^ return taille_ret taille_param
   | AstPlacement.Empty -> ""
+  (* Prise en compte des boucles *)
+  | AstPlacement.Boucle (ia, b) ->
+    begin
+      match info_ast_to_info ia with
+      | InfoBoucle l -> 
+        inverser_liste_boucle ia;
+        let (labLoop, labEndLoop) = List.hd l in
+        label labLoop
+        ^ ast_to_tam_bloc b
+        ^ jump labLoop
+        ^ label labEndLoop
+      | _ -> raise Exceptions.ErreurInterne
+    end
+  | AstPlacement.Break s -> jump (s) (* d'où la nécessité de l'avoir déjà avant*)
+  | AstPlacement.Continue s -> jump (s) (* idem *)
 
 (* analyse_tds_bloc : tds -> info_ast option -> AstPlacement.bloc -> AstPlacement.bloc *)
 (* Paramètre tds : la table des symboles courante *)

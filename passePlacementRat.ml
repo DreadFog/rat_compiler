@@ -46,6 +46,13 @@ let rec analyse_placement_instruction reg depl i =
         (AstPlacement.Retour (e, Type.getTaille ty, List.fold_right add_tailles param_t 0), depl)
       | _ -> raise ErreurInterne);
   | AstType.Empty -> (AstPlacement.Empty, depl)
+  (* Prise en compte des boucles *)
+  | AstType.Boucle (ia, b) ->
+    let nb = fst (analyse_placement_bloc reg depl b) in
+    (AstPlacement.Boucle (ia, nb), depl)
+  | AstType.Break s -> (AstPlacement.Break s, depl)
+  | AstType.Continue s -> (AstPlacement.Continue s, depl)
+  
 
 (* analyse_tds_bloc : tds -> info_ast option -> AstType.bloc -> AstType.bloc *)
 (* Paramètre tds : la table des symboles courante *)

@@ -116,6 +116,10 @@ let rec analyse_type_instruction i =
     if (Type.est_compatible t te) then (AstType.Retour(ne, iast))
     else raise (TypeInattendu(te,t)) 
   | AstTds.Empty -> AstType.Empty
+  (* Gestion des boucles*)
+  | AstTds.Boucle (ia, b) -> AstType.Boucle (ia, analyse_type_bloc b)
+  | AstTds.Break s -> AstType.Break s
+  | AstTds.Continue s -> AstType.Continue s
 
 (* analyse_tds_bloc : tds -> info_ast option -> AstTds.bloc -> AstTds.bloc *)
 (* Paramètre tds : la table des symboles courante *)

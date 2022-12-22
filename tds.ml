@@ -7,7 +7,7 @@ type info =
   | InfoConst of string * int
   | InfoVar of string * typ * int * string
   | InfoFun of string * typ * typ list
-  | InfoBoucle of int list
+  | InfoBoucle of (string * string) list (* Les étiquettes de début et fin de boucle *)
 (* Données stockées dans la tds  et dans les AST : pointeur sur une information *)
 type info_ast = info ref  
 
@@ -385,8 +385,26 @@ let%test _ =
     |_ -> raise Exceptions_identifiants.ErreurInterne
 
 
-(* Ajouter à une infoboucle un nouvel identifiant*)
-let ajouter_liste_boucle i =
+(* Ajouter à une infoboucle un nouvel élément *)
+let ajouter_liste_boucle i e1 e2 =
   match !i with 
-  | InfoBoucle intList -> i:=InfoBoucle((List.hd intList + 1)::intList)
+  | InfoBoucle liste -> i:=InfoBoucle((e1,e2)::liste)
   | _ -> failwith "Appel modifier_liste_boucle sur autre chose qu'une boucle"
+
+(* Inverser la liste d'une infoboucle
+   Utilité: lors de la génération de code, nécessité de parcourir celle_ci en sens inverse *)
+let inverser_liste_boucle i =
+  match !i with 
+  | InfoBoucle liste -> i:=InfoBoucle(List.rev liste)
+  | _ -> failwith "Appel modifier_liste_boucle sur autre chose qu'une boucle"
+
+(* Supprimer le premier élément d'une liste d'infoboucle 
+   Utilité: Dans le cas où plusieures boucles auraient le même nom, la boucle suivante sera associée aux labels
+   présents en tête de boucle. D'où la nécessité de supprimer ceux actuels après utilisation lors de la génération
+   de code.*)
+let supprimer_premier_liste_boucle i =
+  match !i with 
+  | InfoBoucle liste -> i:=InfoBoucle(List.tl liste)
+  | _ -> failwith "Appel modifier_liste_boucle sur autre chose qu'une boucle"
+
+(* Récupère la liste d'une infoboucle *)

@@ -10,7 +10,7 @@ type info =
   (* Information associée à une fonction : son nom (utile pour l'appel), son type de retour et la liste des types des paramètres *)
   | InfoFun of string * typ * typ list
   (* Dans le cas où deux boucles ont le même identifiant, celles-ci seront stockées dans une list *)
-  | InfoBoucle of int list
+  | InfoBoucle of (string*string) list
 
 (* Table des symboles *)
 type tds 
@@ -80,4 +80,9 @@ val type_of_info_ast : info_ast -> typ
 (* Récupère les infos d'une info_ast *)
 val tam_var_of_info_ast : info_ast -> int * int * string
 
-val ajouter_liste_boucle : info ref -> unit
+(* Manipulation d'infoboucles *)
+val ajouter_liste_boucle : info_ast -> string -> string -> unit
+
+val inverser_liste_boucle : info_ast -> unit
+
+val supprimer_premier_liste_boucle : info_ast -> unit
