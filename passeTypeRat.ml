@@ -35,17 +35,17 @@ en une expression de type AstTds.expression *)
 (* Erreur si mauvaise utilisation des identifiants *)
 let rec analyse_type_expression e = match e with
   | AstTds.Identifiant (m,iast) -> ( AstType.Identifiant (m,iast)
-                                   , (type_of_info_ast iast,m))
+                                   , (type_of_info_ast iast, m))
   | AstTds.Entier i -> (AstType.Entier i, (Int, Neant))
   | AstTds.Booleen b -> (AstType.Booleen b, (Bool, Neant))
   | AstTds.NULL -> (AstType.NULL, (Undefined, Pointeur(Neant)))
-  | AstTds.Adr (m,a) -> (AstType.Adr (m,a), (type_of_info_ast a,m))
+  | AstTds.Adr (m,a) -> (AstType.Adr (m,a), (type_of_info_ast a, m))
   | AstTds.New n -> (AstType.New n, n)
   | AstTds.Binaire (op, e1, e2) ->
     let (ne1,tm1) = analyse_type_expression e1 in 
     let (ne2,tm2) = analyse_type_expression e2 in 
     if (Type.est_compatible tm1 tm2) then 
-      (match (op,fst tm1) with
+      (match (op, fst tm1) with
         Fraction, Int -> (AstType.Binaire (AstType.Fraction, ne1, ne2), (Rat,Neant))
         |Plus, Int -> (AstType.Binaire (AstType.PlusInt, ne1, ne2), (Int,Neant))
         |Plus, Rat -> (AstType.Binaire (AstType.PlusRat, ne1, ne2), (Rat,Neant))
@@ -64,6 +64,15 @@ let rec analyse_type_expression e = match e with
      |Denominateur, Rat -> AstType.Unaire (AstType.Denominateur, ne), (Int,Neant)
      |_ -> raise (TypeInattendu (fst te, Rat)) (*rq: erreur a adapté avec ptr*)
      )
+  | AstTds.Ternaire(e1, e2, e3) -> 
+    let (ne1, te1) = analyse_type_expression e1 in
+    let (ne2, te2) = analyse_type_expression e2 in
+    let (ne3, te3) = analyse_type_expression e3 in
+    if (Type.est_compatible te1 (Bool,Neant)) then
+      if (Type.est_compatible te2 te3) then
+        (AstType.Ternaire (ne1, ne2, ne3), te2)
+      else raise (TypeInattendu (fst te3, fst te2)) (*rq: erreur a adapté avec ptr*)
+    else raise (TypeInattendu (fst te1, Bool)) (*rq: erreur a adapté avec ptr*)
   | AstTds.AppelFonction (f, l) -> 
     match info_ast_to_info f with
       |InfoFun((_,Neant),t,lt) -> (* Vérification du bon nombre d'arguments *)
@@ -95,8 +104,11 @@ let rec analyse_type_expression e = match e with
 (* Vérifie la bonne utilisation des identifiants et tranforme l'instruction
 en une instruction de type AstTds.instruction *)
 (* Erreur si mauvaise utilisation des identifiants *)
-let rec analyse_type_instruction i =
-  match i with
+let rec analyse_type_instruction (i,ctx) =
+  (
+  (* match pour l'instruction, le ctx est propagé dans les autres ast 
+   * -> on renvoi un couple *)
+  (match i with
   | AstTds.Declaration (t, n, e) ->
      let nn = (match info_ast_to_info n with
                 InfoVar((_,mv),_,_,_) -> t,mv
@@ -121,8 +133,8 @@ let rec analyse_type_instruction i =
         (* Erreur a adapté pour ajouter les ptrs *)
   | AstTds.Affichage e ->
      let (ne, te) = analyse_type_expression e in
-     if snd te <> Neant then raise Exceptions.MarqueurInattendu else
-     (match fst te with
+     if snd te <> Neant then raise Exceptions.MarqueurInattendu (* pas de print(&a); *)
+     else (match fst te with
       Int -> AstType.AffichageInt ne
       |Bool -> AstType.AffichageBool ne
       |Rat -> AstType.AffichageRat ne
@@ -149,6 +161,11 @@ let rec analyse_type_instruction i =
     else raise (TypeInattendu(fst te, t))
     (* Erreur a adapté pour ajouter les ptrs *)
   | AstTds.Empty -> AstType.Empty
+  (* Gestion des boucles*)
+  | AstTds.Boucle (ia, b) -> AstType.Boucle (ia, analyse_type_bloc b)
+  | AstTds.Break s -> AstType.Break s
+  | AstTds.Continue s -> AstType.Continue s)
+  , ctx)
 
 (* analyse_tds_bloc : tds -> info_ast option -> AstTds.bloc -> AstTds.bloc *)
 (* Paramètre tds : la table des symboles courante *)
@@ -158,20 +175,6 @@ let rec analyse_type_instruction i =
 (* Vérifie la bonne utilisation des identifiants et tranforme le bloc en un bloc de type AstTds.bloc *)
 (* Erreur si mauvaise utilisation des identifiants *)
 and analyse_type_bloc b = List.map analyse_type_instruction b
-   
-(* snd_zip : ('a*'b) list -> ('c*'d) list -> ('b*'d) lits *)
-(* Paramètres : les listes a fusionnées *)
-(* Fusionne des listes [(ai,bi)] en [(b1,b2)] *)
-(* fzip avec snd mais la gestion de polymorphisme avec fzip n'est bien gérée par caml *)
-let snd_zip l1 l2 = List.combine (List.map snd l1) (List.map snd l2)
-
-(* second : ('a -> 'b) -> 'c*'a -> 'c*'b *)
-(* Application de f sur le second élément d'un couple *)
-let second f (x,y) = (x, f y) 
-
-(* first : ('a -> 'b) -> 'c*'a -> 'c*'b *)
-(* Application de f sur le premier élément d'un couple *)
-let first f (x,y) = (f x, y)
 
 (* analyse_tds_fonction : tds -> AstTds.fonction -> AstTds.fonction *)
 (* Paramètre tds : la table des symboles courante *)
@@ -182,13 +185,13 @@ en une fonction de type AstTds.fonction *)
 let analyse_type_fonction (AstTds.Fonction(_,iast,l_param,l_inst)) =
   AstType.Fonction(iast, List.map snd l_param, analyse_type_bloc l_inst)
 
-  
+
 (* analyser : AstTds.programme -> AstType.programme *)
 (* Paramètre : le programme à analyser *)
 (* Vérifie le bon typage des identifiants et tranforme le programme
 en un programme de type AstType.programme *)
 (* Erreur si mauvais typage *)
 let analyser (AstTds.Programme (fonctions,prog)) =
-  let nf = List.map (analyse_type_fonction ) fonctions in
-  let nb = analyse_type_bloc  prog in
+  let nf = List.map analyse_type_fonction fonctions in
+  let nb = analyse_type_bloc prog in
   AstType.Programme (nf,nb)

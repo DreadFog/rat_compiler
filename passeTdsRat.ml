@@ -31,6 +31,13 @@ let chercherGlobalementUnsafeIdent = chercherGlobalementUnsafe print_ident
 
 let absentLocalementUnsafeIdent = absentLocalementUnsafe print_ident
 
+(* Anticipation: mise d'un identifiant aux boucles sans identifiant *)
+let giveID = 
+  let num = ref 0 in
+  fun () ->
+    num := (!num)+1 ;
+    "id"^((string_of_int (!num)))
+
 (* gestion du cas : (1) int ***a =...; (2) *a = ...; 
  * il faut a dte de (2) un int ** :
  * pour cela il faut enlever aux mv * les m * de l'affectations
@@ -61,10 +68,11 @@ let rec analyse_tds_expression tds e = match e with
         (
         match (info_ast_to_info info_ast_found) with 
           | InfoConst(_,i) -> AstTds.Entier i
-          | InfoFun((f,(_: Type.mark)), _, _) ->
+          | InfoFun((f,_), _, _) ->
              raise (MauvaiseUtilisationIdentifiant (print_ident f));
           | InfoVar(_) ->
             AstTds.Identifiant (Neant, info_ast_found)
+          | _ -> raise ErreurInterne
         )
       |_ -> let (m,iast) = analyse_tds_identifiant tds r in
           AstTds.Identifiant (m,iast)
@@ -97,14 +105,17 @@ let rec analyse_tds_expression tds e = match e with
   | AstSyntax.Unaire (op, e) ->
     AstTds.Unaire (op, analyse_tds_expression tds e) 
   | AstSyntax.NULL -> AstTds.NULL
+  | AstSyntax.Ternaire (e1, e2, e3) -> 
+    AstTds.Ternaire (analyse_tds_expression tds e1, analyse_tds_expression tds e2, analyse_tds_expression tds e3)
+
 
 and analyse_tds_identifiant tds ((s,ms)) = 
   let info_ast_found = chercherGlobalementUnsafeIdent tds s in
   (
   match (info_ast_to_info info_ast_found) with 
-    | InfoConst(_,_) -> (raise Exceptions_identifiants.RefInterdite)
     | InfoVar((_,m),_,_,_)-> (gestion_pointeurs m ms, info_ast_found)
     | InfoFun((_,m),_,_) -> (gestion_pointeurs m ms, info_ast_found)
+    | _ -> (raise Exceptions_identifiants.RefInterdite)
   )
 
   (* analyse_tds_instruction : tds -> AstSyntax.instruction -> AstTds.instruction *)
@@ -123,7 +134,7 @@ and analyse_tds_identifiant tds ((s,ms)) =
 (* Vérifie la bonne utilisation des identifiants et tranforme l'instruction
 en une instruction de type AstTds.instruction *)
 (* Erreur si mauvaise utilisation des identifiants *)
-let rec analyse_tds_instruction tds oia i =
+let rec analyse_tds_instruction tds oia optBoucle i num_inst ctx =
   match i with
   | AstSyntax.Declaration (t, (n,m), e) ->
       begin
@@ -141,7 +152,7 @@ let rec analyse_tds_instruction tds oia i =
             ajouter tds n ia;
             (* Renvoie de la nouvelle déclaration où le nom a été remplacé par l'information
             et l'expression remplacée par l'expression issue de l'analyse *)
-            AstTds.Declaration (t, ia, ne)
+            ((AstTds.Declaration (t, ia, ne), ctx), num_inst+1)
         | Some _ ->
             (* L'identifiant est trouvé dans la tds locale,
             il a donc déjà été déclaré dans le bloc courant *)
@@ -165,7 +176,7 @@ let rec analyse_tds_instruction tds oia i =
               let ne = analyse_tds_expression tds e in
               (* Renvoie de la nouvelle affectation où le nom a été remplacé par l'information
                  et l'expression remplacée par l'expression issue de l'analyse *)
-              AstTds.Affectation (gestion_pointeurs mv m, info, ne)
+              ((AstTds.Affectation (gestion_pointeurs mv m, info, ne), ctx), num_inst+1)
             |  _ ->
               (* Modification d'une constante ou d'une fonction *)
               raise (MauvaiseUtilisationIdentifiant (print_ident n))
@@ -180,7 +191,7 @@ let rec analyse_tds_instruction tds oia i =
           (* Ajout dans la tds de la constante *)
           ajouter tds n (info_to_info_ast (InfoConst (n,v)));
           (* Suppression du noeud de déclaration des constantes devenu inutile *)
-          AstTds.Empty
+          ((AstTds.Empty, ctx), num_inst+1)
         | Some _ ->
           (* L'identifiant est trouvé dans la tds locale,
           il a donc déjà été déclaré dans le bloc courant *)
@@ -193,23 +204,23 @@ let rec analyse_tds_instruction tds oia i =
       let ne = analyse_tds_expression tds e in
       (* Renvoie du nouvel affichage où l'expression remplacée par
         l'expression issue de l'analyse *)
-      AstTds.Affichage (ne)
+      ((AstTds.Affichage (ne), ctx), num_inst+1)
   | AstSyntax.Conditionnelle (c,t,e) ->
       (* Analyse de la condition *)
       let nc = analyse_tds_expression tds c in
       (* Analyse du bloc then *)
-      let tast = analyse_tds_bloc tds oia t in
+      let (tast,nl1) = analyse_tds_bloc tds oia optBoucle t (num_inst+1) (("bloc then", num_inst+1)::ctx) in
       (* Analyse du bloc else *)
-      let east = analyse_tds_bloc tds oia e in
+      let (east,nl2) = analyse_tds_bloc tds oia optBoucle e (nl1+1) (("bloc then", num_inst+1)::ctx) in
       (* Renvoie la nouvelle structure de la conditionnelle *)
-      AstTds.Conditionnelle (nc, tast, east)
+      ((AstTds.Conditionnelle (nc, tast, east), ctx), nl2+1)
   | AstSyntax.TantQue (c,b) ->
       (* Analyse de la condition *)
       let nc = analyse_tds_expression tds c in
       (* Analyse du bloc *)
-      let bast = analyse_tds_bloc tds oia b in
+      let (bast,nl) = analyse_tds_bloc tds oia optBoucle b (num_inst+1) (("bloc tantQue", num_inst+1)::ctx) in
       (* Renvoie la nouvelle structure de la boucle *)
-      AstTds.TantQue (nc, bast)
+      ((AstTds.TantQue (nc, bast), ctx), nl+1)
   | AstSyntax.Retour (e) ->
       begin
       (* On récupère l'information associée à la fonction à laquelle le return est associée *)
@@ -220,9 +231,92 @@ let rec analyse_tds_instruction tds oia i =
       | Some ia ->
         (* Analyse de l'expression *)
         let ne = analyse_tds_expression tds e in
-        AstTds.Retour (ne,ia)
+        ((AstTds.Retour (ne,ia), ctx), num_inst+1)
       end
+  (*Boucles à la Rust*)
+  | AstSyntax.Boucle(nOpt, li) -> 
+    begin
+      match nOpt with
+      | None -> (* boucle sans identifiant *)
+        let id = giveID () in
+        let info = InfoBoucle([id, id^"fin"]) in
+        let ia = info_to_info_ast info in
+        ajouter tds id ia;
+        let (nli, nl) = analyse_tds_bloc tds oia (Some ia) li (num_inst + 1) (("boucle rust", num_inst + 1)::ctx)in
+          ((AstTds.Boucle(ia, nli), ctx), nl+1)
 
+      | Some n -> (* boucle avec identifiant *)
+        begin
+          match chercherGlobalement tds n with
+          | None -> 
+            let info = InfoBoucle([n,n^"fin"]) in
+            let ia = info_to_info_ast info in
+            ajouter tds n ia;
+            let (nli, nl) = analyse_tds_bloc tds oia (Some ia) li (num_inst + 1) (("boucle rust", num_inst + 1)::ctx)in
+              ((AstTds.Boucle(ia, nli), ctx), nl+1)
+          | Some r -> ( match info_ast_to_info r with 
+            | InfoBoucle _ -> (* Boucle ayant déjà le même nom -> nécessité d'avoir des labels uniques *)
+            let id = giveID () in
+              ajouter_liste_boucle r id (id^"fin");
+              let (nli, nl) = analyse_tds_bloc tds oia (Some r) li (num_inst + 1) (("boucle rust", num_inst + 1)::ctx)in
+                ((AstTds.Boucle(r, nli), ctx), nl+1)
+            | _ -> raise (DoubleDeclaration n))
+        end
+    end
+  | AstSyntax.Break nOpt -> 
+    begin
+      match nOpt with 
+      | None -> (* break sans identifiant *)
+        begin
+          match optBoucle with 
+          | None -> raise BreakHorsBoucle
+          | Some ia -> 
+            begin
+              match info_ast_to_info ia with
+                | InfoBoucle l -> ((AstTds.Break (snd (List.hd l)), ctx), num_inst+1)
+                | _ -> raise ErreurInterne
+            end
+        end
+
+      | Some(n) -> (* break avec identifiant *)
+        begin
+          match chercherGlobalement tds n with 
+          | None -> raise (IdentifiantNonDeclare n)
+          | Some (r) ->
+            begin
+              match info_ast_to_info r with 
+              | InfoBoucle l -> ((AstTds.Break (snd (List.hd l)), ctx), num_inst+1)
+              | _ -> raise (MauvaiseUtilisationIdentifiant n)
+            end
+        end
+    end
+  | AstSyntax.Continue nOpt -> 
+    begin
+      match nOpt with 
+      | None -> (* continue sans identifiant *)
+        begin
+          match optBoucle with 
+          | None -> raise ContinueHorsBoucle
+          | Some ia -> 
+            begin
+              match info_ast_to_info ia with
+                | InfoBoucle l -> ((AstTds.Continue (fst (List.hd l)), ctx), num_inst+1)
+                | _ -> raise ErreurInterne
+            end
+        end
+
+      | Some(n) -> (* continue avec identifiant *)
+        begin
+          match chercherGlobalement tds n with 
+          | None -> raise (IdentifiantNonDeclare n)
+          | Some (r) ->
+            begin
+              match info_ast_to_info r with 
+              | InfoBoucle l -> ((AstTds.Continue (fst (List.hd l)), ctx), num_inst+1)
+              | _ -> raise (MauvaiseUtilisationIdentifiant n)
+            end
+        end
+    end
 
 (* analyse_tds_bloc : tds -> info_ast option -> AstSyntax.bloc -> AstTds.bloc *)
 (* Paramètre tds : la table des symboles courante *)
@@ -233,15 +327,19 @@ let rec analyse_tds_instruction tds oia i =
 (* Vérifie la bonne utilisation des identifiants et tranforme le bloc
    en un bloc de type AstTds.bloc *)
 (* Erreur si mauvaise utilisation des identifiants *)
-and analyse_tds_bloc tds oia li =
+and analyse_tds_bloc tds oia optBoucle li nb_lignes ctx =
   (* Entrée dans un nouveau bloc, donc création d'une nouvelle tds locale
   pointant sur la table du bloc parent *)
   let tdsbloc = creerTDSFille tds in
+  let getContext (l_done, line_number) to_get_ctx =
+    let (ni, nl) = analyse_tds_instruction tdsbloc oia optBoucle to_get_ctx line_number ctx in
+    (l_done@[ni], nl) in
   (* Analyse des instructions du bloc avec la tds du nouveau bloc.
      Cette tds est modifiée par effet de bord *)
-   let nli = List.map (analyse_tds_instruction tdsbloc oia) li in
-   (* afficher_locale tdsbloc ; *) (* décommenter pour afficher la table locale *)
-   nli
+  let (nli, nb_lignes) = List.fold_left getContext ([], nb_lignes) (List.map fst li) in
+  (* afficher_locale tdsbloc ; *) (* décommenter pour afficher la table locale *)
+  let complete_context = ((fun nb_l (inst, ctx)  -> (inst, (nb_l,ctx))) nb_lignes) in
+  ((List.map complete_context nli), nb_lignes)
 
 (* analyse_tds_fonction : tds -> AstSyntax.fonction -> AstTds.fonction *)
 (* Paramètre tds : la table des symboles courante *)
@@ -249,7 +347,7 @@ and analyse_tds_bloc tds oia li =
 (* Vérifie la bonne utilisation des identifiants et tranforme la fonction
 en une fonction de type AstTds.fonction *)
 (* Erreur si mauvaise utilisation des identifiants *)
-let analyse_tds_fonction maintds (AstSyntax.Fonction(t,(id,m),l_param,l_inst)) =
+let analyse_tds_fonction maintds (AstSyntax.Fonction(t,(id,m),l_param,l_inst)) nb_lignes =
   (* On vérifie que la fonction n'est pas déjà déclarée *)
   absentLocalementUnsafeIdent maintds id;
   (* création de la td fille : tds liée au bloc de la fonction *) 
@@ -258,10 +356,8 @@ let analyse_tds_fonction maintds (AstSyntax.Fonction(t,(id,m),l_param,l_inst)) =
   let l_param_tds' =
     List.map (fun (t,s) -> ((t,s), info_to_info_ast (InfoVar(s,t,0,"")))) l_param in
   
-  let (getSeconds:(('a*'b) * 'c) list -> ('b * 'c) list)
-    = List.map (fun (c,iast') -> (snd c, iast')) in
-  let (getFirsts:(('d*'e) * 'f) list -> ('d * 'f) list)
-    = List.map (fun (c,iast') -> (fst c, iast')) in
+  let getSeconds = List.map (fun (c,iast') -> (snd c, iast')) in
+  let getFirsts = List.map (fun (c,iast') -> (fst c, iast')) in
   (* ajouter les paramètres dans la tds fille pour l'analyse du bloc
    * on fait attention aux possibles doublons
    * Remarque : ici, choix qu'on peut avoir une variable déclarée dans le bloc englobant et
@@ -274,14 +370,18 @@ let analyse_tds_fonction maintds (AstSyntax.Fonction(t,(id,m),l_param,l_inst)) =
   (* On conserve aussi l'identifiant bien que ça ne soit pas nécessaire *)
   ajouter maintds id (info_to_info_ast (InfoFun ((id,m), t, l_param)));
 
-  let (getFirsts:(('z*'x) * 'y) list -> ('z * 'y) list)
-    = List.map (fun (c,iast') -> (fst c, iast')) in
-  (* liste des ASTTds instructions *)
-  let l_inst_tds = analyse_tds_bloc tds_fille (chercherGlobalement tds_fille id) l_inst in
-  let id_tds = chercherGlobalementUnsafeIdent tds_fille id in
-  let (l:(Type.typ * AstTds.tds_info_ast) list) = getFirsts l_param_tds' in
-  AstTds.Fonction(t, id_tds, l, l_inst_tds)
+  (* Redéfinition à koz 2 la boté de kaml *)
+  let getFirsts = List.map (fun (c,iast') -> (fst c, iast')) in
 
+  (* liste des ASTTds instructions *)
+  let (l_inst_tds, nb) = analyse_tds_bloc tds_fille (chercherGlobalement tds_fille id) None l_inst nb_lignes [(id, 0)] in
+  let id_tds = chercherGlobalementUnsafeIdent tds_fille id in
+  let l = getFirsts l_param_tds' in
+  (AstTds.Fonction(t, id_tds, l, l_inst_tds),nb)
+
+let rec addSecond x l = match l with
+  |[] -> []
+  |t::q -> (t,x)::(addSecond x q)
 
 (* analyser : AstSyntax.programme -> AstTds.programme *)
 (* Paramètre : le programme à analyser *)
@@ -290,6 +390,8 @@ en un programme de type AstTds.programme *)
 (* Erreur si mauvaise utilisation des identifiants *)
 let analyser (AstSyntax.Programme (fonctions,prog)) =
   let tds = creerTDSMere () in
-  let nf = List.map (analyse_tds_fonction tds) fonctions in
-  let nb = analyse_tds_bloc tds None prog in
+  let getContext (l_done, line_number) to_get_ctx =
+    let (nf, nl) = analyse_tds_fonction tds to_get_ctx line_number in (l_done@[nf], nl) in
+  let (nf, nl) = List.fold_left getContext ([], 0) fonctions in
+  let (nb, _) = analyse_tds_bloc tds None None prog (nl + 1) [("main", nl + 1)] in
   AstTds.Programme (nf,nb)

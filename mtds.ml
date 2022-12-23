@@ -7,6 +7,7 @@ type 'a info =
   | InfoConst of string * int (* pas de marqueur pour les constantes *)
   | InfoVar of 'a * typ * int * string
   | InfoFun of 'a * typ * (typ*'a) list
+  | InfoBoucle of (string * string) list (* Les étiquettes de début et fin de boucle *)
   (*| InfoParam of string * typ*)
 
 (* Données stockées dans la tds  et dans les AST : pointeur sur une information *)
@@ -93,10 +94,33 @@ match !i with
 | _ -> failwith "Appel modifier_adresse_variable pas sur un InfoVar"
 
 let type_of_info_ast iast =
-match info_ast_to_info iast with
-  |InfoConst(_,_) -> Int
-  |InfoVar(_,t,_,_) -> t
-  |InfoFun(_,t,_) -> t
+  match info_ast_to_info iast with
+    |InfoConst(_,_) -> Int
+    |InfoVar(_,t,_,_) -> t
+    |InfoFun(_,t,_) -> t
+    |InfoBoucle(_) -> raise Exceptions_identifiants.ErreurInterne
+
+(* Ajouter à une infoboucle un nouvel élément *)
+let ajouter_liste_boucle i e1 e2 =
+  match !i with 
+  | InfoBoucle liste -> i:=InfoBoucle((e1,e2)::liste)
+  | _ -> failwith "Appel modifier_liste_boucle sur autre chose qu'une boucle"
+
+(* Inverser la liste d'une infoboucle
+   Utilité: lors de la génération de code, nécessité de parcourir celle_ci en sens inverse *)
+let inverser_liste_boucle i =
+  match !i with 
+  | InfoBoucle liste -> i:=InfoBoucle(List.rev liste)
+  | _ -> failwith "Appel modifier_liste_boucle sur autre chose qu'une boucle"
+
+(* Supprimer le premier élément d'une liste d'infoboucle 
+   Utilité: Dans le cas où plusieures boucles auraient le même nom, la boucle suivante sera associée aux labels
+   présents en tête de boucle. D'où la nécessité de supprimer ceux actuels après utilisation lors de la génération
+   de code.*)
+let supprimer_premier_liste_boucle i =
+  match !i with 
+  | InfoBoucle liste -> i:=InfoBoucle(List.tl liste)
+  | _ -> failwith "Appel modifier_liste_boucle sur autre chose qu'une boucle"
 
 (* Test pour éviter les warnings *)
 let%test _ = 
@@ -110,4 +134,7 @@ let _ = modifier_adresse_variable in
 let _ = modifier_type_fonction in
 let _ = modifier_type_variable in
 let _ = type_of_info_ast in
-let _ = chercherLocalement in true
+let _ = chercherLocalement in
+let _ = ajouter_liste_boucle in
+let _ = inverser_liste_boucle in
+let _ = supprimer_premier_liste_boucle in true

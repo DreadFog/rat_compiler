@@ -1,6 +1,5 @@
 type typ = Bool | Int | Rat | Undefined
 
-
 type mark = Neant | Pointeur of mark
 
 let (*rec*) string_of_type t = 
@@ -61,7 +60,7 @@ let%test _ = not (est_compatible_list [Bool ; Rat ; Bool] [Bool ; Rat ; Bool ; I
 
 let getTaille (t,m) =
   match t with
-  | _ when (m <> Neant)-> 1 (* only the address, so size of one *)
+  | _ when (m <> Neant) -> 1 (* only the address, so size of one *)
   | Int -> 1
   | Bool -> 1
   | Rat -> 2

@@ -17,7 +17,8 @@ type t2 = Ast.AstPlacement.programme
 (* Vérifie la bonne utilisation des identifiants et tranforme l'instruction
 en une instruction de type AstType.instruction *)
 (* Erreur si mauvaise utilisation des identifiants *)
-let rec analyse_placement_instruction reg depl i =
+let rec analyse_placement_instruction reg depl (i,(_:contexte)) =
+  (* ici pas besoin de renvoyer le contexte, on l'a déjà avec analyse_bloc *)
   match i with
   | AstType.Declaration (iast, e) ->
     let mt = (match info_ast_to_info iast with
@@ -56,6 +57,12 @@ let rec analyse_placement_instruction reg depl i =
                              , depl)
       | _ -> raise ErreurInterne);
   | AstType.Empty -> (AstPlacement.Empty, depl)
+  (* Prise en compte des boucles *)
+  | AstType.Boucle (ia, b) ->
+    let nb = fst (analyse_placement_bloc reg depl b) in
+    (AstPlacement.Boucle (ia, nb), depl)
+  | AstType.Break s -> (AstPlacement.Break s, depl)
+  | AstType.Continue s -> (AstPlacement.Continue s, depl)
 
 (* analyse_tds_bloc : tds -> info_ast option -> AstType.bloc -> AstType.bloc *)
 (* Paramètre tds : la table des symboles courante *)
@@ -73,22 +80,9 @@ let rec analyse_placement_instruction reg depl i =
 and analyse_placement_bloc reg depl b = 
   let f (pred, taille) inst =
     let (ni,nfdepl) = analyse_placement_instruction reg (taille+depl) inst in
-    (pred @ [ni], nfdepl-depl) in (* a améliorer ? hopefully ocaml fix it*)
+    (pred @ [(ni,snd inst)], nfdepl-depl) in (* a améliorer ? hopefully ocaml fix it*)
   (List.fold_left f ([], 0) b, depl)
 
-(* snd_zip : ('a*'b) list -> ('c*'d) list -> ('b*'d) lits *)
-(* Paramètres : les listes a fusionnées *)
-(* Fusionne des listes [(ai,bi)] en [(b1,b2)] *)
-(* fzip avec snd mais la gestion de polymorphisme avec fzip n'est bien gérée par caml *)
-let snd_zip l1 l2 = List.combine (List.map snd l1) (List.map snd l2)
-
-(* second : ('a -> 'b) -> 'c*'a -> 'c*'b *)
-(* Application de f sur le second élément d'un couple *)
-let second f (x,y) = (x, f y) 
-
-(* first : ('a -> 'b) -> 'c*'a -> 'c*'b *)
-(* Application de f sur le premier élément d'un couple *)
-let first f (x,y) = (f x, y)
 
 let getTypexMarkOfIast iast = match info_ast_to_info iast with
   InfoVar((_,m),_,_,_) -> (type_of_info_ast iast, m)
@@ -119,6 +113,6 @@ let analyse_placement_fonction reg (AstType.Fonction(iast,l_param,l_inst)) =
 en un programme de type AstPlacement.programme *)
 (* Erreur si mauvais typage *)
 let analyser (AstType.Programme (fonctions,blocs)) =
-  let nf = List.map (fun x -> fst (analyse_placement_fonction "LB" x)) fonctions  in
+  let nf = List.map (fun x -> fst (analyse_placement_fonction "LB" x)) fonctions in
   let nb = fst (analyse_placement_bloc "SB" 0 blocs) in
   AstPlacement.Programme (nf,nb)
