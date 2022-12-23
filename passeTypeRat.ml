@@ -74,12 +74,12 @@ let rec analyse_type_expression e = match e with
       else raise (TypeInattendu (fst te3, fst te2)) (*rq: erreur a adapté avec ptr*)
     else raise (TypeInattendu (fst te1, Bool)) (*rq: erreur a adapté avec ptr*)
   | AstTds.AppelFonction (f, l) -> 
-    match info_ast_to_info f with
+    match f with
       |InfoFun((_,Neant),t,lt) -> (* Vérification du bon nombre d'arguments *)
           let nl = List.map analyse_type_expression l in
           let type_params = List.map snd nl in
           (* check if all params have a correct type*)
-          let lt' = List.map (fun (x,(_,y)) -> (x,y)) lt in
+          let lt' = List.map (fun (x,(_,y)) -> (!x,y)) lt in
           (* Test des types ET marqueurs *)
           if (Type.est_compatible_list lt' type_params) then
             (AstType.AppelFonction (f, List.map fst nl), (t,Neant))
@@ -110,7 +110,7 @@ let rec analyse_type_instruction (i,ctx) =
    * -> on renvoi un couple *)
   (match i with
   | AstTds.Declaration (t, n, e) ->
-     let nn = (match info_ast_to_info n with
+     let nn = (match n with
                 InfoVar((_,mv),_,_,_) -> t,mv
                 |InfoFun((_,mv),_,_) -> t,mv
                 |_ -> raise ErreurInterne) in
@@ -121,9 +121,9 @@ let rec analyse_type_instruction (i,ctx) =
     else raise (TypeInattendu(fst tme, t))
             (* Erreur a adapté pour ajouter les ptrs *)
   | AstTds.Affectation (m,n,e) ->
-    let nn = (match info_ast_to_info n with
-                InfoVar((_,_),t,_,_) -> t,m
-                |InfoFun((_,_),t,_) -> t,m
+    let nn = (match n with
+                InfoVar((_,_),t,_,_) -> (!t), m
+                |InfoFun((_,_),t,_) -> t, m
                 |_ -> raise ErreurInterne) in
      let (ne, tme) = analyse_type_expression e in
      let t = type_of_info_ast n in

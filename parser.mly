@@ -66,42 +66,41 @@ open List
 
 main : lfi=prog EOF     {lfi}
 
-prog : lf=fonc* ID li=bloc  {Programme (lf,li)}
+prog : lf=fonc* ID li=bloc  {Programme (lf, map (fun x -> (x,(0,[]))) li)}
 
 r :
 (*|ident=ID              {Symbole ident} (* a = 7 -> *a *)*)
 (*| MULT r1 = r             {Pointeur(r1)} (* a = 7; b = *a; c = b *)*)
 |ladr=MULT* ident=ID     {(ident, fold_left (fun x _ -> Pointeur(x)) Neant ladr)}        
 
-fonc : t=typ n=r PO lp=param* PF li=bloc {Fonction(t,n,lp,li)}
+fonc : t=typ n=r PO lp=param* PF li=bloc {Fonction(t,n,lp,map (fun x -> (x,(0,[]))) li)}
 
 param : t=typ n=r  {(t,n)}
 
-bloc : AO li=i* AF      {li}
+bloc : AO li=i* AF      {li} (* Rq : j'ai voulu enlever les map d'ajout de contexte pour le faire ici mais ça ne marche pas *)
 
 i :
 | t=typ n=r EQUAL e1=e PV           {Declaration (t,n,e1)}
 | n=r EQUAL e1=e PV                 {Affectation (n,e1)}
 | CONST n=r EQUAL e=ENTIER PV       {Constante (n,e)}
 | PRINT e1=e PV                     {Affichage (e1)}
-| IF exp=e li1=bloc ELSE li2=bloc   {Conditionnelle (exp,li1,li2)}
+| IF exp=e li1=bloc ELSE li2=bloc   {Conditionnelle (exp,map (fun x -> (x,(0,[]))) li1,map (fun x -> (x,(0,[])))li2)}
 (* IF sans else *)
-| IF exp=e li1=bloc                 {Conditionnelle (exp,li1,[])}
-| WHILE exp=e li=bloc               {TantQue (exp,li)}
+| IF exp=e li1=bloc                 {Conditionnelle (exp,map (fun x -> (x,(0,[]))) li1,[])}
+| WHILE exp=e li=bloc               {TantQue (exp,map (fun x -> (x,(0,[]))) li)}
 | RETURN exp=e PV                   {Retour (exp)}
 (* Affectation incrémentée *)
-| n=ID PLUS EQUAL e1=e PV           {Affectation (n,Binaire (Plus,Ident n,e1))}
+| n=r PLUS EQUAL e1=e PV           {Affectation (n,Binaire (Plus,Identifiant n,e1))}
 (* Prise en compte de <variable>++ et ++<variable>*)
-| PLUS PLUS n=ID PV                 {Affectation (n,Binaire (Plus,Ident n,Entier 1))}
-| n=ID PLUS PLUS PV                 {Affectation (n,Binaire (Plus,Ident n,Entier 1))}
+| PLUS PLUS n=r PV                 {Affectation (n,Binaire (Plus,Identifiant n,Entier 1))}
+| n=r PLUS PLUS PV                 {Affectation (n,Binaire (Plus,Identifiant n,Entier 1))}
 (* Instructions pour les boucles *)
-| n=ID COLON LOOP li=bloc           {Boucle(Some(n),li)}
-| LOOP li=bloc                      {Boucle(None,li)}
+| n=ID COLON LOOP li=bloc           {Boucle(Some(n),map (fun x -> (x,(0,[]))) li)}
+| LOOP li=bloc                      {Boucle(None,map (fun x -> (x,(0,[]))) li)}
 | BREAK n=ID PV                     {Break(Some(n))}
 | BREAK PV                          {Break(None)}
 | CONTINUE n=ID PV                  {Continue(Some(n))}
 | CONTINUE PV                       {Continue(None)}
-
 
 
 typ :

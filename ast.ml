@@ -99,7 +99,7 @@ end
 (* ********************************************* *)
 module AstTds =
 struct
-  type tds_info_ast = (AstSyntax.identifiant) Mtds.info_ast
+  type tds_info_ast = (AstSyntax.identifiant) Mtds.info
 
   type identifiant = tds_info_ast
 
@@ -155,7 +155,7 @@ struct
 
   (* Structure des fonctions dans notre langage *)
   (* type de retour - informations associées à l'identificateur (dont son nom) - liste des paramètres (association type et information sur les paramètres) - corps de la fonction *)
-  type fonction = Fonction of typ * tds_info_ast * (typ * tds_info_ast ) list * bloc
+  type fonction = Fonction of typ * tds_info_ast * (typ ref * tds_info_ast ) list * bloc
 
   (* Structure d'un programme dans notre langage *)
   type programme = Programme of fonction list * bloc

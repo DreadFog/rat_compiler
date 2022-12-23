@@ -8,6 +8,9 @@ open Ast
 type t1 = Ast.AstType.programme
 type t2 = Ast.AstPlacement.programme
 
+(* first : ('a -> 'b) -> 'c*'a -> 'c*'b *)
+(* Application de f sur le premier élément d'un couple *)
+let first f (x,y) = (f x, y)
 
 (* analyse_tds_instruction : tds -> info_ast option -> AstType.instruction -> AstType.instruction *)
 (* Paramètre tds : la table des symboles courante *)
@@ -21,8 +24,8 @@ let rec analyse_placement_instruction reg depl (i,(_:contexte)) =
   (* ici pas besoin de renvoyer le contexte, on l'a déjà avec analyse_bloc *)
   match i with
   | AstType.Declaration (iast, e) ->
-    let mt = (match info_ast_to_info iast with
-                  InfoVar((_,m),t,_,_) -> t,m
+    let mt = (match iast with
+                  InfoVar((_,m),t,_,_) -> (!t),m
                   |InfoFun((_,m),t,_) -> t,m
                   |_ -> raise ErreurInterne) in
     let taille = Type.getTaille mt in
@@ -46,14 +49,14 @@ let rec analyse_placement_instruction reg depl (i,(_:contexte)) =
     let nb = fst (analyse_placement_bloc reg depl b) in
     (AstPlacement.TantQue (e, nb), depl)
   | AstType.Retour (e,iast) ->
-    (match info_ast_to_info iast with
+    (match iast with
       InfoFun((_,m), ty, param_t) ->
         let getSeconds = List.map (fun (c,b) -> (c, snd b)) in
         let add_tailles = (fun param taille -> Type.getTaille param + taille) in
         (*let param_t' = List.map fst param_t in*)
         (AstPlacement.Retour ( e
                              , Type.getTaille (ty,m)
-                             , List.fold_right add_tailles (getSeconds param_t) 0)
+                             , List.fold_right add_tailles (getSeconds (List.map (first (!)) param_t)) 0)
                              , depl)
       | _ -> raise ErreurInterne);
   | AstType.Empty -> (AstPlacement.Empty, depl)
@@ -84,10 +87,11 @@ and analyse_placement_bloc reg depl b =
   (List.fold_left f ([], 0) b, depl)
 
 
-let getTypexMarkOfIast iast = match info_ast_to_info iast with
+let getTypexMarkOfIast iast = match iast with
   InfoVar((_,m),_,_,_) -> (type_of_info_ast iast, m)
   |InfoFun((_,m),_,_) -> (type_of_info_ast iast, m)
-  |InfoConst(_) -> (type_of_info_ast iast, Type.Neant) 
+  |InfoConst(_) -> (type_of_info_ast iast, Type.Neant)
+  |_ -> raise ErreurInterne
 
 (* analyse_tds_fonction : tds -> AstType.fonction -> AstType.fonction *)
 (* Paramètre tds : la table des symboles courante *)

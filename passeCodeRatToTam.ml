@@ -11,8 +11,8 @@ type t2 = string
 
 (* Récupère les infos d'une info_ast *)
 let tam_var_of_mark_info_ast m iast =
-  match info_ast_to_info iast with
-    InfoVar((_,_),ty,dep,reg) -> (Type.getTaille (ty,m), dep, reg)
+  match iast with
+    InfoVar((_,_),ty,dep,reg) -> (Type.getTaille (!ty,m), dep, reg)
     |_ -> raise Exceptions_identifiants.ErreurInterne
 
 
@@ -27,7 +27,7 @@ let rec ast_to_tam_expression e = match e with
         let (taille, depl, reg) = tam_var_of_mark_info_ast m s in 
         (* int *** a = ...; ...; b = **a *)
         (match m with
-          Type.Neant -> load taille depl reg
+          Type.Neant -> load taille !depl !reg
           |Type.Pointeur _ ->
             let rec gestion_ptr p = match p with
               Type.Neant ->
@@ -45,7 +45,7 @@ let rec ast_to_tam_expression e = match e with
                                                    * on peut load ce qu'on veut c'est pas important *)
   | AstType.Adr (m,a) -> (* inch' j'ai bien géré les adresses ie elles ont bien le même iast que a *)
       let (_, depl, reg) = tam_var_of_mark_info_ast m a in
-      (string_of_int depl) ^ "[" ^ reg ^ "]" 
+      (string_of_int !depl) ^ "[" ^ !reg ^ "]" 
   | AstType.Entier i -> loadl_int i 
   | AstType.Booleen b -> loadl_int (Bool.to_int b)
   | AstType.Binaire (op, e1, e2) -> 
@@ -72,8 +72,8 @@ let rec ast_to_tam_expression e = match e with
       | Numerateur -> pop 0 1
       | Denominateur -> store 1 (-2) "ST" 
     )
-  | AstType.AppelFonction (f, l) -> let info_f = info_ast_to_info f in
-    (match info_f with
+  | AstType.AppelFonction (f, l) ->
+    (match f with
     | InfoFun ((name,_), _, _) ->
       List.fold_left (fun acc e -> acc ^ ast_to_tam_expression e) "" l
       ^ call "ST" name
@@ -103,15 +103,15 @@ let rec ast_to_tam_instruction i =
   match i with
   | AstPlacement.Declaration (iast, e) ->
     let (ty, m, taille, dep, reg) = 
-      match info_ast_to_info iast with
-        InfoVar((_,m),ty,dep,reg) -> (ty, m, Type.getTaille (ty,m),dep,reg)
+      match iast with
+        InfoVar((_,m),ty,dep,reg) -> (ty, m, Type.getTaille (!ty,m),dep,reg)
         |_ -> raise Exceptions_identifiants.ErreurInterne
     in
       (match m with
         Type.Neant -> 
             push taille
           ^ ast_to_tam_expression e
-          ^ store taille dep reg
+          ^ store taille !dep !reg
         (* Pour les pointeurs on as dans la pile l'adr du 1er *
            le reste est dans le tas *)
         | Type.Pointeur p ->
@@ -127,26 +127,26 @@ let rec ast_to_tam_instruction i =
               (* On alloue et load en haut de pile
                * l'adresse vers laquelle pointe p dans la pile
                * puis on la copie dans le tas avant de la pop *) 
-               loadl_int (Type.getTaille (ty,p'))
+               loadl_int (Type.getTaille (!ty,p'))
               ^ subr "MAlloc" (* @Source copie, futur @Dest *)
               ^ call "ST" "assignPtr"
               ^ gestion_ptr p'
               ^ pop 0 1 (* pop du MAlloc qui est maintenant dans le tas *)
           in 
         (* int * -> MAlloc taille(int) mais int ** -> MAlloc taille( int* ) *)
-          (loadl_int (Type.getTaille (ty,p)))
+          (loadl_int (Type.getTaille (!ty,p)))
         ^ (subr "MAlloc") (* 1ère @Source pour la copie *)
         ^ gestion_ptr p
       )
   | AstPlacement.Affectation (m, iast, e) ->
     let (taille, dep, reg) = (
-      match info_ast_to_info iast with
-        InfoVar((_,_),ty,dep,reg) -> (Type.getTaille (ty,m),dep,reg)
+      match iast with
+        InfoVar((_,_),ty,dep,reg) -> (Type.getTaille (!ty,m),dep,reg)
         |_ -> raise Exceptions_identifiants.ErreurInterne) in
     (match m with
       Neant -> 
           ast_to_tam_expression e
-        ^ store taille dep reg
+        ^ store taille !dep !reg
       |Pointeur _ ->
         let rec gestion_ptr p = match p with
           Type.Neant ->
@@ -201,11 +201,11 @@ let rec ast_to_tam_instruction i =
   (* Prise en compte des boucles *)
   | AstPlacement.Boucle (ia, b) ->
     begin
-      match info_ast_to_info ia with
+      match ia with
       | InfoBoucle l -> 
         inverser_liste_boucle ia; (* l a maintenant en premier élément les bons labels 
                                       TODO: vérifier qu'il faut pas reprendre l *)
-        let (labLoop, labEndLoop) = List.hd l in 
+        let (labLoop, labEndLoop) = List.hd !l in 
         supprimer_premier_liste_boucle ia; (* Si deux boucles ont le même nom, on supprime celle utilisée *)
         inverser_liste_boucle ia; (* On remet la liste dans l'ordre: mauvaise complexité, mais liste courte *)
         label labLoop
@@ -239,7 +239,7 @@ en une fonction de type AstPlacement.fonction *)
 (* Erreur si mauvaise utilisation des identifiants *)
 let ast_to_tam_fonction (AstPlacement.Fonction(iast,_,l_inst)) =
   (* Rq : On n'autorise pas les fonctions auxillaires *)
-  match info_ast_to_info iast with 
+  match iast with 
   | InfoFun ((nom,_), _, _) -> label nom ^ ast_to_tam_bloc l_inst
   | _ -> raise ErreurInterne
   
