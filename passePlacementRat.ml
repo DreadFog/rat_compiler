@@ -18,40 +18,40 @@ en une instruction de type AstType.instruction *)
 (* Erreur si mauvaise utilisation des identifiants *)
 let rec analyse_placement_instruction reg depl i =
   match i with
-  | AstType.Declaration (iast, e) ->
+  | AstType.Declaration (iast, e, ctx) ->
      let taille = Type.getTaille (type_of_info_ast iast) in
      modifier_adresse_variable depl reg iast;
-     (AstPlacement.Declaration(iast, e), depl+taille)
-  | AstType.Affectation (iast, e) ->
-     (AstPlacement.Affectation(iast, e), depl)
-  | AstType.AffichageInt e ->
-     (AstPlacement.AffichageInt e, depl)
-  | AstType.AffichageRat e ->
-    (AstPlacement.AffichageRat e, depl)
-  | AstType.AffichageBool e ->
-    (AstPlacement.AffichageBool e, depl)
-  | AstType.Conditionnelle (e,b1,b2) ->
+     (AstPlacement.Declaration(iast, e, ctx), depl+taille)
+  | AstType.Affectation (iast, e, ctx) ->
+     (AstPlacement.Affectation(iast, e, ctx), depl)
+  | AstType.AffichageInt (e, ctx) ->
+     (AstPlacement.AffichageInt (e, ctx), depl)
+  | AstType.AffichageRat (e, ctx) ->
+    (AstPlacement.AffichageRat (e, ctx), depl)
+  | AstType.AffichageBool (e, ctx) ->
+    (AstPlacement.AffichageBool (e, ctx), depl)
+  | AstType.Conditionnelle (e,b1,b2, ctx) ->
     (* Vérification que la conditionnelle est bien booléenne *)
     let nb1 = fst (analyse_placement_bloc reg depl b1) in
     let nb2 = fst (analyse_placement_bloc reg depl b2) in 
-    (AstPlacement.Conditionnelle (e, nb1, nb2), depl)
-  | AstType.TantQue (e,b) ->
+    (AstPlacement.Conditionnelle (e, nb1, nb2, ctx), depl)
+  | AstType.TantQue (e,b, ctx) ->
     (* Vérification que la conditionnelle est bien booléenne *)
     let nb = fst (analyse_placement_bloc reg depl b) in
-    (AstPlacement.TantQue (e, nb), depl)
-  | AstType.Retour (e,iast) ->
+    (AstPlacement.TantQue (e, nb, ctx), depl)
+  | AstType.Retour (e,iast, ctx) ->
     (match info_ast_to_info iast with
       InfoFun(_, ty, param_t) ->
         let add_tailles = (fun param taille -> (Type.getTaille param + taille)) in
-        (AstPlacement.Retour (e, Type.getTaille ty, List.fold_right add_tailles param_t 0), depl)
+        (AstPlacement.Retour (e, Type.getTaille ty, List.fold_right add_tailles param_t 0, ctx), depl)
       | _ -> raise ErreurInterne);
   | AstType.Empty -> (AstPlacement.Empty, depl)
   (* Prise en compte des boucles *)
-  | AstType.Boucle (ia, b) ->
+  | AstType.Boucle (ia, b, ctx) ->
     let nb = fst (analyse_placement_bloc reg depl b) in
-    (AstPlacement.Boucle (ia, nb), depl)
-  | AstType.Break s -> (AstPlacement.Break s, depl)
-  | AstType.Continue s -> (AstPlacement.Continue s, depl)
+    (AstPlacement.Boucle (ia, nb, ctx), depl)
+  | AstType.Break (s, ctx) -> (AstPlacement.Break (s, ctx), depl)
+  | AstType.Continue (s, ctx) -> (AstPlacement.Continue (s, ctx), depl)
   
 
 (* analyse_tds_bloc : tds -> info_ast option -> AstType.bloc -> AstType.bloc *)

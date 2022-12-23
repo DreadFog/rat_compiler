@@ -70,14 +70,14 @@ struct
   (* Renvoie l'adresse d'une variable dans le cas d'une déclaration *)
   let rec analyser_instruction i = 
     match i with
-    | Ast.AstPlacement.Declaration (info,_) -> 
+    | Ast.AstPlacement.Declaration (info,_, _) -> 
       begin
         match Tds.info_ast_to_info info with
         | InfoVar (n,_,d,r) -> [(n,(d,r))]
         | _ -> []
         end
-    | Ast.AstPlacement.Conditionnelle(_,(bt,_),(be,_)) -> (List.flatten (List.map (analyser_instruction) bt))@(List.flatten (List.map (analyser_instruction) be))
-    | Ast.AstPlacement.TantQue (_,(b,_)) -> (List.flatten (List.map (analyser_instruction) b))
+    | Ast.AstPlacement.Conditionnelle(_,(bt,_),(be,_), _) -> (List.flatten (List.map (analyser_instruction) bt))@(List.flatten (List.map (analyser_instruction) be))
+    | Ast.AstPlacement.TantQue (_,(b,_), _) -> (List.flatten (List.map (analyser_instruction) b))
     | _ -> [] 
 
 

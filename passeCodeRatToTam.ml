@@ -74,25 +74,25 @@ en une instruction de type AstPlacement.instruction *)
 (* Erreur si mauvaise utilisation des identifiants *)
 let rec ast_to_tam_instruction i =
   match i with
-  | AstPlacement.Declaration (iast, e) ->
+  | AstPlacement.Declaration (iast, e, _) ->
     let (taille, dep, reg) = Tds.tam_var_of_info_ast iast in
     push taille
     ^ ast_to_tam_expression e
     ^ store taille dep reg
-  | AstPlacement.Affectation (iast, e) ->
+  | AstPlacement.Affectation (iast, e, _) ->
     let (taille, dep, reg) = Tds.tam_var_of_info_ast iast in
     ast_to_tam_expression e
     ^ store taille dep reg
-  | AstPlacement.AffichageInt e ->
+  | AstPlacement.AffichageInt (e, _) ->
     ast_to_tam_expression e
     ^ subr "IOut"
-  | AstPlacement.AffichageRat e ->
+  | AstPlacement.AffichageRat (e, _) ->
     ast_to_tam_expression e
     ^ call "SB" "ROut"
-  | AstPlacement.AffichageBool e ->
+  | AstPlacement.AffichageBool (e, _) ->
     ast_to_tam_expression e
     ^ subr "BOut"
-  | AstPlacement.Conditionnelle (e,b1,b2) ->
+  | AstPlacement.Conditionnelle (e,b1,b2, _) ->
     let labIf = getEtiquette ()
     and labElse = getEtiquette ()
     and labEndIF = getEtiquette () in
@@ -104,7 +104,7 @@ let rec ast_to_tam_instruction i =
     ^ label labElse
     ^ ast_to_tam_bloc b2
     ^ label labEndIF
-  | AstPlacement.TantQue (e,b) ->
+  | AstPlacement.TantQue (e,b, _) ->
     let labLoop = getEtiquette ()
     and labEndLoop = getEtiquette () in
     label labLoop
@@ -113,14 +113,14 @@ let rec ast_to_tam_instruction i =
     ^ ast_to_tam_bloc b
     ^ jump labLoop
     ^ label labEndLoop
-  | AstPlacement.Retour (e, taille_ret, taille_param) ->
+  | AstPlacement.Retour (e, taille_ret, taille_param, _) ->
   (* Rq : pas besoin de pop, le pointeur de pile sera remis au bon endroit 
      grâce aux instructions d'activation *)
     ast_to_tam_expression e
     ^ return taille_ret taille_param
   | AstPlacement.Empty -> ""
   (* Prise en compte des boucles *)
-  | AstPlacement.Boucle (ia, b) ->
+  | AstPlacement.Boucle (ia, b, _) ->
     begin
       match info_ast_to_info ia with
       | InfoBoucle l -> 
@@ -135,8 +135,8 @@ let rec ast_to_tam_instruction i =
         ^ label labEndLoop
       | _ -> raise Exceptions.ErreurInterne
     end
-  | AstPlacement.Break s -> jump (s) (* d'où la nécessité de l'avoir déjà avant*)
-  | AstPlacement.Continue s -> jump (s) (* idem *)
+  | AstPlacement.Break (s, _) -> jump (s) (* d'où la nécessité de l'avoir déjà avant*)
+  | AstPlacement.Continue (s, _) -> jump (s) (* idem *)
 
 (* analyse_tds_bloc : tds -> info_ast option -> AstPlacement.bloc -> AstPlacement.bloc *)
 (* Paramètre tds : la table des symboles courante *)

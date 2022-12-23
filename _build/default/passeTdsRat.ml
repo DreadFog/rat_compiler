@@ -86,7 +86,7 @@ let rec analyse_tds_instruction tds oia iaOptBoucle i num_l contexte =
             ajouter tds n ia;
             (* Renvoie de la nouvelle déclaration où le nom a été remplacé par l'information
             et l'expression remplacée par l'expression issue de l'analyse *)
-            (AstTds.Declaration (t, ia, ne),num_l + 1)
+            (AstTds.Declaration (t, ia, ne, (num_l, contexte)),num_l + 1)
         | Some _ ->
             (* L'identifiant est trouvé dans la tds locale,
             il a donc déjà été déclaré dans le bloc courant *)
@@ -109,7 +109,7 @@ let rec analyse_tds_instruction tds oia iaOptBoucle i num_l contexte =
               let ne = analyse_tds_expression tds e in
               (* Renvoie de la nouvelle affectation où le nom a été remplacé par l'information
                  et l'expression remplacée par l'expression issue de l'analyse *)
-              (AstTds.Affectation (info, ne),num_l + 1)
+              (AstTds.Affectation (info, ne, (num_l, contexte)),num_l + 1)
             |  _ ->
               (* Modification d'une constante ou d'une fonction *)
               raise (MauvaiseUtilisationIdentifiant n)
@@ -135,7 +135,7 @@ let rec analyse_tds_instruction tds oia iaOptBoucle i num_l contexte =
       (* et obtention de l'expression transformée *)
       let ne = analyse_tds_expression tds e in
       (* Renvoie du nouvel affichage où l'expression remplacée par l'expression issue de l'analyse *)
-      (AstTds.Affichage (ne),num_l + 1)
+      (AstTds.Affichage (ne, (num_l, contexte)),num_l + 1)
   | AstSyntax.Conditionnelle (c,t,e) ->
       (* Analyse de la condition *)
       let nc = analyse_tds_expression tds c in
@@ -144,14 +144,14 @@ let rec analyse_tds_instruction tds oia iaOptBoucle i num_l contexte =
       (* Analyse du bloc else *)
       let (east, nl2) = analyse_tds_bloc tds oia iaOptBoucle e (nl1+1) (("bloc else",nl1+1)::contexte) in
       (* Renvoie la nouvelle structure de la conditionnelle *)
-      (AstTds.Conditionnelle (nc, tast, east), nl2 + 1)
+      (AstTds.Conditionnelle (nc, tast, east, (num_l, contexte)), nl2 + 1)
   | AstSyntax.TantQue (c,b) ->
       (* Analyse de la condition *)
       let nc = analyse_tds_expression tds c in
       (* Analyse du bloc *)
       let (bast, nl) = analyse_tds_bloc tds oia iaOptBoucle b (num_l + 1) (("bloc tantQue", num_l + 1)::contexte) in
       (* Renvoie la nouvelle structure de la boucle *)
-      (AstTds.TantQue (nc, bast), nl + 1)
+      (AstTds.TantQue (nc, bast, (num_l, contexte)), nl + 1)
   | AstSyntax.Retour (e) ->
       begin
       (* On récupère l'information associée à la fonction à laquelle le return est associée *)
@@ -162,7 +162,7 @@ let rec analyse_tds_instruction tds oia iaOptBoucle i num_l contexte =
       | Some ia ->
         (* Analyse de l'expression *)
         let ne = analyse_tds_expression tds e in
-        (AstTds.Retour (ne,ia), num_l + 1)
+        (AstTds.Retour (ne,ia, (num_l, contexte)), num_l + 1)
       end
 
   (*Boucles à la Rust*)
@@ -175,7 +175,7 @@ let rec analyse_tds_instruction tds oia iaOptBoucle i num_l contexte =
         let ia = info_to_info_ast info in
         ajouter tds id ia;
         let (nli, n_l) = analyse_tds_bloc tds oia (Some ia) li (num_l + 1) (("boucle rust", num_l + 1)::contexte)in
-        (AstTds.Boucle(ia, nli), n_l + 1)
+        (AstTds.Boucle(ia, nli, (num_l, contexte)), n_l + 1)
 
       | Some n -> (* boucle avec identifiant *)
         begin
@@ -185,13 +185,13 @@ let rec analyse_tds_instruction tds oia iaOptBoucle i num_l contexte =
             let ia = info_to_info_ast info in
             ajouter tds n ia;
             let (nli, n_l) = analyse_tds_bloc tds oia (Some ia) li (num_l + 1) (("boucle rust", num_l + 1)::contexte)in
-            (AstTds.Boucle(ia, nli), n_l + 1)
+            (AstTds.Boucle(ia, nli, (num_l, contexte)), n_l + 1)
           | Some r -> ( match info_ast_to_info r with 
             | InfoBoucle _ -> (* Boucle ayant déjà le même nom -> nécessité d'avoir des labels uniques *)
             let id = giveID () in
               Tds.ajouter_liste_boucle r id (id^"fin");
               let (nli, n_l) = analyse_tds_bloc tds oia (Some r) li (num_l + 1) (("boucle rust", num_l + 1)::contexte)in
-              (AstTds.Boucle(r, nli), n_l + 1)
+              (AstTds.Boucle(r, nli, (num_l, contexte)), n_l + 1)
             | _ -> raise (DoubleDeclaration n))
         end
     end
@@ -205,7 +205,7 @@ let rec analyse_tds_instruction tds oia iaOptBoucle i num_l contexte =
           | Some ia -> 
             begin
               match info_ast_to_info ia with
-                | InfoBoucle l -> (AstTds.Break (snd (List.hd l)), num_l + 1)
+                | InfoBoucle l -> (AstTds.Break (snd (List.hd l), (num_l, contexte)), num_l + 1)
                 | _ -> raise ErreurInterne
             end
         end
@@ -217,7 +217,7 @@ let rec analyse_tds_instruction tds oia iaOptBoucle i num_l contexte =
           | Some (r) ->
             begin
               match info_ast_to_info r with 
-              | InfoBoucle l -> (AstTds.Break (snd (List.hd l)), num_l + 1)
+              | InfoBoucle l -> (AstTds.Break (snd (List.hd l), (num_l, contexte)), num_l + 1)
               | _ -> raise (MauvaiseUtilisationIdentifiant n)
             end
         end
@@ -232,7 +232,7 @@ let rec analyse_tds_instruction tds oia iaOptBoucle i num_l contexte =
           | Some ia -> 
             begin
               match info_ast_to_info ia with
-                | InfoBoucle l -> (AstTds.Continue (fst (List.hd l)), num_l + 1)
+                | InfoBoucle l -> (AstTds.Continue (fst (List.hd l), (num_l, contexte)), num_l + 1)
                 | _ -> raise ErreurInterne
             end
         end
@@ -244,7 +244,7 @@ let rec analyse_tds_instruction tds oia iaOptBoucle i num_l contexte =
           | Some (r) ->
             begin
               match info_ast_to_info r with 
-              | InfoBoucle l -> (AstTds.Continue (fst (List.hd l)), num_l + 1)
+              | InfoBoucle l -> (AstTds.Continue (fst (List.hd l), (num_l, contexte)), num_l + 1)
               | _ -> raise (MauvaiseUtilisationIdentifiant n)
             end
         end

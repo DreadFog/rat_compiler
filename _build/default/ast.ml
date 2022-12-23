@@ -9,6 +9,8 @@ sig
    type programme
 end
 
+(* Type pour le contexte *)
+type contexte = int * (string * int) list (* le numéro de ligne et les bloc dans lesquels l'instruction est *)
 
 (* *************************************** *)
 (* AST après la phase d'analyse syntaxique *)
@@ -96,17 +98,17 @@ struct
   + suppression de nœuds (const) *)
   type bloc = instruction list
   and instruction =
-    | Declaration of typ * Tds.info_ast * expression (* le nom de l'identifiant est remplacé par ses informations *)
-    | Affectation of  Tds.info_ast * expression (* le nom de l'identifiant est remplacé par ses informations *)
-    | Affichage of expression
-    | Conditionnelle of expression * bloc * bloc
-    | TantQue of expression * bloc
-    | Retour of expression * Tds.info_ast  (* les informations sur la fonction à laquelle est associé le retour *)
+    | Declaration of typ * Tds.info_ast * expression * contexte
+    | Affectation of  Tds.info_ast * expression * contexte
+    | Affichage of expression * contexte
+    | Conditionnelle of expression * bloc * bloc * contexte
+    | TantQue of expression * bloc * contexte
+    | Retour of expression * Tds.info_ast * contexte  (* les informations sur la fonction à laquelle est associé le retour *)
     | Empty (* les nœuds ayant disparus: Const *)
     (*Instructions de boucles *)
-    | Boucle of Tds.info_ast * bloc
-    | Break of string
-    | Continue of string
+    | Boucle of Tds.info_ast * bloc * contexte
+    | Break of string * contexte
+    | Continue of string * contexte
 
   (* Structure des fonctions dans notre langage *)
   (* type de retour - informations associées à l'identificateur (dont son nom) - liste des paramètres (association type et information sur les paramètres) - corps de la fonction *)
@@ -146,19 +148,19 @@ type expression =
 (* + résolution de la surcharge de l'affichage *)
 type bloc = instruction list
  and instruction =
-  | Declaration of Tds.info_ast * expression
-  | Affectation of Tds.info_ast * expression
-  | AffichageInt of expression
-  | AffichageRat of expression
-  | AffichageBool of expression
-  | Conditionnelle of expression * bloc * bloc
-  | TantQue of expression * bloc
-  | Retour of expression * Tds.info_ast
+  | Declaration of Tds.info_ast * expression * contexte
+  | Affectation of Tds.info_ast * expression * contexte
+  | AffichageInt of expression * contexte
+  | AffichageRat of expression * contexte
+  | AffichageBool of expression * contexte
+  | Conditionnelle of expression * bloc * bloc * contexte
+  | TantQue of expression * bloc * contexte
+  | Retour of expression * Tds.info_ast * contexte
   | Empty (* les nœuds ayant disparus: Const *)
   (*Instructions de boucles *)
-  | Boucle of Tds.info_ast * bloc
-  | Break of string
-  | Continue of string
+  | Boucle of Tds.info_ast * bloc * contexte
+  | Break of string * contexte
+  | Continue of string * contexte
 
 (* informations associées à l'identificateur (dont son nom), liste des paramètres, corps *)
 type fonction = Fonction of Tds.info_ast * Tds.info_ast list * bloc
@@ -181,19 +183,19 @@ type expression = AstType.expression
 (* instructions existantes dans notre langage *)
 type bloc = instruction list * int (* taille du bloc *)
  and instruction =
- | Declaration of Tds.info_ast * expression
- | Affectation of Tds.info_ast * expression
- | AffichageInt of expression
- | AffichageRat of expression
- | AffichageBool of expression
- | Conditionnelle of expression * bloc * bloc
- | TantQue of expression * bloc
- | Retour of expression * int * int (* taille du retour et taille des paramètres *)
+ | Declaration of Tds.info_ast * expression * contexte
+ | Affectation of Tds.info_ast * expression * contexte
+ | AffichageInt of expression * contexte
+ | AffichageRat of expression * contexte
+ | AffichageBool of expression * contexte
+ | Conditionnelle of expression * bloc * bloc * contexte
+ | TantQue of expression * bloc * contexte
+ | Retour of expression * int * int  * contexte(* taille du retour et taille des paramètres *)
  | Empty (* les nœuds ayant disparus: Const *)
   (*Instructions de boucles *)
- | Boucle of Tds.info_ast * bloc
- | Break of string
- | Continue of string
+ | Boucle of Tds.info_ast * bloc * contexte
+ | Break of string * contexte
+ | Continue of string * contexte
 
 (* informations associées à l'identificateur (dont son nom), liste de paramètres, corps, expression de retour *)
 (* Plus besoin de la liste des paramètres mais on la garde pour les tests du placements mémoire *)

@@ -79,47 +79,47 @@ en une instruction de type AstTds.instruction *)
 (* Erreur si mauvaise utilisation des identifiants *)
 let rec analyse_type_instruction i =
   match i with
-  | AstTds.Declaration (t, n, e) ->
+  | AstTds.Declaration (t, n, e, ctx) ->
      let (ne, te) = analyse_type_expression e in
      if (Type.est_compatible t te) then (
       modifier_type_variable t n; (* modification du type associé*)
-      (AstType.Declaration (n, ne))) 
+      (AstType.Declaration (n, ne, ctx))) 
     else raise (TypeInattendu(te, t))
-  | AstTds.Affectation (n,e) ->
+  | AstTds.Affectation (n,e, ctx) ->
      let (ne, te) = analyse_type_expression e in
      let t = type_of_info_ast n in
-     if (Type.est_compatible t te) then (AstType.Affectation(n, ne)) else raise (TypeInattendu(te,t)) 
-  | AstTds.Affichage e ->
+     if (Type.est_compatible t te) then (AstType.Affectation(n, ne, ctx)) else raise (TypeInattendu(te,t)) 
+  | AstTds.Affichage (e, ctx) ->
      let (ne, te) = analyse_type_expression e in
      (match te with
-      Int -> AstType.AffichageInt ne
-      |Bool -> AstType.AffichageBool ne
-      |Rat -> AstType.AffichageRat ne
+      Int -> AstType.AffichageInt (ne, ctx)
+      |Bool -> AstType.AffichageBool (ne, ctx)
+      |Rat -> AstType.AffichageRat (ne, ctx)
       |_ -> (raise ErreurInterne)
     )
-  | AstTds.Conditionnelle (e,b1,b2) ->
+  | AstTds.Conditionnelle (e,b1,b2, ctx) ->
     (* Vérification que la conditionnelle est bien booléenne *)
     let (ne, te) = (analyse_type_expression e) in
     if (Type.est_compatible te Bool) then 
-      AstType.Conditionnelle(ne, analyse_type_bloc b1, analyse_type_bloc b2)
+      AstType.Conditionnelle(ne, analyse_type_bloc b1, analyse_type_bloc b2, ctx)
   else raise (TypeInattendu(te, Bool))
-  | AstTds.TantQue (e,b) ->
+  | AstTds.TantQue (e,b, ctx) ->
     (* Vérification que la conditionnelle est bien booléenne *)
 
     let (ne, te) = (analyse_type_expression e) in
     if (Type.est_compatible te Bool) then 
-      AstType.TantQue(ne, analyse_type_bloc b)
+      AstType.TantQue(ne, analyse_type_bloc b, ctx)
     else raise (TypeInattendu(te, Bool))
-  | AstTds.Retour (e,iast) ->
+  | AstTds.Retour (e,iast, ctx) ->
     let (ne, te) = analyse_type_expression e 
     and t = type_of_info_ast iast in
-    if (Type.est_compatible t te) then (AstType.Retour(ne, iast))
+    if (Type.est_compatible t te) then (AstType.Retour(ne, iast, ctx))
     else raise (TypeInattendu(te,t)) 
   | AstTds.Empty -> AstType.Empty
   (* Gestion des boucles*)
-  | AstTds.Boucle (ia, b) -> AstType.Boucle (ia, analyse_type_bloc b)
-  | AstTds.Break s -> AstType.Break s
-  | AstTds.Continue s -> AstType.Continue s
+  | AstTds.Boucle (ia, b, ctx) -> AstType.Boucle (ia, analyse_type_bloc b, ctx)
+  | AstTds.Break (s, ctx) -> AstType.Break (s, ctx)
+  | AstTds.Continue (s, ctx) -> AstType.Continue (s, ctx)
 
 (* analyse_tds_bloc : tds -> info_ast option -> AstTds.bloc -> AstTds.bloc *)
 (* Paramètre tds : la table des symboles courante *)
