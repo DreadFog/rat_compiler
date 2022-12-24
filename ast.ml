@@ -61,7 +61,7 @@ type expression =
   | Ternaire of expression * expression * expression
   
 (* Instructions de Rat *)
-type bloc = (instruction * contexte) list
+type bloc = instruction list
 and instruction =
   (* Déclaration de variable représentée par son type, son nom et l'expression d'initialisation *)
   (* | Declaration of typ * string * expression *)

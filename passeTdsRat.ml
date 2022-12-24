@@ -332,7 +332,7 @@ and analyse_tds_bloc tds oia optBoucle li nb_lignes ctx =
     (l_done@[ni], nl) in
   (* Analyse des instructions du bloc avec la tds du nouveau bloc.
      Cette tds est modifiée par effet de bord *)
-  let (nli, nb_lignes) = List.fold_left getContext ([], nb_lignes) (List.map fst li) in
+  let (nli, nb_lignes) = List.fold_left getContext ([], nb_lignes) li in
   (* afficher_locale tdsbloc ; *) (* décommenter pour afficher la table locale *)
   let complete_context = ((fun nb_l (inst, ctx)  -> (inst, (nb_l,ctx))) nb_lignes) in
   ((List.map complete_context nli), nb_lignes)
