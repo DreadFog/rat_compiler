@@ -10,9 +10,9 @@ type t1 = Ast.AstPlacement.programme
 type t2 = string
 
 (* Récupère les infos d'une info_ast *)
-let tam_var_of_mark_info_ast m iast =
+let tam_var_of_info_ast iast =
   match iast with
-    InfoVar((_,_),ty,dep,reg) -> (Type.getTaille (!ty,m), dep, reg)
+    InfoVar((_,m),ty,dep,reg) -> (m, Type.getTaille (!ty,m), dep, reg)
     |_ -> raise Exceptions_identifiants.ErreurInterne
 
 
@@ -23,8 +23,8 @@ let tam_var_of_mark_info_ast m iast =
 en une expression de type AstTds.expression *)
 (* Erreur si mauvaise utilisation des identifiants *)
 let rec ast_to_tam_expression e = match e with
-  | AstType.Identifiant (m,s) ->
-        let (taille, depl, reg) = tam_var_of_mark_info_ast m s in 
+  | AstType.Identifiant s ->
+        let (m, taille, depl, reg) = tam_var_of_info_ast s in 
         (* int *** a = ...; ...; b = **a *)
         (match m with
           Type.Neant -> load taille !depl !reg
@@ -43,8 +43,8 @@ let rec ast_to_tam_expression e = match e with
   | AstType.NULL -> subr "MVoid"
   | AstType.New n -> loadl_int (Type.getTaille n) (* déjà géré dans déclaration,
                                                    * on peut load ce qu'on veut c'est pas important *)
-  | AstType.Adr (m,a) -> (* inch' j'ai bien géré les adresses ie elles ont bien le même iast que a *)
-      let (_, depl, reg) = tam_var_of_mark_info_ast m a in
+  | AstType.Adr a -> (* inch' j'ai bien géré les adresses ie elles ont bien le même iast que a *)
+      let (_, _, depl, reg) = tam_var_of_info_ast a in
       (string_of_int !depl) ^ "[" ^ !reg ^ "]" 
   | AstType.Entier i -> loadl_int i 
   | AstType.Booleen b -> loadl_int (Bool.to_int b)
@@ -138,10 +138,10 @@ let rec ast_to_tam_instruction i =
         ^ (subr "MAlloc") (* 1ère @Source pour la copie *)
         ^ gestion_ptr p
       )
-  | AstPlacement.Affectation (m, iast, e) ->
-    let (taille, dep, reg) = (
+  | AstPlacement.Affectation (iast, e) ->
+    let (m, taille, dep, reg) = (
       match iast with
-        InfoVar((_,_),ty,dep,reg) -> (Type.getTaille (!ty,m),dep,reg)
+        InfoVar((_,m),ty,dep,reg) -> (m, Type.getTaille (!ty,m),dep,reg)
         |_ -> raise Exceptions_identifiants.ErreurInterne) in
     (match m with
       Neant -> 

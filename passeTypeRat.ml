@@ -22,10 +22,11 @@ let rec getTypeOfDeclaration t n = match n with
   |AstSyntax.Symbole _ -> t
   |AstSyntax.Pointeur p -> Type.Pointeur (getTypeOfDeclaration t p)*)
 
-(*let getTypexMarkOfIast iast = match info_ast_to_info iast with
-  InfoVar((_,m),_,_,_) -> (type_of_info_ast iast, m)
-  |InfoFun((_,m),_,_) -> (type_of_info_ast iast, m)
-  |InfoConst(_) -> (type_of_info_ast iast, Type.Neant) *)
+let getTypexMarkOfIast iast = match iast with
+  InfoVar((_,m),t,_,_) -> (!t, m)
+  |InfoFun((_,m),t,_) -> (t, m)
+  |InfoConst(_) -> (Int, Type.Neant)
+  | _ -> raise ErreurInterne
 
 (* analyse_tds_expression : tds -> AstTds.expression -> AstTds.expression *)
 (* Paramètre tds : la table des symboles courante *)
@@ -34,12 +35,11 @@ let rec getTypeOfDeclaration t n = match n with
 en une expression de type AstTds.expression *)
 (* Erreur si mauvaise utilisation des identifiants *)
 let rec analyse_type_expression e = match e with
-  | AstTds.Identifiant (m,iast) -> ( AstType.Identifiant (m,iast)
-                                   , (type_of_info_ast iast, m))
+  | AstTds.Identifiant iast -> (AstType.Identifiant iast, getTypexMarkOfIast iast)
   | AstTds.Entier i -> (AstType.Entier i, (Int, Neant))
   | AstTds.Booleen b -> (AstType.Booleen b, (Bool, Neant))
   | AstTds.NULL -> (AstType.NULL, (Undefined, Pointeur(Neant)))
-  | AstTds.Adr (m,a) -> (AstType.Adr (m,a), (type_of_info_ast a, m))
+  | AstTds.Adr a -> (AstType.Adr a, getTypexMarkOfIast a)
   | AstTds.New n -> (AstType.New n, n)
   | AstTds.Binaire (op, e1, e2) ->
     let (ne1,tm1) = analyse_type_expression e1 in 
@@ -120,15 +120,15 @@ let rec analyse_type_instruction (i,ctx) =
       (AstType.Declaration (n, ne))) 
     else raise (TypeInattendu(fst tme, t))
             (* Erreur a adapté pour ajouter les ptrs *)
-  | AstTds.Affectation (m,n,e) ->
+  | AstTds.Affectation (n,e) ->
     let nn = (match n with
-                InfoVar((_,_),t,_,_) -> (!t), m
-                |InfoFun((_,_),t,_) -> t, m
+                InfoVar((_,m),t,_,_) -> (!t), m
+                |InfoFun((_,m),t,_) -> t, m
                 |_ -> raise ErreurInterne) in
      let (ne, tme) = analyse_type_expression e in
      let t = type_of_info_ast n in
      if (Type.est_compatible nn tme) then
-          (AstType.Affectation(m, n, ne))
+          (AstType.Affectation(n, ne))
      else raise (TypeInattendu(fst tme,t)) 
         (* Erreur a adapté pour ajouter les ptrs *)
   | AstTds.Affichage e ->

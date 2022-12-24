@@ -114,7 +114,7 @@ struct
     | Booleen of bool
     | Entier of int
     (* mark pour les cas int ** a = ...; ...; b = &( *a ); *)
-    | Adr of mark * identifiant
+    | Adr of identifiant
     | New of (Type.typ * Type.mark)
     | NULL
     (* 
@@ -122,7 +122,7 @@ struct
        * ex : int ***a = ...; int **b = *a; alors
        * l'identifiant correspondant à *a a une mark de 
        * Pointeur(Pointeur(Neant)) ie ** *)
-    | Identifiant of mark * identifiant
+    | Identifiant of identifiant
     | Unaire of AstSyntax.unaire * expression
     | Binaire of AstSyntax.binaire * expression * expression
     | Ternaire of expression * expression * expression
@@ -139,7 +139,7 @@ struct
        * la marque est la diff entre celle initiale et affectée
        * ex : int ***a = ...; *a = ...; alors l'affectation correspondant
        * à *a est Pointeur(Pointeur(Neant)) ie ** *)
-    | Affectation of mark * identifiant * expression 
+    | Affectation of identifiant * expression 
     | Affichage of expression
     | Conditionnelle of expression * bloc * bloc
     | TantQue of expression * bloc
@@ -187,10 +187,10 @@ type expression =
   | Entier of int 
   | Unaire of unaire * expression
   | Binaire of binaire * expression * expression
-  | Adr of mark * identifiant
+  | Adr of identifiant
   | New of (Type.typ * Type.mark)
   | NULL
-  | Identifiant of mark * identifiant
+  | Identifiant of identifiant
   | Ternaire of expression * expression * expression
 
 (* instructions existantes Rat *)
@@ -199,7 +199,7 @@ type expression =
 type bloc = (instruction * contexte) list
  and instruction =
   | Declaration of type_info_ast * expression
-  | Affectation of mark * type_info_ast * expression
+  | Affectation of type_info_ast * expression
   | AffichageInt of expression
   | AffichageRat of expression
   | AffichageBool of expression
@@ -236,7 +236,7 @@ type identifiant = AstTds.identifiant
 type bloc = (instruction * contexte) list * int (* taille du bloc *)
  and instruction =
  | Declaration of placement_info_ast * expression
- | Affectation of mark * placement_info_ast * expression
+ | Affectation of placement_info_ast * expression
  | AffichageInt of expression
  | AffichageRat of expression
  | AffichageBool of expression

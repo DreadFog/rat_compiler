@@ -31,8 +31,8 @@ let rec analyse_placement_instruction reg depl (i,(_:contexte)) =
     let taille = Type.getTaille mt in
      modifier_adresse_variable depl reg iast;
      (AstPlacement.Declaration(iast, e), depl+taille)
-  | AstType.Affectation (m, iast, e) ->
-     (AstPlacement.Affectation(m, iast, e), depl)
+  | AstType.Affectation (iast, e) ->
+     (AstPlacement.Affectation(iast, e), depl)
   | AstType.AffichageInt e ->
      (AstPlacement.AffichageInt e, depl)
   | AstType.AffichageRat e ->

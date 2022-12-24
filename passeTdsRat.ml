@@ -71,11 +71,10 @@ let rec analyse_tds_expression tds e = match e with
           | InfoFun((f,_), _, _) ->
              raise (MauvaiseUtilisationIdentifiant (print_ident f));
           | InfoVar(_) ->
-            AstTds.Identifiant (Neant, info_ast_found)
+            AstTds.Identifiant (info_ast_found)
           | _ -> raise ErreurInterne
         )
-      |_ -> let (m,iast) = analyse_tds_identifiant tds r in
-          AstTds.Identifiant (m,iast)
+      |_ -> AstTds.Identifiant (analyse_tds_identifiant tds r)
     )
   | AstSyntax.Adr a -> 
     (match a with
@@ -85,10 +84,9 @@ let rec analyse_tds_expression tds e = match e with
         (
         match info_ast_found with 
           | InfoConst(_,_) -> raise RefInterdite
-          | _ -> AstTds.Adr (Neant, info_ast_found)
+          | _ -> AstTds.Adr (info_ast_found)
         )
-      |_ -> let (m,iast) = analyse_tds_identifiant tds a in
-          AstTds.Adr (m, iast)
+      |_ -> AstTds.Adr (analyse_tds_identifiant tds a)
     )
   | AstSyntax.New t -> AstTds.New t
   | AstSyntax.Entier i -> AstTds.Entier i
@@ -113,8 +111,8 @@ and analyse_tds_identifiant tds ((s,ms)) =
   let info_ast_found = chercherGlobalementUnsafeIdent tds s in
   (
   match info_ast_found with 
-    | InfoVar((_,m),_,_,_)-> (gestion_pointeurs m ms, info_ast_found)
-    | InfoFun((_,m),_,_) -> (gestion_pointeurs m ms, info_ast_found)
+    | InfoVar((id,m),t,d,b)-> InfoVar((id,gestion_pointeurs m ms),t,d,b)
+    | InfoFun((f,m),t,lp) -> InfoFun((f,gestion_pointeurs m ms),t,lp)
     | _ -> (raise Exceptions_identifiants.RefInterdite)
   )
 
@@ -168,13 +166,13 @@ let rec analyse_tds_instruction tds oia optBoucle i num_inst ctx =
           il a donc déjà été déclaré. L'information associée est récupérée. *)
           begin
             match info with
-            | InfoVar((_,mv),_,_,_) ->
+            | InfoVar((id,mv),t,d,b) ->
               (* Vérification de la bonne utilisation des identifiants dans l'expression *)
               (* et obtention de l'expression transformée *)
               let ne = analyse_tds_expression tds e in
               (* Renvoie de la nouvelle affectation où le nom a été remplacé par l'information
                  et l'expression remplacée par l'expression issue de l'analyse *)
-              ((AstTds.Affectation (gestion_pointeurs mv m, info, ne), ctx), num_inst+1)
+              ((AstTds.Affectation (InfoVar((id,gestion_pointeurs mv m),t,d,b), ne), ctx), num_inst+1)
             |  _ ->
               (* Modification d'une constante ou d'une fonction *)
               raise (MauvaiseUtilisationIdentifiant (print_ident n))
