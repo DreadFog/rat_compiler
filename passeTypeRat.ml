@@ -129,20 +129,6 @@ let rec analyse_type_instruction i =
 (* Vérifie la bonne utilisation des identifiants et tranforme le bloc en un bloc de type AstTds.bloc *)
 (* Erreur si mauvaise utilisation des identifiants *)
 and analyse_type_bloc b = List.map analyse_type_instruction b
-   
-(* snd_zip : ('a*'b) list -> ('c*'d) list -> ('b*'d) lits *)
-(* Paramètres : les listes a fusionnées *)
-(* Fusionne des listes [(ai,bi)] en [(b1,b2)] *)
-(* fzip avec snd mais la gestion de polymorphisme avec fzip n'est bien gérée par caml *)
-let snd_zip l1 l2 = List.combine (List.map snd l1) (List.map snd l2)
-
-(* second : ('a -> 'b) -> 'c*'a -> 'c*'b *)
-(* Application de f sur le second élément d'un couple *)
-let second f (x,y) = (x, f y) 
-
-(* first : ('a -> 'b) -> 'c*'a -> 'c*'b *)
-(* Application de f sur le premier élément d'un couple *)
-let first f (x,y) = (f x, y)
 
 (* analyse_tds_fonction : tds -> AstTds.fonction -> AstTds.fonction *)
 (* Paramètre tds : la table des symboles courante *)

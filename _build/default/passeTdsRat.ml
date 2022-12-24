@@ -8,11 +8,11 @@ type t1 = Ast.AstSyntax.programme
 type t2 = Ast.AstTds.programme
 
 (* Anticipation: mise d'un identifiant aux boucles sans identifiant *)
-let giveID = 
-  let num = ref 0 in
+let giveID = Code.getEtiquette
+  (*let num = ref 0 in
   fun () ->
     num := (!num)+1 ;
-    "id"^((string_of_int (!num)))
+    "id"^((string_of_int (!num)))*)
 
 
 

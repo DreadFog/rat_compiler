@@ -266,8 +266,8 @@ and analyse_tds_bloc tds oia iaOptBoucle li nb_l contexte =
   let tdsbloc = creerTDSFille tds in
   (* Analyse des instructions du bloc avec la tds du nouveau bloc.
      Cette tds est modifiée par effet de bord *)
-   let fonction_fold_left i_c (liste_traitee, acc_l) = 
-    let (ni, nl) = analyse_tds_instruction tdsbloc oia iaOptBoucle i_c acc_l contexte  in
+   let fonction_fold_left (liste_traitee, acc_l) i_c = 
+    let (ni, nl) = analyse_tds_instruction tdsbloc oia iaOptBoucle i_c acc_l contexte in
     (liste_traitee@[ni], nl) in
     let (nli, nb_lignes) = List.fold_left fonction_fold_left ([], nb_l) li in
    (* afficher_locale tdsbloc ; *) (* décommenter pour afficher la table locale *)
@@ -318,7 +318,7 @@ let analyse_tds_fonction maintds (AstSyntax.Fonction(t,nom,l_param,l_inst)) nb_l
   ajouter maintds nom (info_to_info_ast (InfoFun (nom, t, List.map fst l_param)));
 
   (* liste des ASTTds instructions *)
-  let (l_inst_tds, nb) = analyse_tds_bloc tds_fille (chercherGlobalement tds_fille nom) None l_inst nb_ligne [("fonction", 0)] in
+  let (l_inst_tds, nb) = analyse_tds_bloc tds_fille (chercherGlobalement tds_fille nom) None l_inst nb_ligne [(nom, 0)] in
   let nom_tds = chercherGlobalementUnsafe tds_fille nom in
   (AstTds.Fonction(t, nom_tds, (getFirsts l_param_tds'), l_inst_tds), nb)
 
@@ -330,9 +330,9 @@ en un programme de type AstTds.programme *)
 (* Erreur si mauvaise utilisation des identifiants *)
 let analyser (AstSyntax.Programme (fonctions,prog)) =
   let tds = creerTDSMere () in
-  let fold_function curr_fun (prev_funs, acc_l) = 
-  let (nf, nl) = analyse_tds_fonction tds curr_fun acc_l in
-  (prev_funs@[nf], nl) in
+  let fold_function (prev_funs, acc_l) curr_fun = 
+    let (nf, nl) = analyse_tds_fonction tds curr_fun acc_l in
+      (prev_funs@[nf], nl) in
   let (nf, nl) = List.fold_left fold_function ([], 0) fonctions in
   let (nb, _) = analyse_tds_bloc tds None None prog (nl + 1) [("main", nl + 1)] in
   AstTds.Programme (nf,nb)
