@@ -1,0 +1,5 @@
+main {
+    bool choix = true;
+    int x = (choix ? 2 : 1);
+    print x;
+}
