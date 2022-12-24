@@ -5,6 +5,19 @@ let getEtiquette =
     num := (!num)+1 ;
     "label"^((string_of_int (!num)))
 
+
+let assignPtr =
+(* loadl la taille du ptr : 1
+   load  l'@ dest copie
+   load  l'@ source copie *)
+"assignPtr
+LOADL 1
+LOAD (1) -2[LB]
+LOAD (1) -1[LB]
+SUBR MCopy
+RETURN (1) 1\n\n
+"
+
 let pgcd = 
 "pgcd
 LOADL 0
@@ -92,6 +105,7 @@ let getEntete () =
   ^rout
   ^radd
   ^rmul
+  ^assignPtr
 
 (*Ecriture dans un fichier *)
 let ecrireFichier nom texte =

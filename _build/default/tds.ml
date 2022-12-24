@@ -1,5 +1,5 @@
-open Hashtbl
-(*open Type
+(*open Hashtbl
+open Type
 open Exceptions_identifiants
 
 (* Définition du type des informations associées aux identifiants *)

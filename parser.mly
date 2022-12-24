@@ -45,6 +45,7 @@ open List
 %token QMARK
 %token COLON
 (* boucles *)
+%token DEFINE
 %token LOOP
 %token BREAK
 %token CONTINUE
@@ -81,7 +82,7 @@ param : t=typ n=r  {(t,n)}
 bloc : AO li=i* AF      {li}
 
 idC :
-| n=ID COLON    {n}
+| DEFINE n=ID COLON     {n}
 
 i :
 | t=typ n=r EQUAL e1=e PV           {Declaration (t,n,e1)}
@@ -94,17 +95,14 @@ i :
 | WHILE exp=e li=bloc               {TantQue (exp,li)}
 | RETURN exp=e PV                   {Retour (exp)}
 (* Affectation incrémentée *)
-| n=r PLUS EQUAL e1=e PV           {Affectation (n,Binaire (Plus,Identifiant n,e1))}
+| n=r PLUS EQUAL e1=e PV            {Affectation (n,Binaire (Plus,Identifiant n,e1))}
 (* Prise en compte de <variable>++ et ++<variable> *)
-| PLUS PLUS n=r PV                 {Affectation (n,Binaire (Plus,Identifiant n,Entier 1))}
-| n=r PLUS PLUS PV                 {Affectation (n,Binaire (Plus,Identifiant n,Entier 1))}
+| PLUS PLUS n=r PV                  {Affectation (n,Binaire (Plus,Identifiant n,Entier 1))}
+| n=r PLUS PLUS PV                  {Affectation (n,Binaire (Plus,Identifiant n,Entier 1))}
 (* Instructions pour les boucles *)
-| n=idC? LOOP li=bloc PV               {Boucle(n,li)}
-(*| LOOP li=bloc                       {Boucle(None,li)}*)
-| BREAK n=ID? PV                     {Break(n)}
-(*| BREAK PV                          {Break(None)}*)
-| CONTINUE n=ID? PV                  {Continue(n)}
-(*| CONTINUE PV                       {Continue(None)}*)
+| n=idC? LOOP li=bloc PV            {Boucle(n,li)}
+| BREAK n=ID? PV                    {Break(n)}
+| CONTINUE n=ID? PV                 {Continue(n)}
 
 
 typ :

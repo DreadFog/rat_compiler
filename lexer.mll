@@ -35,7 +35,8 @@
         (* pour les loop *)
         "loop",    LOOP;
         "break",   BREAK;
-        "continue", CONTINUE
+        "continue", CONTINUE;
+        "define", DEFINE;
       ];
     fun id ->
       match Hashtbl.find_opt kws id with

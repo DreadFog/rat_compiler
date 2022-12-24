@@ -62,28 +62,27 @@ end
 (* Passe AstPlacement.programme -> string *)
 (* Affiche les adresses des variables  *)
 (* Pour tester les paramètres des fonctions, il est nécessaire de les mettre en retour *)
+
 module VerifPlacement =
 struct
   open Mtds
-  open Ast
-
 
   (* Renvoie l'adresse d'une variable dans le cas d'une déclaration *)
   let rec analyser_instruction i = 
     match i with
     | Ast.AstPlacement.Declaration (info,_) -> 
       begin
-        match Mtds.info_ast_to_info info with
+        match info with
         | InfoVar (n,_,d,r) -> [(n,(d,r))]
         | _ -> []
         end
-    | Ast.AstPlacement.Conditionnelle(_,(bt,_),(be,_)) -> (List.flatten (List.map (analyser_instruction) bt))@(List.flatten (List.map (analyser_instruction) be))
-    | Ast.AstPlacement.TantQue (_,(b,_)) -> (List.flatten (List.map (analyser_instruction) b))
+    | Ast.AstPlacement.Conditionnelle(_,(bt,_),(be,_)) -> (List.flatten (List.map (analyser_instruction) (List.map fst bt)))@(List.flatten (List.map (analyser_instruction) (List.map fst be)))
+    | Ast.AstPlacement.TantQue (_,(b,_)) -> (List.flatten (List.map (analyser_instruction) (List.map fst b)))
     | _ -> [] 
 
 
 let analyser_param info =
-  match Mtds.info_ast_to_info info with
+  match info with
   | InfoVar (n,_,d,r) -> [(n,(d,r))]
   | _ -> []
 
@@ -92,12 +91,12 @@ let analyser_param info =
   let analyser_fonction (Ast.AstPlacement.Fonction(info,lp,(li,_))) =
     (*La liste des paramètres n'est plus présente, pour tester le placement des paramètres, on utilisera une astuce :
     il faudra écrire un programme qui renvoie le paramètre *)
-    match info_ast_to_info info with
-    | InfoFun(n,_,_) -> [(n,(List.flatten (List.map analyser_param lp))@(List.flatten (List.map (analyser_instruction) li)))]
+    match info with
+    | InfoFun(n,_,_) -> [(n,(List.flatten (List.map analyser_param lp))@(List.flatten (List.map (analyser_instruction) (List.map fst li))))]
     | _ -> failwith "Internal error"
 
   (* Renvoie la suite des adresses des variables déclarées dans les fonctions et dans le programme principal *)
   let analyser (Ast.AstPlacement.Programme (fonctions, (prog,_))) =
-    ((AstSyntax.Symbole "main"), List.flatten (List.map (analyser_instruction) prog))::(List.flatten (List.map (analyser_fonction) fonctions))
+    (("main",Type.Neant), List.flatten (List.map (analyser_instruction) (List.map fst prog)))::(List.flatten (List.map (analyser_fonction) fonctions))
 
 end

@@ -1,3 +1,4 @@
+
 open Rat
 open Compilateur
 open Passe
@@ -40,80 +41,80 @@ let test fichier fonction (var,occ) (dep,registre) =
 
 let pathFichiersRat = "../../../../../tests/placement/avec_fonction/fichiersRat/"
 
-open Ast
+
 let%test "test8_x_1" = 
-  test (pathFichiersRat^"test8.rat") (AstSyntax.Symbole "main") ((AstSyntax.Symbole "x"),1)  (0, "SB")
+  test (pathFichiersRat^"test8.rat") ("main", Type.Neant) (("x", Type.Neant),1)  (ref 0, ref "SB")
     
 let%test "test8_y_1" = 
-  test (pathFichiersRat^"test8.rat") (AstSyntax.Symbole "main") ((AstSyntax.Symbole "y"),1)  (1, "SB")
+  test (pathFichiersRat^"test8.rat") ("main", Type.Neant) (("y", Type.Neant),1)  (ref 1, ref "SB")
     
 let%test "test8_z_1" = 
-  test (pathFichiersRat^"test8.rat") (AstSyntax.Symbole "main") ((AstSyntax.Symbole "z"),1)  (3, "SB")
+  test (pathFichiersRat^"test8.rat") ("main", Type.Neant) (("z", Type.Neant),1)  (ref 3, ref "SB")
   
 let%test "test8_x_2" = 
-  test (pathFichiersRat^"test8.rat") (AstSyntax.Symbole "main") ((AstSyntax.Symbole "x"),2)  (4, "SB")
+  test (pathFichiersRat^"test8.rat") ("main", Type.Neant) (("x", Type.Neant),2)  (ref 4, ref "SB")
     
 let%test "test8_y_2" = 
-  test (pathFichiersRat^"test8.rat") (AstSyntax.Symbole "main") ((AstSyntax.Symbole "y"),2)  (5, "SB")
+  test (pathFichiersRat^"test8.rat") ("main", Type.Neant) (("y", Type.Neant),2)  (ref 5, ref "SB")
     
 let%test "test8_z_2" = 
-  test (pathFichiersRat^"test8.rat") (AstSyntax.Symbole "main") ((AstSyntax.Symbole "z"),2)  (7, "SB")
+  test (pathFichiersRat^"test8.rat") ("main", Type.Neant) (("z", Type.Neant),2)  (ref 7, ref "SB")
   
 let%test "test8_x1" = 
-  test (pathFichiersRat^"test8.rat") (AstSyntax.Symbole "main") ((AstSyntax.Symbole "x1"),1)  (4, "SB")
+  test (pathFichiersRat^"test8.rat") ("main", Type.Neant) (("x1", Type.Neant),1)  (ref 4, ref "SB")
     
 let%test "test8_y1" = 
-  test (pathFichiersRat^"test8.rat") (AstSyntax.Symbole "main") ((AstSyntax.Symbole "y1"),1)  (5, "SB")
+  test (pathFichiersRat^"test8.rat") ("main", Type.Neant) (("y1", Type.Neant),1)  (ref 5, ref "SB")
     
 let%test "test8_z1" = 
-  test (pathFichiersRat^"test8.rat" )(AstSyntax.Symbole "main") ((AstSyntax.Symbole "z1"),1)  (7, "SB")
+  test (pathFichiersRat^"test8.rat" )("main", Type.Neant) (("z1", Type.Neant),1)  (ref 7, ref "SB")
 
 let%test "test8_f_x_1" = 
-  test (pathFichiersRat^"test8.rat")  (AstSyntax.Symbole "f") ((AstSyntax.Symbole "x"),1)  (3, "LB")
+  test (pathFichiersRat^"test8.rat")  ("f", Type.Neant) (("x", Type.Neant),1)  (ref 3, ref "LB")
     
 let%test "test8_f_y_1" = 
-  test (pathFichiersRat^"test8.rat")  (AstSyntax.Symbole "f") ((AstSyntax.Symbole "y"),1)  (4, "LB")
+  test (pathFichiersRat^"test8.rat")  ("f", Type.Neant) (("y", Type.Neant),1)  (ref 4, ref "LB")
     
 let%test "test8_f_z_1" = 
-  test (pathFichiersRat^"test8.rat")  (AstSyntax.Symbole "f") ((AstSyntax.Symbole "z"),1)  (6, "LB")
+  test (pathFichiersRat^"test8.rat")  ("f", Type.Neant) (("z", Type.Neant),1)  (ref 6, ref "LB")
   
 let%test "test8_f_x_2" = 
-  test (pathFichiersRat^"test8.rat")  (AstSyntax.Symbole "f") ((AstSyntax.Symbole "x"),2)  (7, "LB")
+  test (pathFichiersRat^"test8.rat")  ("f", Type.Neant) (("x", Type.Neant),2)  (ref 7, ref "LB")
     
 let%test "test8_f_y_2" = 
-  test (pathFichiersRat^"test8.rat")  (AstSyntax.Symbole "f") ((AstSyntax.Symbole "y"),2)  (8, "LB")
+  test (pathFichiersRat^"test8.rat")  ("f", Type.Neant) (("y", Type.Neant),2)  (ref 8, ref "LB")
     
 let%test "test8_f_z_2" = 
-  test (pathFichiersRat^"test8.rat")  (AstSyntax.Symbole "f") ((AstSyntax.Symbole "z"),2)  (10, "LB")
+  test (pathFichiersRat^"test8.rat")  ("f", Type.Neant) (("z", Type.Neant),2)  (ref 10, ref "LB")
   
 let%test "test8_f_x1" = 
-  test (pathFichiersRat^"test8.rat")  (AstSyntax.Symbole "f") ((AstSyntax.Symbole "x1"),1)  (7, "LB")
+  test (pathFichiersRat^"test8.rat")  ("f", Type.Neant) (("x1", Type.Neant),1)  (ref 7, ref "LB")
     
 let%test "test8_f_y1" = 
-  test (pathFichiersRat^"test8.rat")  (AstSyntax.Symbole "f") ((AstSyntax.Symbole "y1"),1)  (8, "LB")
+  test (pathFichiersRat^"test8.rat")  ("f", Type.Neant) (("y1", Type.Neant),1)  (ref 8, ref "LB")
     
 let%test "test8_f_z1" = 
-  test (pathFichiersRat^"test8.rat")  (AstSyntax.Symbole "f") ((AstSyntax.Symbole "z1"),1)  (10, "LB")
+  test (pathFichiersRat^"test8.rat")  ("f", Type.Neant) (("z1", Type.Neant),1)  (ref 10, ref "LB")
     
 let%test "test8_f_a" = 
-  test (pathFichiersRat^"test8.rat")  (AstSyntax.Symbole "f") ((AstSyntax.Symbole "a"),1)  (-1, "LB")
+  test (pathFichiersRat^"test8.rat")  ("f", Type.Neant) (("a", Type.Neant),1)  (ref (-1), ref "LB")
     
 let%test "test9_f_a" = 
-  test (pathFichiersRat^"test9.rat")  (AstSyntax.Symbole "f") ((AstSyntax.Symbole "a"),1)  (-1, "LB")
+  test (pathFichiersRat^"test9.rat")  ("f", Type.Neant) (("a", Type.Neant),1)  (ref (-1), ref "LB")
 
 let%test "test10_f_a" = 
-  test (pathFichiersRat^"test10.rat")  (AstSyntax.Symbole "f") ((AstSyntax.Symbole "a"),1)  (-2, "LB")
+  test (pathFichiersRat^"test10.rat")  ("f", Type.Neant) (("a", Type.Neant),1)  (ref (-2), ref "LB")
 
 let%test "test11_f_a" = 
-  test (pathFichiersRat^"test11.rat")  (AstSyntax.Symbole "f") ((AstSyntax.Symbole "a"),1)  (-1, "LB")
+  test (pathFichiersRat^"test11.rat")  ("f", Type.Neant) (("a", Type.Neant),1)  (ref (-1), ref "LB")
     
 let%test "test12_f_b" = 
-  test (pathFichiersRat^"test12.rat")  (AstSyntax.Symbole "f") ((AstSyntax.Symbole "b"),1)  (-4, "LB")
+  test (pathFichiersRat^"test12.rat")  ("f", Type.Neant) (("b", Type.Neant),1)  (ref (-4), ref "LB")
     
 let%test "test12_f_r" = 
-  test (pathFichiersRat^"test12.rat")  (AstSyntax.Symbole "f") ((AstSyntax.Symbole "r"),1)  (-3, "LB")
+  test (pathFichiersRat^"test12.rat")  ("f", Type.Neant) (("r", Type.Neant),1)  (ref (-3), ref "LB")
     
 let%test "test12_f_i" = 
-  test (pathFichiersRat^"test12.rat")  (AstSyntax.Symbole "f") ((AstSyntax.Symbole "i"),1)  (-1, "LB")
+  test (pathFichiersRat^"test12.rat")  ("f", Type.Neant) (("i", Type.Neant),1)  (ref (-1), ref "LB")
   
 

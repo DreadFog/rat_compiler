@@ -8,6 +8,9 @@ open Ast
 type t1 = Ast.AstType.programme
 type t2 = Ast.AstPlacement.programme
 
+(* first : ('a -> 'b) -> 'c*'a -> 'c*'b *)
+(* Application de f sur le premier élément d'un couple *)
+let first f (x,y) = (f x, y)
 
 (* analyse_tds_instruction : tds -> info_ast option -> AstType.instruction -> AstType.instruction *)
 (* Paramètre tds : la table des symboles courante *)
@@ -17,22 +20,19 @@ type t2 = Ast.AstPlacement.programme
 (* Vérifie la bonne utilisation des identifiants et tranforme l'instruction
 en une instruction de type AstType.instruction *)
 (* Erreur si mauvaise utilisation des identifiants *)
-let rec analyse_placement_instruction reg depl i =
+let rec analyse_placement_instruction reg depl (i,(_:contexte)) =
+  (* ici pas besoin de renvoyer le contexte, on l'a déjà avec analyse_bloc *)
   match i with
   | AstType.Declaration (iast, e) ->
-    let id = (match info_ast_to_info iast with
-              InfoVar(i,_,_,_) -> i
-              |InfoFun(i,_,_) -> i
-              |_ -> raise ErreurInterne) in
-    let is_pointeur = (match id with 
-                       | Symbole _ -> true
-                       | _ -> false
-     ) in
-    let taille = if is_pointeur then 1 else Type.getTaille (type_of_info_ast iast) in
+    let mt = (match iast with
+                  InfoVar((_,m),t,_,_) -> (!t),m
+                  |InfoFun((_,m),t,_) -> t,m
+                  |_ -> raise ErreurInterne) in
+    let taille = Type.getTaille mt in
      modifier_adresse_variable depl reg iast;
      (AstPlacement.Declaration(iast, e), depl+taille)
-  | AstType.Affectation (iast, e) ->
-     (AstPlacement.Affectation(iast, e), depl)
+  | AstType.Affectation (m, iast, e) ->
+     (AstPlacement.Affectation(m, iast, e), depl)
   | AstType.AffichageInt e ->
      (AstPlacement.AffichageInt e, depl)
   | AstType.AffichageRat e ->
@@ -49,14 +49,23 @@ let rec analyse_placement_instruction reg depl i =
     let nb = fst (analyse_placement_bloc reg depl b) in
     (AstPlacement.TantQue (e, nb), depl)
   | AstType.Retour (e,iast) ->
-    (match info_ast_to_info iast with
-      InfoFun(_, ty, param_t) ->
-        let add_tailles = (fun (param, id) taille ->
-          (if (match id with AstSyntax.Pointeur _ -> true | _ -> false) then 1 else Type.getTaille param + taille)) in
+    (match iast with
+      InfoFun((_,m), ty, param_t) ->
+        let getSeconds = List.map (fun (c,b) -> (c, snd b)) in
+        let add_tailles = (fun param taille -> Type.getTaille param + taille) in
         (*let param_t' = List.map fst param_t in*)
-        (AstPlacement.Retour (e, Type.getTaille ty, List.fold_right add_tailles param_t 0), depl)
+        (AstPlacement.Retour ( e
+                             , Type.getTaille (ty,m)
+                             , List.fold_right add_tailles (getSeconds (List.map (first (!)) param_t)) 0)
+                             , depl)
       | _ -> raise ErreurInterne);
   | AstType.Empty -> (AstPlacement.Empty, depl)
+  (* Prise en compte des boucles *)
+  | AstType.Boucle (ia, b) ->
+    let nb = fst (analyse_placement_bloc reg depl b) in
+    (AstPlacement.Boucle (ia, nb), depl)
+  | AstType.Break s -> (AstPlacement.Break s, depl)
+  | AstType.Continue s -> (AstPlacement.Continue s, depl)
 
 (* analyse_tds_bloc : tds -> info_ast option -> AstType.bloc -> AstType.bloc *)
 (* Paramètre tds : la table des symboles courante *)
@@ -71,25 +80,18 @@ let rec analyse_placement_instruction reg depl i =
     let (ni,nfdepl) = analyse_placement_instruction reg fdepl inst in
     (pred @ [ni], nfdepl) in (* a améliorer ? hopefully ocaml fix it*)
   (List.fold_left f ([], depl) b, depl) *)
-  and analyse_placement_bloc reg depl b = 
+and analyse_placement_bloc reg depl b = 
   let f (pred, taille) inst =
     let (ni,nfdepl) = analyse_placement_instruction reg (taille+depl) inst in
-    (pred @ [ni], nfdepl-depl) in (* a améliorer ? hopefully ocaml fix it*)
+    (pred @ [(ni,snd inst)], nfdepl-depl) in (* a améliorer ? hopefully ocaml fix it*)
   (List.fold_left f ([], 0) b, depl)
 
-(* snd_zip : ('a*'b) list -> ('c*'d) list -> ('b*'d) lits *)
-(* Paramètres : les listes a fusionnées *)
-(* Fusionne des listes [(ai,bi)] en [(b1,b2)] *)
-(* fzip avec snd mais la gestion de polymorphisme avec fzip n'est bien gérée par caml *)
-let snd_zip l1 l2 = List.combine (List.map snd l1) (List.map snd l2)
 
-(* second : ('a -> 'b) -> 'c*'a -> 'c*'b *)
-(* Application de f sur le second élément d'un couple *)
-let second f (x,y) = (x, f y) 
-
-(* first : ('a -> 'b) -> 'c*'a -> 'c*'b *)
-(* Application de f sur le premier élément d'un couple *)
-let first f (x,y) = (f x, y)
+let getTypexMarkOfIast iast = match iast with
+  InfoVar((_,m),_,_,_) -> (type_of_info_ast iast, m)
+  |InfoFun((_,m),_,_) -> (type_of_info_ast iast, m)
+  |InfoConst(_) -> (type_of_info_ast iast, Type.Neant)
+  |_ -> raise ErreurInterne
 
 (* analyse_tds_fonction : tds -> AstType.fonction -> AstType.fonction *)
 (* Paramètre tds : la table des symboles courante *)
@@ -101,7 +103,7 @@ let analyse_placement_fonction reg (AstType.Fonction(iast,l_param,l_inst)) =
   (* traitement des paramères *)
   (* f(int a, int b) -> @a : -4LB; @b : -3LB *)
   let f param fdepl =
-    let taille = Type.getTaille (type_of_info_ast param) in
+    let taille = Type.getTaille (getTypexMarkOfIast param) in
      modifier_adresse_variable (fdepl - taille) reg param;
      fdepl - taille in 
   let _ = List.fold_right f l_param 0 in
@@ -115,6 +117,6 @@ let analyse_placement_fonction reg (AstType.Fonction(iast,l_param,l_inst)) =
 en un programme de type AstPlacement.programme *)
 (* Erreur si mauvais typage *)
 let analyser (AstType.Programme (fonctions,blocs)) =
-  let nf = List.map (fun x -> fst (analyse_placement_fonction "LB" x)) fonctions  in
+  let nf = List.map (fun x -> fst (analyse_placement_fonction "LB" x)) fonctions in
   let nb = fst (analyse_placement_bloc "SB" 0 blocs) in
   AstPlacement.Programme (nf,nb)

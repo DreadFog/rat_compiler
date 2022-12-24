@@ -1,5 +1,8 @@
 open Type
 
+(* Type pour le contexte *)
+type contexte = int * (string * int) list (* le numéro de ligne et les bloc dans lesquels l'instruction est *)
+
 (* Interface des arbres abstraits *)
 module type Ast =
 sig
@@ -25,8 +28,7 @@ struct
         Par contre, on autorise pas les pointeurs dans les paramètres, faudra voir pour les typedef struct
 *)
 
-type identifiant = Symbole of string | Pointeur of identifiant 
-
+type identifiant = string * Type.mark
 
 (* Opérateurs unaires de Rat *)
 type unaire = Numerateur | Denominateur
@@ -47,7 +49,7 @@ type expression =
   (* Adresse d'une variable *)
   | Adr of identifiant
   (* Nouveau pointeur *)
-  | New of Type.typ
+  | New of (Type.typ * Type.mark)
   | NULL
   (* Référence *)
   | Identifiant of identifiant
@@ -55,6 +57,8 @@ type expression =
   | Unaire of unaire * expression
   (* Opération binaire représentée par l'opérateur, l'opérande gauche et l'opérande droite *)
   | Binaire of binaire * expression * expression
+  (* Expression ternaire de la forme e1?e2:e3 *)
+  | Ternaire of expression * expression * expression
   
 (* Instructions de Rat *)
 type bloc = instruction list
@@ -74,6 +78,10 @@ and instruction =
   | TantQue of expression * bloc
   (* return d'une fonction *)
   | Retour of expression
+  (* Instructions de boucles *)
+  | Boucle of string option * bloc
+  | Break of string option
+  | Continue of string option
 
 (* Structure des fonctions de Rat *)
 (* type de retour - nom - liste des paramètres (association type et nom) - corps de la fonction *)
@@ -91,9 +99,9 @@ end
 (* ********************************************* *)
 module AstTds =
 struct
-  type tds_info_ast = AstSyntax.identifiant Mtds.info_ast
+  type tds_info_ast = (AstSyntax.identifiant) Mtds.info
 
-  type identifiant = Iast of tds_info_ast | Pointeur of identifiant
+  type identifiant = tds_info_ast
 
   (* Opérateurs unaires de Rat *)
 
@@ -105,31 +113,49 @@ struct
     (*| Ident of Tds.info_ast  -- le nom de l'identifiant est remplacé par ses informations *)
     | Booleen of bool
     | Entier of int
-    | Adr of identifiant
-    | New of Type.typ
+    (* mark pour les cas int ** a = ...; ...; b = &( *a ); *)
+    | Adr of mark * identifiant
+    | New of (Type.typ * Type.mark)
     | NULL
-    | Identifiant of identifiant
+    (* 
+       * la marque est la diff entre celle initiale et affectée
+       * ex : int ***a = ...; int **b = *a; alors
+       * l'identifiant correspondant à *a a une mark de 
+       * Pointeur(Pointeur(Neant)) ie ** *)
+    | Identifiant of mark * identifiant
     | Unaire of AstSyntax.unaire * expression
     | Binaire of AstSyntax.binaire * expression * expression
+    | Ternaire of expression * expression * expression
 
   (* instructions existantes dans notre langage *)
   (* ~ instruction de l'AST syntaxique où les noms des identifiants ont été
   remplacés par les informations associées aux identificateurs
   + suppression de nœuds (const) *)
-  type bloc = instruction list
+  type bloc = (instruction * contexte) list
   and instruction =
-    | Declaration of typ * tds_info_ast * expression (* le nom de l'identifiant est remplacé par ses informations *)
-    | Affectation of tds_info_ast * expression (* le nom de l'identifiant est remplacé par ses informations *)
+      (* le nom de l'identifiant est remplacé par ses informations : *)
+    | Declaration of typ * identifiant * expression 
+      (* le nom de l'identifiant est remplacé par ses informations
+       * la marque est la diff entre celle initiale et affectée
+       * ex : int ***a = ...; *a = ...; alors l'affectation correspondant
+       * à *a est Pointeur(Pointeur(Neant)) ie ** *)
+    | Affectation of mark * identifiant * expression 
     | Affichage of expression
     | Conditionnelle of expression * bloc * bloc
     | TantQue of expression * bloc
-    | Retour of expression * tds_info_ast  (* les informations sur la fonction à laquelle est associé le retour *)
-    | Empty (* les nœuds ayant disparus: Const *)
+      (* les informations sur la fonction à laquelle est associé le retour : *)
+    | Retour of expression * identifiant
+      (* les nœuds ayant disparus: Const : *)
+    | Empty 
+    (* Instructions de boucles *)
+    | Boucle of identifiant * bloc
+    | Break of string
+    | Continue of string
 
 
   (* Structure des fonctions dans notre langage *)
   (* type de retour - informations associées à l'identificateur (dont son nom) - liste des paramètres (association type et information sur les paramètres) - corps de la fonction *)
-  type fonction = Fonction of typ * tds_info_ast * (typ * tds_info_ast ) list * bloc
+  type fonction = Fonction of typ * tds_info_ast * (typ ref * tds_info_ast ) list * bloc
 
   (* Structure d'un programme dans notre langage *)
   type programme = Programme of fonction list * bloc
@@ -145,6 +171,7 @@ struct
 type type_info_ast = AstTds.tds_info_ast
 
 type identifiant = AstTds.identifiant
+
 (* Opérateurs unaires de Rat - résolution de la surcharge *)
 type unaire = Numerateur | Denominateur
 
@@ -160,17 +187,19 @@ type expression =
   | Entier of int 
   | Unaire of unaire * expression
   | Binaire of binaire * expression * expression
-  | Adr of identifiant
-  | New of Type.typ
+  | Adr of mark * identifiant
+  | New of (Type.typ * Type.mark)
   | NULL
-  | Identifiant of identifiant
+  | Identifiant of mark * identifiant
+  | Ternaire of expression * expression * expression
+
 (* instructions existantes Rat *)
 (* = instruction de AstTds + informations associées aux identificateurs, mises à jour *)
 (* + résolution de la surcharge de l'affichage *)
-type bloc = instruction list
+type bloc = (instruction * contexte) list
  and instruction =
   | Declaration of type_info_ast * expression
-  | Affectation of type_info_ast * expression
+  | Affectation of mark * type_info_ast * expression
   | AffichageInt of expression
   | AffichageRat of expression
   | AffichageBool of expression
@@ -178,6 +207,10 @@ type bloc = instruction list
   | TantQue of expression * bloc
   | Retour of expression * type_info_ast
   | Empty (* les nœuds ayant disparus: Const *)
+  (*Instructions de boucles *)
+  | Boucle of identifiant * bloc
+  | Break of string
+  | Continue of string
 
 (* informations associées à l'identificateur (dont son nom), liste des paramètres, corps *)
 type fonction = Fonction of type_info_ast * type_info_ast list * bloc
@@ -198,11 +231,12 @@ type placement_info_ast = AstTds.tds_info_ast
 (* = expression de AstType  *)
 type expression = AstType.expression
 type identifiant = AstTds.identifiant
+
 (* instructions existantes dans notre langage *)
-type bloc = instruction list * int (* taille du bloc *)
+type bloc = (instruction * contexte) list * int (* taille du bloc *)
  and instruction =
  | Declaration of placement_info_ast * expression
- | Affectation of placement_info_ast * expression
+ | Affectation of mark * placement_info_ast * expression
  | AffichageInt of expression
  | AffichageRat of expression
  | AffichageBool of expression
@@ -210,6 +244,10 @@ type bloc = instruction list * int (* taille du bloc *)
  | TantQue of expression * bloc
  | Retour of expression * int * int (* taille du retour et taille des paramètres *)
  | Empty (* les nœuds ayant disparus: Const *)
+ (* Instructions de boucles *)
+| Boucle of identifiant * bloc
+| Break of string
+| Continue of string
 
 (* informations associées à l'identificateur (dont son nom), liste de paramètres, corps, expression de retour *)
 (* Plus besoin de la liste des paramètres mais on la garde pour les tests du placements mémoire *)

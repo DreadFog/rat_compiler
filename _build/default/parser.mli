@@ -7,6 +7,7 @@ type token =
   | SLASH
   | RETURN
   | RAT
+  | QMARK
   | PV
   | PRINT
   | PO
@@ -16,6 +17,7 @@ type token =
   | NULL
   | NEW
   | MULT
+  | LOOP
   | INT
   | INF
   | IF
@@ -26,10 +28,14 @@ type token =
   | ENTIER of (int)
   | ELSE
   | DENOM
+  | DEFINE
+  | CONTINUE
   | CONST
+  | COLON
   | CO
   | CF
   | CALL
+  | BREAK
   | BOOL
   | AO
   | AF

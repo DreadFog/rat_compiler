@@ -4,6 +4,7 @@ type token =
   | SLASH
   | RETURN
   | RAT
+  | QMARK
   | PV
   | PRINT
   | PO
@@ -13,6 +14,7 @@ type token =
   | NULL
   | NEW
   | MULT
+  | LOOP
   | INT
   | INF
   | IF
@@ -23,10 +25,14 @@ type token =
   | ENTIER of int
   | ELSE
   | DENOM
+  | DEFINE
+  | CONTINUE
   | CONST
+  | COLON
   | CO
   | CF
   | CALL
+  | BREAK
   | BOOL
   | AO
   | AF
@@ -36,11 +42,15 @@ val xv_typ : Type.typ
 val xv_r : Ast.AstSyntax.identifiant
 val xv_prog : Ast.AstSyntax.programme
 val xv_param : Type.typ * Ast.AstSyntax.identifiant
+val xv_option_idC_ : string option
+val xv_option_ID_ : string option
 val xv_main : Ast.AstSyntax.programme
 val xv_list_param_ : (Type.typ * Ast.AstSyntax.identifiant) list
-val xv_list_i_ : Ast.AstSyntax.bloc
+val xv_list_i_ : Ast.AstSyntax.instruction list
 val xv_list_fonc_ : Ast.AstSyntax.fonction list
 val xv_list_e_ : Ast.AstSyntax.expression list
+val xv_list_MULT_ : unit list
+val xv_idC : string
 val xv_i : Ast.AstSyntax.instruction
 val xv_fonc : Ast.AstSyntax.fonction
 val xv_e : Ast.AstSyntax.expression

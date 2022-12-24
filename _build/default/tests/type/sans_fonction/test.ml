@@ -1,7 +1,7 @@
 open Rat
 open Compilateur
 open Exceptions
-open Exceptions_identifiants
+(*open Exceptions_identifiants*)
 
 exception ErreurNonDetectee
 

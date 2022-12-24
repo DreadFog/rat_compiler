@@ -4,13 +4,11 @@ open Exceptions_identifiants
 
 (* Définition du type des informations associées aux identifiants *)
 type 'a info =
-  | InfoConst of 'a * int
-  | InfoVar of 'a * typ * int * string
-  | InfoFun of 'a * typ * (typ*'a) list
+  | InfoConst of string * int (* pas de marqueur pour les constantes *)
+  | InfoVar of 'a * typ ref * int ref * string ref
+  | InfoFun of 'a * typ * (typ ref*'a) list
+  | InfoBoucle of ((string * string) list) ref(* Les étiquettes de début et fin de boucle *)
   (*| InfoParam of string * typ*)
-
-(* Données stockées dans la tds  et dans les AST : pointeur sur une information *)
-type 'a info_ast = 'a info ref  
 
 (* Table des symboles hiérarchique *)
 (* Les tables locales sont codées à l'aide d'une hashtable *)
@@ -18,12 +16,6 @@ type ('a,'b) tds =
   | Nulle
   (* Table courante : la table mère - la table courante *)
   | Courante of ('a,'b) tds * ('a,'b) Hashtbl.t
-
- (* Créer une information à associer à l'AST à partir d'une info *)
-let info_to_info_ast (i : 'a info) = ref i
-
- (* Récupère l'information associée à un noeud *)
-let info_ast_to_info (i : 'a info_ast) = !i
 
 (* unwrap : string -> a Option -> a 
   * Paramètre s : l'identifiant qu'on essaie de unwrap
@@ -78,44 +70,54 @@ let rec chercherGlobalement tds nom =
 let chercherGlobalementUnsafe print_err tds nom = unwrap nom (chercherGlobalement tds nom) print_err
 
 let modifier_type_variable t i =
-match !i with
-| InfoVar (n,_,dep,base) -> i:= InfoVar (n,t,dep,base)
-| _ -> failwith "Appel modifier_type_variable pas sur un InfoVar"
-
-let modifier_type_fonction t tp i =
-match !i with
-| InfoFun(n,_,_) -> i:= InfoFun(n,t,tp)
-| _ -> failwith "Appel modifier_type_fonction pas sur un InfoFun"
-
+  match i with
+  |InfoVar (_,tv,_,_) -> tv := t;
+  | _ -> failwith "Appel modifier_adresse_variable pas sur un InfoVar"
+  
 let modifier_adresse_variable d b i =
-match !i with
-|InfoVar (n,t,_,_) -> i:= InfoVar (n,t,d,b)
+match i with
+|InfoVar (_,_,dv,bv) -> bv := b; dv := d;
 | _ -> failwith "Appel modifier_adresse_variable pas sur un InfoVar"
 
 let type_of_info_ast iast =
-match info_ast_to_info iast with
-  |InfoConst(_,_) -> Int
-  |InfoVar(_,t,_,_) -> t
-  |InfoFun(_,t,_) -> t
+  match iast with
+    |InfoConst(_,_) -> Int
+    |InfoVar(_,t,_,_) -> !t
+    |InfoFun(_,t,_) -> t
+    |InfoBoucle(_) -> raise Exceptions_identifiants.ErreurInterne
 
-(* Récupère les infos d'une info_ast
-*)
-let tam_var_of_info_ast iast =
-match info_ast_to_info iast with
-InfoVar(_,ty,dep,reg) -> (Type.getTaille ty,dep,reg)
-|_ -> raise Exceptions_identifiants.ErreurInterne
+(* Ajouter à une infoboucle un nouvel élément *)
+let ajouter_liste_boucle i e1 e2 =
+  match i with 
+  | InfoBoucle liste_ref -> liste_ref:=(e1,e2)::(!liste_ref)
+  | _ -> failwith "Appel modifier_liste_boucle sur autre chose qu'une boucle"
+
+(* Inverser la liste d'une infoboucle
+   Utilité: lors de la génération de code, nécessité de parcourir celle_ci en sens inverse *)
+let inverser_liste_boucle i =
+  match i with 
+  | InfoBoucle liste_ref -> liste_ref:=List.rev (!liste_ref)
+  | _ -> failwith "Appel modifier_liste_boucle sur autre chose qu'une boucle"
+
+(* Supprimer le premier élément d'une liste d'infoboucle 
+   Utilité: Dans le cas où plusieures boucles auraient le même nom, la boucle suivante sera associée aux labels
+   présents en tête de boucle. D'où la nécessité de supprimer ceux actuels après utilisation lors de la génération
+   de code.*)
+let supprimer_premier_liste_boucle i =
+  match i with 
+  | InfoBoucle liste_ref -> liste_ref:=List.tl (!liste_ref)
+  | _ -> failwith "Appel modifier_liste_boucle sur autre chose qu'une boucle"
 
 (* Test pour éviter les warnings *)
 let%test _ = 
 let _ = creerTDSMere in
-let _ = info_to_info_ast in
 let _ = creerTDSFille in
 let _ = absentLocalementUnsafe in
 let _ = chercherLocalementUnsafe in
 let _ = chercherGlobalementUnsafe in
 let _ = modifier_adresse_variable in
-let _ = modifier_type_fonction in
-let _ = modifier_type_variable in
-let _ = tam_var_of_info_ast in
 let _ = type_of_info_ast in
-let _ = chercherLocalement in true
+let _ = chercherLocalement in
+let _ = ajouter_liste_boucle in
+let _ = inverser_liste_boucle in
+let _ = supprimer_premier_liste_boucle in true

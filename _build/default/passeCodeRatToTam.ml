@@ -1,6 +1,6 @@
-(* (* Module de la passe de gestion du typage *)
+(* Module de la passe de gestion du typage *)
 (* doit être conforme à l'interface Passe *)
-open Tds
+open Mtds
 open Exceptions
 open Ast
 open Tam
@@ -9,6 +9,13 @@ open Code
 type t1 = Ast.AstPlacement.programme
 type t2 = string
 
+(* Récupère les infos d'une info_ast *)
+let tam_var_of_mark_info_ast m iast =
+  match iast with
+    InfoVar((_,_),ty,dep,reg) -> (Type.getTaille (!ty,m), dep, reg)
+    |_ -> raise Exceptions_identifiants.ErreurInterne
+
+
 (* analyse_tds_expression : tds -> AstTds.expression -> AstTds.expression *)
 (* Paramètre tds : la table des symboles courante *)
 (* Paramètre e : l'expression à analyser *)
@@ -16,8 +23,29 @@ type t2 = string
 en une expression de type AstTds.expression *)
 (* Erreur si mauvaise utilisation des identifiants *)
 let rec ast_to_tam_expression e = match e with
-  | AstType.Ident s -> let (taille, depl, reg) = Tds.tam_var_of_info_ast s in 
-    load taille depl reg
+  | AstType.Identifiant (m,s) ->
+        let (taille, depl, reg) = tam_var_of_mark_info_ast m s in 
+        (* int *** a = ...; ...; b = **a *)
+        (match m with
+          Type.Neant -> load taille !depl !reg
+          |Type.Pointeur _ ->
+            let rec gestion_ptr p = match p with
+              Type.Neant ->
+                (* mettre l'expression dans le tas *)
+                  loadi taille
+              |Type.Pointeur p' ->
+                (* On load l'adresse vers laquelle pointe p' dans la pile
+                * puis on la copie dans le tas avant de la pop *) 
+                  loadi 1 (* load l'@ vers laquelle pointe p' *)
+                ^ gestion_ptr p'
+                ^ pop 0 1 (* pop, on a plus besoin des @ pointées *)
+            in gestion_ptr m)
+  | AstType.NULL -> subr "MVoid"
+  | AstType.New n -> loadl_int (Type.getTaille n) (* déjà géré dans déclaration,
+                                                   * on peut load ce qu'on veut c'est pas important *)
+  | AstType.Adr (m,a) -> (* inch' j'ai bien géré les adresses ie elles ont bien le même iast que a *)
+      let (_, depl, reg) = tam_var_of_mark_info_ast m a in
+      (string_of_int !depl) ^ "[" ^ !reg ^ "]" 
   | AstType.Entier i -> loadl_int i 
   | AstType.Booleen b -> loadl_int (Bool.to_int b)
   | AstType.Binaire (op, e1, e2) -> 
@@ -25,7 +53,7 @@ let rec ast_to_tam_expression e = match e with
     and ne2 = ast_to_tam_expression e2 in
     ne1 ^ ne2 ^ (
       match op with
-      | Fraction -> "\n" (* les deux entiers sont déjà dans l'ordre d'un rationnel *)
+      | Fraction -> "" (* les deux entiers sont déjà dans l'ordre d'un rationnel *)
       | PlusInt -> subr "IAdd"
       | PlusRat -> call "ST" "radd" (* ST est inutile mais cet argument est utile en cas d'appel croisé *)
       | MultInt -> subr "IMul"
@@ -44,14 +72,23 @@ let rec ast_to_tam_expression e = match e with
       | Numerateur -> pop 0 1
       | Denominateur -> store 1 (-2) "ST" 
     )
-  | AstType.AppelFonction (f, l) -> let info_f = info_ast_to_info f in
-    (match info_f with
-    | InfoFun (name, _, _) ->
+  | AstType.AppelFonction (f, l) ->
+    (match f with
+    | InfoFun ((name,_), _, _) ->
       List.fold_left (fun acc e -> acc ^ ast_to_tam_expression e) "" l
       ^ call "ST" name
     | _ -> raise Exceptions.ErreurInterne 
     )
-      
+  | AstType.Ternaire(e1, e2, e3) -> 
+      let labElse = getEtiquette ()
+      and labEndIF = getEtiquette () in
+      ast_to_tam_expression e1
+      ^ jumpif 0 labElse
+      ^ ast_to_tam_expression e2
+      ^ jump labEndIF
+      ^ label labElse
+      ^ ast_to_tam_expression e3
+      ^ label labEndIF
 
 
 (* analyse_tds_instruction : tds -> info_ast option -> AstPlacement.instruction -> AstPlacement.instruction *)
@@ -65,28 +102,80 @@ en une instruction de type AstPlacement.instruction *)
 let rec ast_to_tam_instruction i =
   match i with
   | AstPlacement.Declaration (iast, e) ->
-    let (taille, dep, reg) = Tds.tam_var_of_info_ast iast in
-    push taille
-    ^ ast_to_tam_expression e
-    ^ store taille dep reg
-  | AstPlacement.Affectation (iast, e) ->
-    let (taille, dep, reg) = Tds.tam_var_of_info_ast iast in
-    ast_to_tam_expression e
-    ^ store taille dep reg
+    let (ty, m, taille, dep, reg) = 
+      match iast with
+        InfoVar((_,m),ty,dep,reg) -> (ty, m, Type.getTaille (!ty,m),dep,reg)
+        |_ -> raise Exceptions_identifiants.ErreurInterne
+    in
+      (match m with
+        Type.Neant -> 
+            push taille
+          ^ ast_to_tam_expression e
+          ^ store taille !dep !reg
+        (* Pour les pointeurs on as dans la pile l'adr du 1er *
+           le reste est dans le tas *)
+        | Type.Pointeur p ->
+          (* int **a; pile : @( *a ) tas : *a et a *)
+          let rec gestion_ptr p = match p with
+            Type.Neant ->
+              (* mettre l'expression dans le tas *)
+                ast_to_tam_expression e
+              ^ loada (-2) "ST"
+              ^ storei taille
+              ^ pop 0 taille
+            |Type.Pointeur p' ->
+              (* On alloue et load en haut de pile
+               * l'adresse vers laquelle pointe p dans la pile
+               * puis on la copie dans le tas avant de la pop *) 
+               loadl_int (Type.getTaille (!ty,p'))
+              ^ subr "MAlloc" (* @Source copie, futur @Dest *)
+              ^ call "ST" "assignPtr"
+              ^ gestion_ptr p'
+              ^ pop 0 1 (* pop du MAlloc qui est maintenant dans le tas *)
+          in 
+        (* int * -> MAlloc taille(int) mais int ** -> MAlloc taille( int* ) *)
+          (loadl_int (Type.getTaille (!ty,p)))
+        ^ (subr "MAlloc") (* 1ère @Source pour la copie *)
+        ^ gestion_ptr p
+      )
+  | AstPlacement.Affectation (m, iast, e) ->
+    let (taille, dep, reg) = (
+      match iast with
+        InfoVar((_,_),ty,dep,reg) -> (Type.getTaille (!ty,m),dep,reg)
+        |_ -> raise Exceptions_identifiants.ErreurInterne) in
+    (match m with
+      Neant -> 
+          ast_to_tam_expression e
+        ^ store taille !dep !reg
+      |Pointeur _ ->
+        let rec gestion_ptr p = match p with
+          Type.Neant ->
+            (* mettre l'expression dans le tas *)
+              ast_to_tam_expression e
+            ^ loada (-2) "ST"
+            ^ storei taille
+            ^ pop 0 taille
+          |Type.Pointeur p' ->
+            (* On load l'adresse vers laquelle pointe p' dans la pile
+            * puis on la copie dans le tas avant de la pop *) 
+              loadi 1 (* load l'@ vers laquelle pointe p' *)
+            ^ gestion_ptr p'
+            ^ pop 0 1 (* pop, on a plus besoin des @ pointées *)
+        in gestion_ptr m )
   | AstPlacement.AffichageInt e ->
-    ast_to_tam_expression e
+      ast_to_tam_expression e
     ^ subr "IOut"
   | AstPlacement.AffichageRat e ->
-    ast_to_tam_expression e
+      ast_to_tam_expression e
     ^ call "SB" "ROut"
   | AstPlacement.AffichageBool e ->
-    ast_to_tam_expression e
+      ast_to_tam_expression e
     ^ subr "BOut"
   | AstPlacement.Conditionnelle (e,b1,b2) ->
     let labIf = getEtiquette ()
     and labElse = getEtiquette ()
     and labEndIF = getEtiquette () in
-    label labIf
+      label labIf
     ^ ast_to_tam_expression e
     ^ jumpif 0 labElse
     ^ ast_to_tam_bloc b1
@@ -97,7 +186,7 @@ let rec ast_to_tam_instruction i =
   | AstPlacement.TantQue (e,b) ->
     let labLoop = getEtiquette ()
     and labEndLoop = getEtiquette () in
-    label labLoop
+      label labLoop
     ^ ast_to_tam_expression e
     ^ jumpif 0 labEndLoop
     ^ ast_to_tam_bloc b
@@ -106,19 +195,40 @@ let rec ast_to_tam_instruction i =
   | AstPlacement.Retour (e, taille_ret, taille_param) ->
   (* Rq : pas besoin de pop, le pointeur de pile sera remis au bon endroit 
      grâce aux instructions d'activation *)
-    ast_to_tam_expression e
+      ast_to_tam_expression e
     ^ return taille_ret taille_param
   | AstPlacement.Empty -> ""
+  (* Prise en compte des boucles *)
+  | AstPlacement.Boucle (ia, b) ->
+    begin
+      match ia with
+      | InfoBoucle l -> 
+        inverser_liste_boucle ia; (* l a maintenant en premier élément les bons labels 
+                                      TODO: vérifier qu'il faut pas reprendre l *)
+        let (labLoop, labEndLoop) = List.hd !l in 
+        supprimer_premier_liste_boucle ia; (* Si deux boucles ont le même nom, on supprime celle utilisée *)
+        inverser_liste_boucle ia; (* On remet la liste dans l'ordre: mauvaise complexité, mais liste courte *)
+        label labLoop
+        ^ ast_to_tam_bloc b
+        ^ jump labLoop
+        ^ label labEndLoop
+      | _ -> raise Exceptions.ErreurInterne
+    end
+  | AstPlacement.Break s -> jump s (* d'où la nécessité de l'avoir déjà avant*)
+  | AstPlacement.Continue s -> jump s (* idem *)
 
 (* analyse_tds_bloc : tds -> info_ast option -> AstPlacement.bloc -> AstPlacement.bloc *)
 (* Paramètre tds : la table des symboles courante *)
 (* Paramètre oia : None si le bloc li est dans le programme principal,
-                   Some ia où ia est l'information associée à la fonction dans laquelle est le bloc li sinon *)
+                   Some ia où ia est l'information associée
+                    à la fonction dans laquelle est le bloc li sinon *)
 (* Paramètre li : liste d'instructions à analyser *)
-(* Vérifie la bonne utilisation des identifiants et tranforme le bloc en un bloc de type AstPlacement.bloc *)
+(* Vérifie la bonne utilisation des identifiants et
+ *  tranforme le bloc en un bloc de type AstPlacement.bloc *)
 (* Erreur si mauvaise utilisation des identifiants *)
 and ast_to_tam_bloc (l_inst, taille_bloc) =
-  List.fold_left (fun prev_str inst -> prev_str ^ ast_to_tam_instruction inst) "" l_inst
+    List.fold_left (fun prev_str inst -> prev_str ^ ast_to_tam_instruction inst)
+                    "" (List.map fst l_inst (* contexte inutile ici *))
   ^ pop 0 taille_bloc
 
 (* analyse_tds_fonction : tds -> AstPlacement.fonction -> AstPlacement.fonction *)
@@ -127,10 +237,10 @@ and ast_to_tam_bloc (l_inst, taille_bloc) =
 (* Vérifie la bonne utilisation des identifiants et tranforme la fonction
 en une fonction de type AstPlacement.fonction *)
 (* Erreur si mauvaise utilisation des identifiants *)
-let rec ast_to_tam_fonction (AstPlacement.Fonction(iast,_,l_inst)) =
+let ast_to_tam_fonction (AstPlacement.Fonction(iast,_,l_inst)) =
   (* Rq : On n'autorise pas les fonctions auxillaires *)
-  match info_ast_to_info iast with 
-  | InfoFun (nom, _, _) -> label nom ^ ast_to_tam_bloc l_inst
+  match iast with 
+  | InfoFun ((nom,_), _, _) -> label nom ^ ast_to_tam_bloc l_inst
   | _ -> raise ErreurInterne
   
 (* analyser : AstPlacement.programme -> AstPlacement.programme *)
@@ -139,12 +249,12 @@ let rec ast_to_tam_fonction (AstPlacement.Fonction(iast,_,l_inst)) =
 en un programme de type AstPlacement.programme *)
 (* Erreur si mauvais typage *)
 let analyser (AstPlacement.Programme (fonctions,bloc)) = 
-  getEntete ()
+    getEntete ()
   (* Analyse des fonctions *)
-  ^ List.fold_left (fun prev_str func -> prev_str ^ ast_to_tam_fonction func) "" fonctions
+  ^ List.fold_left (fun prev_str func -> prev_str ^ ast_to_tam_fonction func)
+                    "" fonctions
   (* Analyse du bloc *)
   ^ label "main"
   ^ ast_to_tam_bloc bloc
   ^ halt 
 
- *)
