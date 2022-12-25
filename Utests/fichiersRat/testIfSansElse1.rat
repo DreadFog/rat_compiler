@@ -1,5 +1,0 @@
-test{
-  if true {
-    int x = 3;
-  } 
-}
