@@ -1,24 +1,22 @@
 open Rat
 open PasseTdsRat
 open Compilateur
+open Type
 (*open Exceptions*)
 open Exceptions_identifiants
 
-exception ErreurNonDetectee
-let pathFichiersRat = "../Utests/fichiersRat/"
+(* ====== Test snd_zip, second, first, addSecond ====== *)
+let%test _ = snd_zip [] [] = []
+let%test _ = snd_zip [(1,"2");(3,"4")] [(5,true);(7,false)] = [("2",true);("4",false)]
+let%test _ = second ((+) 1) ("1",0) = ("1",1)
+let%test _ = first ((+) 1) (-1,true) = (0,true)
 
-(**********)
-(*  TESTS *)
-(**********)
+(* ====== Test gestion_pointeurs ====== *)
+let%test _ = gestion_pointeurs (Pointeur(Pointeur(Neant))) Neant = Pointeur(Pointeur(Neant))
+let%test _ = try
+    let _ = gestion_pointeurs Neant (Pointeur(Pointeur(Neant))) = Pointeur(Pointeur(Neant)) in
+      false
+  with RefInterdite -> true
+let%test _ = gestion_pointeurs Neant Neant = Neant
+let%test _ = gestion_pointeurs (Pointeur(Pointeur(Neant))) (Pointeur(Pointeur(Neant))) = Neant
 
-let%test_unit "testTernaireSimpleOk" = 
-  let _ = compiler (pathFichiersRat^"testTernaireSimpleOk.rat") in () (* ne doit pas lever d'erreur *)
-let%test_unit "testVariablePlusPlus" = 
-  let _ = compiler (pathFichiersRat^"testVariablePlusPlus.rat") in () (* ne doit pas lever d'erreur *)
-
-(* let%test_unit "testAffectation2"= 
-  try 
-    let _ = compiler (pathFichiersRat^"testAffectation2.rat") 
-    in raise ErreurNonDetectee
-  with
-  | IdentifiantNonDeclare("y") -> () *)
