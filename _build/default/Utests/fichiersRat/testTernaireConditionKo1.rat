@@ -1,5 +1,0 @@
-main {
-    bool choix = true;
-    int x = (condition_inconnue ? 2 : 1);
-    print x;
-}

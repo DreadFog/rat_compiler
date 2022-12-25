@@ -1,2 +1,0 @@
-open Rat
-open Type
