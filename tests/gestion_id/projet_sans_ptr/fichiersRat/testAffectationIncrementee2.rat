@@ -1,0 +1,6 @@
+test{
+  rat x = [1/2];
+  rat to_add = [5/2];
+  x += to_add;
+  print x;
+}
