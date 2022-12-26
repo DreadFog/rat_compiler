@@ -2,13 +2,14 @@ type typ = Bool | Int | Rat | Undefined
 
 type mark = Neant | Pointeur of mark
 
-let (*rec*) string_of_type t = 
-  match t with
-  | Bool ->  "Bool"
-  | Int  ->  "Int"
-  | Rat  ->  "Rat"
+let rec string_of_type_mark (t,m) = 
+  match t, m  with
+  | _, Pointeur p -> string_of_type_mark (t,p)^"*" 
+  | Bool, _ ->  "Bool"
+  | Int, _  ->  "Int"
+  | Rat, _  ->  "Rat"
   (*| Pointeur(dsk) -> "Pointeur of " ^ string_of_type dsk*)
-  | Undefined -> "Undefined"
+  | Undefined, _ -> "Undefined"
 
 let (*rec*) est_compatible (t1,m1) (t2,m2) =
   let typesEq = 

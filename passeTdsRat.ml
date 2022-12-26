@@ -375,10 +375,6 @@ let analyse_tds_fonction maintds (AstSyntax.Fonction(t,(id,m),l_param_unref,l_in
   let l = getFirsts l_param_tds' in
   (AstTds.Fonction(t, id_tds, l, l_inst_tds),nb)
 
-let rec addSecond x l = match l with
-  |[] -> []
-  |t::q -> (t,x)::(addSecond x q)
-
 (* analyser : AstSyntax.programme -> AstTds.programme *)
 (* Paramètre : le programme à analyser *)
 (* Vérifie la bonne utilisation des identifiants et tranforme le programme

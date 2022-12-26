@@ -3,9 +3,9 @@ type typ = Bool | Int | Rat | Undefined
 
 type mark = Neant | Pointeur of mark
 
-(* string_of_type :  typ -> string *)
+(* string_of_type :  typ -> mark -> string *)
 (* transforme un typ en chaîne de caractère *)
-val string_of_type : typ -> string  
+val string_of_type_mark : (typ*mark) -> string  
 
 (* est_compatible_type : typ -> typ -> bool *)
 (* vérifie que le second type est compatible avec le premier *)

@@ -34,16 +34,16 @@ let getTypexMarkOfIast iast = match iast with
 (* Vérifie la bonne utilisation des identifiants et tranforme l'expression
 en une expression de type AstTds.expression *)
 (* Erreur si mauvaise utilisation des identifiants *)
-let rec analyse_type_expression e = match e with
+let rec analyse_type_expression (e,(ctx:contexte)) = match e with
   | AstTds.Identifiant iast -> (AstType.Identifiant iast, getTypexMarkOfIast iast)
   | AstTds.Entier i -> (AstType.Entier i, (Int, Neant))
   | AstTds.Booleen b -> (AstType.Booleen b, (Bool, Neant))
   | AstTds.NULL -> (AstType.NULL, (Undefined, Pointeur(Neant)))
-  | AstTds.Adr a -> (AstType.Adr a, getTypexMarkOfIast a)
-  | AstTds.New n -> (AstType.New n, n)
+  | AstTds.Adr a -> let (t,m) = getTypexMarkOfIast a in (AstType.Adr a, (t, Pointeur(m)))
+  | AstTds.New n -> let (t,m) = n in (AstType.New n, (t, Pointeur(m)))
   | AstTds.Binaire (op, e1, e2) ->
-    let (ne1,tm1) = analyse_type_expression e1 in 
-    let (ne2,tm2) = analyse_type_expression e2 in 
+    let (ne1,tm1) = analyse_type_expression (e1,ctx) in 
+    let (ne2,tm2) = analyse_type_expression (e2,ctx) in 
     if (Type.est_compatible tm1 tm2) then 
       (match (op, fst tm1) with
         Fraction, Int -> (AstType.Binaire (AstType.Fraction, ne1, ne2), (Rat,Neant))
@@ -54,29 +54,29 @@ let rec analyse_type_expression e = match e with
         |Equ, Int -> (AstType.Binaire (AstType.EquInt, ne1, ne2), (Bool,Neant))
         |Equ, Bool -> (AstType.Binaire (AstType.EquBool, ne1, ne2), (Bool,Neant))
         |Inf, Int -> (AstType.Binaire (AstType.Inf, ne1, ne2), (Bool,Neant))
-        |_, _ -> raise (TypeBinaireInattendu (op, fst tm1, fst tm2)) (*rq: erreur a adapté avec ptr*)
+        |_, _ -> afficher_erreur (TypeBinaireInattendu (op, tm1, tm2)) ctx
         )
-    else raise (TypeBinaireInattendu (op,fst tm1, fst tm2)) (*rq: erreur a adapté avec ptr*)
+    else afficher_erreur (TypeBinaireInattendu (op, tm1, tm2)) ctx
   | AstTds.Unaire (op, e) -> 
-    let (ne, te) = analyse_type_expression e in
+    let (ne, te) = analyse_type_expression (e,ctx) in
     (match (op, fst te) with
      |Numerateur, Rat -> AstType.Unaire (AstType.Numerateur, ne), (Int,Neant)
      |Denominateur, Rat -> AstType.Unaire (AstType.Denominateur, ne), (Int,Neant)
-     |_ -> raise (TypeInattendu (fst te, Rat)) (*rq: erreur a adapté avec ptr*)
+     |_ -> afficher_erreur (TypeInattendu (te, (Rat,Neant))) ctx
      )
   | AstTds.Ternaire(e1, e2, e3) -> 
-    let (ne1, te1) = analyse_type_expression e1 in
-    let (ne2, te2) = analyse_type_expression e2 in
-    let (ne3, te3) = analyse_type_expression e3 in
+    let (ne1, te1) = analyse_type_expression (e1,ctx) in
+    let (ne2, te2) = analyse_type_expression (e2,ctx) in
+    let (ne3, te3) = analyse_type_expression (e3,ctx) in
     if (Type.est_compatible te1 (Bool,Neant)) then
       if (Type.est_compatible te2 te3) then
         (AstType.Ternaire (ne1, ne2, ne3), te2)
-      else raise (TypeInattendu (fst te3, fst te2)) (*rq: erreur a adapté avec ptr*)
-    else raise (TypeInattendu (fst te1, Bool)) (*rq: erreur a adapté avec ptr*)
+      else afficher_erreur (TypeInattendu (te3, te2)) ctx
+    else afficher_erreur (TypeInattendu (te1, (Bool,Neant))) ctx
   | AstTds.AppelFonction (f, l) -> 
     match f with
       |InfoFun((_,Neant),t,lt) -> (* Vérification du bon nombre d'arguments *)
-          let nl = List.map analyse_type_expression l in
+          let nl = List.map (fun x -> analyse_type_expression (x,ctx)) l in
           let type_params = List.map snd nl in
           (* check if all params have a correct type*)
           let lt' = List.map (fun (x,(_,y)) -> (!x,y)) lt in
@@ -85,7 +85,7 @@ let rec analyse_type_expression e = match e with
             (AstType.AppelFonction (f, List.map fst nl), (t,Neant))
           else 
             (* Erreur a adapté pour ajouter les ptrs *)
-            raise (TypesParametresInattendus (List.map fst lt', List.map fst type_params))
+            afficher_erreur (TypesParametresInattendus (lt', type_params)) ctx
       |InfoFun(_) -> failwith "Pointeurs de fonctions pas encore supporté"
       |_ -> raise ErreurInterne
 
@@ -104,7 +104,7 @@ let rec analyse_type_expression e = match e with
 (* Vérifie la bonne utilisation des identifiants et tranforme l'instruction
 en une instruction de type AstTds.instruction *)
 (* Erreur si mauvaise utilisation des identifiants *)
-let rec analyse_type_instruction (i,ctx) =
+let rec analyse_type_instruction (i,(ctx:contexte)) =
   (
   (* match pour l'instruction, le ctx est propagé dans les autres ast 
    * -> on renvoi un couple *)
@@ -114,25 +114,24 @@ let rec analyse_type_instruction (i,ctx) =
                 InfoVar((_,mv),_,_,_) -> t,mv
                 |InfoFun((_,mv),_,_) -> t,mv
                 |_ -> raise ErreurInterne) in
-     let (ne, tme) = analyse_type_expression e in
+     let (ne, tme) = analyse_type_expression (e,ctx) in
      if (Type.est_compatible nn tme) then (
       modifier_type_variable t n; (* modification du type associé *)
       (AstType.Declaration (n, ne))) 
-    else raise (TypeInattendu(fst tme, t))
+    else afficher_erreur (TypeInattendu(tme, nn)) ctx
             (* Erreur a adapté pour ajouter les ptrs *)
   | AstTds.Affectation (n,e) ->
     let nn = (match n with
                 InfoVar((_,m),t,_,_) -> (!t), m
                 |InfoFun((_,m),t,_) -> t, m
                 |_ -> raise ErreurInterne) in
-     let (ne, tme) = analyse_type_expression e in
-     let t = type_of_info_ast n in
+     let (ne, tme) = analyse_type_expression (e,ctx) in
      if (Type.est_compatible nn tme) then
           (AstType.Affectation(n, ne))
-     else raise (TypeInattendu(fst tme,t)) 
+     else afficher_erreur (TypeInattendu(tme, nn)) ctx 
         (* Erreur a adapté pour ajouter les ptrs *)
   | AstTds.Affichage e ->
-     let (ne, te) = analyse_type_expression e in
+     let (ne, te) = analyse_type_expression (e,ctx) in
      if snd te <> Neant then raise Exceptions.MarqueurInattendu (* pas de print(&a); *)
      else (match fst te with
       Int -> AstType.AffichageInt ne
@@ -142,23 +141,23 @@ let rec analyse_type_instruction (i,ctx) =
     )
   | AstTds.Conditionnelle (e,b1,b2) ->
     (* Vérification que la conditionnelle est bien booléenne *)
-    let (ne, te) = (analyse_type_expression e) in
+    let (ne, te) = (analyse_type_expression (e,ctx)) in
     if (Type.est_compatible te (Bool,Neant)) then 
       AstType.Conditionnelle(ne, analyse_type_bloc b1, analyse_type_bloc b2)
-    else raise (TypeInattendu(fst te, Bool))
+    else afficher_erreur (TypeInattendu(te, (Bool,Neant))) ctx
     (* Erreur a adapté pour ajouter les ptrs *)
   | AstTds.TantQue (e,b) ->
     (* Vérification que la conditionnelle est bien booléenne *)
-    let (ne, te) = (analyse_type_expression e) in
+    let (ne, te) = (analyse_type_expression (e,ctx)) in
     if (Type.est_compatible te (Bool,Neant)) then 
       AstType.TantQue(ne, analyse_type_bloc b)
-    else raise (TypeInattendu(fst te, Bool))
+    else afficher_erreur (TypeInattendu(te, (Bool,Neant))) ctx
     (* Erreur a adapté pour ajouter les ptrs *)
   | AstTds.Retour (e,iast) ->
-    let (ne, te) = analyse_type_expression e 
+    let (ne, te) = analyse_type_expression (e,ctx) 
     and t = type_of_info_ast iast in
     if (Type.est_compatible (t,Neant) te) then (AstType.Retour(ne, iast))
-    else raise (TypeInattendu(fst te, t))
+    else afficher_erreur (TypeInattendu(te, (t,Neant))) ctx
     (* Erreur a adapté pour ajouter les ptrs *)
   | AstTds.Empty -> AstType.Empty
   (* Gestion des boucles*)
