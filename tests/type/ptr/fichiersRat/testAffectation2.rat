@@ -1,0 +1,5 @@
+test{
+  int **b = new (int *);
+  int c = 1;
+  *b = &c;
+}
