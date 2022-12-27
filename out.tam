@@ -70,31 +70,27 @@ SUBR IMul
 CALL (ST) norm
 RETURN (2) 4
 
-assignPtr
-LOADL 1
-LOAD (1) -2[LB]
-LOAD (1) -1[LB]
-SUBR MCopy
-RETURN (1) 1
-
-
 main
 LOADL 1
 SUBR MAlloc
 LOADL 1
 SUBR MAlloc
-CALL (ST) assignPtr
+LOAD (1) -1[ST]
+LOAD (1) -2[ST]
+STOREI (1)
+
+
 LOADL 1
-LOADA -2[ST]
+LOAD (1) -2[ST]
 STOREI (1)
 POP (0) 1
 POP (0) 1
 PUSH 1
-LOADL 1
+LOADL 42
 STORE (1) 1[SB]
 LOADI (1)
 LOAD (1) 1[SB]
-LOADA -2[ST]
+LOAD (1) -2[ST]
 STOREI (1)
 POP (0) 1
 POP (0) 1

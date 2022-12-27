@@ -16,6 +16,17 @@ let tam_var_of_info_ast iast =
     |_ -> raise Exceptions_identifiants.ErreurInterne
 
 
+(* a modif pour fcts *)
+let assignPtr =
+(* loadl la taille du ptr : 1
+    load  l'@ dest copie
+    load  l'@ source copie *)
+"LOAD (1) -1[ST]
+LOAD (1) -2[ST]
+STOREI (1)\n\n
+"
+
+
 (* analyse_tds_expression : tds -> AstTds.expression -> AstTds.expression *)
 (* Paramètre tds : la table des symboles courante *)
 (* Paramètre e : l'expression à analyser *)
@@ -120,7 +131,7 @@ let rec ast_to_tam_instruction i =
             Type.Neant ->
               (* mettre l'expression dans le tas *)
                 ast_to_tam_expression e
-              ^ loada (-2) "ST"
+              ^ load 1 (-2) "ST"
               ^ storei taille
               ^ pop 0 taille
             |Type.Pointeur p' ->
@@ -129,7 +140,7 @@ let rec ast_to_tam_instruction i =
                * puis on la copie dans le tas avant de la pop *) 
                loadl_int (Type.getTaille (!ty,p'))
               ^ subr "MAlloc" (* @Source copie, futur @Dest *)
-              ^ call "ST" "assignPtr"
+              ^ assignPtr
               ^ gestion_ptr p'
               ^ pop 0 1 (* pop du MAlloc qui est maintenant dans le tas *)
           in 
@@ -152,7 +163,7 @@ let rec ast_to_tam_instruction i =
           Type.Neant ->
             (* mettre l'expression dans le tas *)
               ast_to_tam_expression e
-            ^ loada (-2) "ST"
+            ^ load 1 (-2) "ST"
             ^ storei taille
             ^ pop 0 taille
           |Type.Pointeur p' ->
@@ -203,11 +214,12 @@ let rec ast_to_tam_instruction i =
     begin
       match ia with
       | InfoBoucle l -> 
-        inverser_liste_boucle ia; (* l a maintenant en premier élément les bons labels 
-                                      TODO: vérifier qu'il faut pas reprendre l *)
-        let (labLoop, labEndLoop) = List.hd !l in 
-        supprimer_premier_liste_boucle ia; (* Si deux boucles ont le même nom, on supprime celle utilisée *)
-        inverser_liste_boucle ia; (* On remet la liste dans l'ordre: mauvaise complexité, mais liste courte *)
+        (*let l' = inverser_liste_boucle ia in (* l a maintenant en premier élément les bons labels 
+                                      TODO: vérifier qu'il faut pas reprendre l *)*)
+
+        let (labLoop, labEndLoop) = List.hd l in 
+        (*supprimer_premier_liste_boucle ia; (* Si deux boucles ont le même nom, on supprime celle utilisée *)
+        inverser_liste_boucle ia; (* On remet la liste dans l'ordre: mauvaise complexité, mais liste courte *)*)
         label labLoop
         ^ ast_to_tam_bloc b
         ^ jump labLoop

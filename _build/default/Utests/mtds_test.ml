@@ -256,7 +256,7 @@ let%test _ =
 
 
 (* ====== Test ajouter_liste_boucle, inverser_liste_boucle, supprimer_premier_liste_boucle ====== *)
-let%test _ = 
+(*let%test _ = 
   let info = InfoBoucle (ref [("test","test")]) in
   ajouter_liste_boucle info "a" "b";
   inverser_liste_boucle info;
@@ -264,3 +264,4 @@ let%test _ =
   match info with
     | InfoBoucle (l) -> !l = ["a","b"]
     | _ -> false
+*)

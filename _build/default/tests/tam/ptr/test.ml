@@ -39,3 +39,6 @@ let%expect_test "test" =
 let%expect_test "testAffectation1" =
   runtam (pathFichiersRat^"testAffectation1.rat");
   [%expect{| 1 |}]
+let%expect_test "testAffectation2" =
+  runtam (pathFichiersRat^"testAffectation2.rat");
+  [%expect{| 42 |}]
