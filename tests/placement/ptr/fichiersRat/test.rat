@@ -5,5 +5,7 @@ main{
     int x = 2;
     while (x < 3){
         x = (x + 1);
+        *px = &x;
+        int y = **px;
     }
 }

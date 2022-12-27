@@ -44,6 +44,11 @@ let pathFichiersRat = "./fichiersRat/"
 (*  TESTS *)
 (**********)
 
-let%test "test1_a" = 
+(*let%test "test1_px" = 
+  test (pathFichiersRat^"test.rat")  ("main", Type.Neant) (("px", Type.Neant), 0) (ref 0, ref "SB")*)
+  let%test "test1_a" = 
   test (pathFichiersRat^"test.rat")  ("main", Type.Neant) (("a", Type.Neant), 1) (ref 1, ref "SB")
-(* le rat est fait pour plusieurs tests même si y'en a que un pour le moment *)
+(*let%test "test1_x" = 
+  test (pathFichiersRat^"test.rat")  ("main", Type.Neant) (("x", Type.Neant), 2) (ref 2, ref "SB")
+let%test "test1_y" = 
+  test (pathFichiersRat^"test.rat")  ("main", Type.Neant) (("y", Type.Neant), 3) (ref 3, ref "SB")*)
