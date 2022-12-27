@@ -30,42 +30,42 @@ let%test_unit "testDeclaration4"=
     let _ = compiler (pathFichiersRat^"testDeclaration4.rat")
     in  raise ErreurNonDetectee
   with
-  | TypeInattendu(Bool,Int) -> ()
+  | TypeInattendu((Bool,Neant),(Int,Neant)) -> ()
 
 let%test_unit "testDeclaration5"= 
   try 
     let _ = compiler (pathFichiersRat^"testDeclaration5.rat")
     in raise ErreurNonDetectee
   with
-  | TypeInattendu(Bool,Rat) -> ()
+  | TypeInattendu((Bool,Neant),(Rat,Neant)) -> ()
 
 let%test_unit "testDeclaration6"= 
   try 
     let _ = compiler (pathFichiersRat^"testDeclaration6.rat")
     in raise ErreurNonDetectee
   with
-  | TypeInattendu(Int,Bool) -> ()
+  | TypeInattendu((Int,Neant),(Bool,Neant)) -> ()
 
 let%test_unit "testDeclaration7"= 
   try 
     let _ = compiler (pathFichiersRat^"testDeclaration7.rat")
     in raise ErreurNonDetectee
   with
-  | TypeInattendu(Int,Rat) -> ()
+  | TypeInattendu((Int,Neant),(Rat,Neant)) -> ()
 
 let%test_unit "testDeclaration8"= 
   try 
     let _ = compiler (pathFichiersRat^"testDeclaration8.rat")
     in raise ErreurNonDetectee
   with
-  | TypeInattendu(Rat,Int) -> ()
+  | TypeInattendu((Rat,Neant),(Int,Neant)) -> ()
 
 let%test_unit "testDeclaration9"= 
   try 
     let _ = compiler (pathFichiersRat^"testDeclaration9.rat")
     in raise ErreurNonDetectee
   with
-  | TypeInattendu(Rat,Bool) -> ()
+  | TypeInattendu((Rat,Neant),(Bool,Neant)) -> ()
 
 let%test_unit "testAffectation1"= 
   let _ = compiler (pathFichiersRat^"testAffectation1.rat") in ()
@@ -81,42 +81,42 @@ let%test_unit "testAffectation4"=
     let _ = compiler (pathFichiersRat^"testAffectation4.rat")
     in raise ErreurNonDetectee
   with
-  | TypeInattendu(Int,Rat) -> ()
+  | TypeInattendu((Int,Neant),(Rat,Neant)) -> ()
 
 let%test_unit "testAffectation5"= 
   try 
     let _ = compiler (pathFichiersRat^"testAffectation5.rat")
     in raise ErreurNonDetectee
   with
-  | TypeInattendu(Bool,Int) -> ()
+  | TypeInattendu((Bool,Neant),(Int,Neant)) -> ()
 
 let%test_unit "testAffectation6"= 
   try 
     let _ = compiler (pathFichiersRat^"testAffectation6.rat")
     in raise ErreurNonDetectee
   with
-  | TypeInattendu(Bool,Rat) -> ()
+  | TypeInattendu((Bool,Neant),(Rat,Neant)) -> ()
 
 let%test_unit "testAffectation7"= 
   try 
     let _ = compiler (pathFichiersRat^"testAffectation7.rat")
     in raise ErreurNonDetectee
   with
-  | TypeInattendu(Rat,Int) -> ()
+  | TypeInattendu((Rat,Neant),(Int,Neant)) -> ()
 
 let%test_unit "testAffectation8"= 
   try 
     let _ = compiler (pathFichiersRat^"testAffectation8.rat")
     in raise ErreurNonDetectee
   with
-  | TypeInattendu(Rat,Bool) -> ()
+  | TypeInattendu((Rat,Neant),(Bool,Neant)) -> ()
 
 let%test_unit "testAffectation9"= 
   try 
     let _ = compiler (pathFichiersRat^"testAffectation9.rat")
     in raise ErreurNonDetectee
   with
-  | TypeInattendu(Int,Bool) -> ()
+  | TypeInattendu((Int,Neant),(Bool,Neant)) -> ()
 
 let%test_unit "testConditionnelle1"= 
   let _ = compiler (pathFichiersRat^"testConditionnelle1.rat") in ()
@@ -126,14 +126,14 @@ let%test_unit "testConditionnelle2"=
     let _ = compiler (pathFichiersRat^"testConditionnelle2.rat")
     in raise ErreurNonDetectee
   with
-  | TypeInattendu(Int,Bool) -> ()
+  | TypeInattendu((Int,Neant),(Bool,Neant)) -> ()
 
 let%test_unit "testConditionnelle3"= 
   try 
     let _ = compiler (pathFichiersRat^"testConditionnelle3.rat")
     in raise ErreurNonDetectee
   with
-  | TypeInattendu(Rat,Bool) -> ()
+  | TypeInattendu((Rat,Neant),(Bool,Neant)) -> ()
 
 let%test_unit "testConditionnelle4"= 
   let _ = compiler (pathFichiersRat^"testConditionnelle4.rat") in ()
@@ -143,14 +143,14 @@ let%test_unit "testConditionnelle5"=
     let _ = compiler (pathFichiersRat^"testConditionnelle5.rat")
     in raise ErreurNonDetectee
   with
-  | TypeInattendu(Int,Bool) -> ()
+  | TypeInattendu((Int,Neant),(Bool,Neant)) -> ()
 
 let%test_unit "testConditionnelle6"= 
   try 
     let _ = compiler (pathFichiersRat^"testConditionnelle6.rat")
     in raise ErreurNonDetectee
   with
-  | TypeInattendu(Rat,Bool) -> ()
+  | TypeInattendu((Rat,Neant),(Bool,Neant)) -> ()
 
 let%test_unit "testRepetition1"= 
   let _ = compiler (pathFichiersRat^"testRepetition1.rat") in ()
@@ -160,14 +160,14 @@ let%test_unit "testRepetition2"=
     let _ = compiler (pathFichiersRat^"testRepetition2.rat")
     in raise ErreurNonDetectee
   with
-  | TypeInattendu(Int,Bool) -> ()
+  | TypeInattendu((Int,Neant),(Bool,Neant)) -> ()
 
 let%test_unit "testRepetition3"= 
   try 
     let _ = compiler (pathFichiersRat^"testRepetition3.rat")
     in raise ErreurNonDetectee
   with
-  | TypeInattendu(Rat,Bool) -> ()
+  | TypeInattendu((Rat,Neant),(Bool,Neant)) -> ()
 
 let%test_unit "testRepetition4"= 
   let _ = compiler (pathFichiersRat^"testRepetition4.rat") in ()
@@ -177,23 +177,23 @@ let%test_unit "testRepetition5"=
     let _ = compiler (pathFichiersRat^"testRepetition5.rat")
     in raise ErreurNonDetectee
   with
-  | TypeInattendu(Int,Bool) -> ()
+  | TypeInattendu((Int,Neant),(Bool,Neant)) -> ()
 
 let%test_unit "testRepetition6"= 
   try 
     let _ = compiler (pathFichiersRat^"testRepetition6.rat")
     in raise ErreurNonDetectee
   with
-  | TypeInattendu(Rat,Bool) -> ()
+  | TypeInattendu((Rat,Neant),(Bool,Neant)) -> ()
 
-let%test_unit "testPrint1"= 
-  let _ = compiler (pathFichiersRat^"testPrint1.rat") in ()
+let%test_unit "testPr(Int,Neant)1"= 
+  let _ = compiler (pathFichiersRat^"testPr(Int,Neant)1.rat") in ()
 
-let%test_unit "testPrint2"= 
-  let _ = compiler (pathFichiersRat^"testPrint2.rat") in ()
+let%test_unit "testPr(Int,Neant)2"= 
+  let _ = compiler (pathFichiersRat^"testPr(Int,Neant)2.rat") in ()
 
-let%test_unit "testPrint3"= 
-  let _ = compiler (pathFichiersRat^"testPrint3.rat") in ()
+let%test_unit "testPr(Int,Neant)3"= 
+  let _ = compiler (pathFichiersRat^"testPr(Int,Neant)3.rat") in ()
 
 let%test_unit "testRationnel1"= 
   let _ = compiler (pathFichiersRat^"testRationnel1.rat") in ()
@@ -206,21 +206,21 @@ let%test_unit "testRationnel3"=
     let _ = compiler (pathFichiersRat^"testRationnel3.rat")
     in raise ErreurNonDetectee
   with
-  | TypeBinaireInattendu(_,Int,Rat) -> ()
+  | TypeBinaireInattendu(_,(Int,Neant),(Rat,Neant)) -> ()
 
 let%test_unit "testRationnel4"= 
   try 
     let _ = compiler (pathFichiersRat^"testRationnel4.rat")
     in raise ErreurNonDetectee
   with
-  | TypeBinaireInattendu(_,Bool,Int) -> ()
+  | TypeBinaireInattendu(_,(Bool,Neant),(Int,Neant)) -> ()
 
 let%test_unit "testRationnel5"= 
   try 
     let _ = compiler (pathFichiersRat^"testRationnel5.rat")
     in raise ErreurNonDetectee
   with
-  | TypeInattendu(Rat,Int) -> ()
+  | TypeInattendu((Rat,Neant),(Int,Neant)) -> ()
 
 let%test_unit "testNumerateur1"= 
   let _ = compiler (pathFichiersRat^"testNumerateur1.rat") in ()
@@ -233,21 +233,21 @@ let%test_unit "testNumerateur3"=
     let _ = compiler (pathFichiersRat^"testNumerateur3.rat")
     in raise ErreurNonDetectee
   with
-  | TypeInattendu(Bool,Rat) -> ()
+  | TypeInattendu((Bool,Neant),(Rat,Neant)) -> ()
 
 let%test_unit "testNumerateur4"= 
   try 
     let _ = compiler (pathFichiersRat^"testNumerateur4.rat")
     in raise ErreurNonDetectee
   with
-  | TypeInattendu(Int,Rat) -> ()
+  | TypeInattendu((Int,Neant),(Rat,Neant)) -> ()
 
 let%test_unit "testNumerateur5"= 
   try 
     let _ = compiler (pathFichiersRat^"testNumerateur5.rat")
     in raise ErreurNonDetectee
   with
-  | TypeInattendu(Int,Bool) -> ()
+  | TypeInattendu((Int,Neant),(Bool,Neant)) -> ()
 
 let%test_unit "testDenominateur1"= 
   let _ = compiler (pathFichiersRat^"testDenominateur1.rat") in ()
@@ -260,21 +260,21 @@ let%test_unit "testDenominateur3"=
     let _ = compiler (pathFichiersRat^"testDenominateur3.rat")
     in raise ErreurNonDetectee
   with
-  | TypeInattendu(Bool,Rat) -> ()
+  | TypeInattendu((Bool,Neant),(Rat,Neant)) -> ()
 
 let%test_unit "testDenominateur4"= 
   try 
     let _ = compiler (pathFichiersRat^"testDenominateur4.rat")
     in raise ErreurNonDetectee
   with
-  | TypeInattendu(Int,Rat) -> ()
+  | TypeInattendu((Int,Neant),(Rat,Neant)) -> ()
 
 let%test_unit "testDenominateur5"= 
   try 
     let _ = compiler (pathFichiersRat^"testDenominateur5.rat")
     in raise ErreurNonDetectee
   with
-  | TypeInattendu(Int,Bool) -> ()
+  | TypeInattendu((Int,Neant),(Bool,Neant)) -> ()
 
 let%test_unit "testIdent1"= 
   let _ = compiler (pathFichiersRat^"testIdent1.rat") in ()
@@ -290,42 +290,42 @@ let%test_unit "testIdent4"=
     let _ = compiler (pathFichiersRat^"testIdent4.rat")
     in raise ErreurNonDetectee
   with
-  | TypeInattendu(Rat,Int) -> ()
+  | TypeInattendu((Rat,Neant),(Int,Neant)) -> ()
 
 let%test_unit "testIdent5"= 
   try 
     let _ = compiler (pathFichiersRat^"testIdent5.rat")
     in raise ErreurNonDetectee
   with
-  | TypeInattendu(Rat,Bool) -> ()
+  | TypeInattendu((Rat,Neant),(Bool,Neant)) -> ()
 
 let%test_unit "testIdent6"= 
   try 
     let _ = compiler (pathFichiersRat^"testIdent6.rat")
     in raise ErreurNonDetectee
   with
-  | TypeInattendu(Int,Bool) -> ()
+  | TypeInattendu((Int,Neant),(Bool,Neant)) -> ()
 
 let%test_unit "testIdent7"= 
   try 
     let _ = compiler (pathFichiersRat^"testIdent7.rat")
     in raise ErreurNonDetectee
   with
-  | TypeInattendu(Int,Rat) -> ()
+  | TypeInattendu((Int,Neant),(Rat,Neant)) -> ()
 
 let%test_unit "testIdent8"= 
   try 
     let _ = compiler (pathFichiersRat^"testIdent8.rat")
     in raise ErreurNonDetectee
   with
-  | TypeInattendu(Bool,Rat) -> ()
+  | TypeInattendu((Bool,Neant),(Rat,Neant)) -> ()
 
 let%test_unit "testIdent9"= 
   try 
     let _ = compiler (pathFichiersRat^"testIdent9.rat")
     in raise ErreurNonDetectee
   with
-  | TypeInattendu(Bool,Int) -> ()
+  | TypeInattendu((Bool,Neant),(Int,Neant)) -> ()
 
 let%test_unit "testOperation1"= 
   let _ = compiler (pathFichiersRat^"testOperation1.rat") in ()
@@ -338,14 +338,14 @@ let%test_unit "testOperation3"=
     let _ = compiler (pathFichiersRat^"testOperation3.rat")
     in raise ErreurNonDetectee
   with
-  | TypeBinaireInattendu(Plus, Bool, Bool) -> ()
+  | TypeBinaireInattendu(Plus, (Bool,Neant), (Bool,Neant)) -> ()
 
 let%test_unit "testOperation4"= 
   try 
     let _ = compiler (pathFichiersRat^"testOperation4.rat")
     in raise ErreurNonDetectee
   with
-  | TypeBinaireInattendu(Equ, Rat, Rat) -> ()
+  | TypeBinaireInattendu(Equ, (Rat,Neant), (Rat,Neant)) -> ()
 
 let%test_unit "testOperation5"= 
   let _ = compiler (pathFichiersRat^"testOperation5.rat") in ()
@@ -364,21 +364,21 @@ let%test_unit "testOperation9"=
     let _ = compiler (pathFichiersRat^"testOperation9.rat")
     in raise ErreurNonDetectee
   with
-  | TypeBinaireInattendu(Mult, Bool, Bool) -> ()
+  | TypeBinaireInattendu(Mult, (Bool,Neant), (Bool,Neant)) -> ()
 
 let%test_unit "testOperation10"= 
   try 
     let _ = compiler (pathFichiersRat^"testOperation10.rat")
     in raise ErreurNonDetectee
   with
-  | TypeBinaireInattendu(Inf, Rat, Rat) -> ()
+  | TypeBinaireInattendu(Inf, (Rat,Neant), (Rat,Neant)) -> ()
 
 let%test_unit "testOperation11"= 
   try 
     let _ = compiler (pathFichiersRat^"testOperation11.rat")
     in raise ErreurNonDetectee
   with
-  | TypeBinaireInattendu(Inf, Bool, Bool) -> ()
+  | TypeBinaireInattendu(Inf, (Bool,Neant), (Bool,Neant)) -> ()
 
 let%test_unit "testOperation12"= 
   let _ = compiler (pathFichiersRat^"testOperation12.rat") in ()
