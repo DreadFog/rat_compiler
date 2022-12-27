@@ -81,14 +81,14 @@ let%test_unit "testAppel12"=
     let _ = compiler (pathFichiersRat^"testAppel12.rat")
     in raise ErreurNonDetectee
   with
-  | TypeInattendu(Int,Bool) -> ()
+  | TypeInattendu((Int,Neant),(Bool,Neant)) -> ()
 
 let%test_unit "testAppel13"= 
   try 
     let _ = compiler (pathFichiersRat^"testAppel13.rat")
     in raise ErreurNonDetectee
   with
-  | TypeInattendu(Int,Rat) -> ()
+  | TypeInattendu((Int,Neant),(Rat,Neant)) -> ()
 
 let%test_unit "testRetourFonction1"= 
   let _ = compiler (pathFichiersRat^"testRetourFonction1.rat") in ()
@@ -98,7 +98,7 @@ let%test_unit "testRetourFonction2"=
     let _ = compiler (pathFichiersRat^"testRetourFonction2.rat")
     in raise ErreurNonDetectee
   with
-  | TypeInattendu(Bool,Int) -> ()
+  | TypeInattendu((Bool,Neant),(Int,Neant)) -> ()
 
 let%test_unit "testRetourFonction3"=
   let _ = compiler (pathFichiersRat^"testRetourFonction3.rat") in ()
@@ -108,7 +108,7 @@ let%test_unit "testRetourFonction4"=
     let _ = compiler (pathFichiersRat^"testRetourFonction4.rat")
     in raise ErreurNonDetectee
   with
-  | TypeInattendu(Bool,Int) -> ()
+  | TypeInattendu((Bool,Neant),(Int,Neant)) -> ()
 
 let%test_unit "testRecursiviteFonction"= 
   let _ = compiler (pathFichiersRat^"testRecursiviteFonction.rat") in ()
