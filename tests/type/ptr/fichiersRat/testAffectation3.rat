@@ -1,0 +1,5 @@
+test {
+    int a = 42;
+    int c = &a;
+    print c;
+}

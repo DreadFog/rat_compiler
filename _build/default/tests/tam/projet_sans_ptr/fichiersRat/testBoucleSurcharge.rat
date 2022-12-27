@@ -1,0 +1,14 @@
+test {
+    int compteur = 5;
+    define id : loop {
+        define id : loop {
+            compteur = (compteur + 1);
+            break id;
+        };
+        compteur = (compteur + 5);
+        if ( 10 < compteur) {
+            break id;
+        }
+    };
+    print compteur;
+}

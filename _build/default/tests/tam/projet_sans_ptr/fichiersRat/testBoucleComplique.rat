@@ -1,0 +1,15 @@
+test{
+  int x = 2;
+  define grandeLoop :
+  loop {
+    define petiteLoop :
+    loop {
+      x = (x + 1);
+      if (10 < x) {
+          break petiteLoop;
+      }
+    };
+    break;
+  };
+  print x;
+}
