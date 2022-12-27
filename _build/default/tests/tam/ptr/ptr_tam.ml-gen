@@ -1,2 +1,0 @@
-(** @canonical Ptr_tam.Test *)
-module Test = Ptr_tam__Test
