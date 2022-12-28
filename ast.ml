@@ -99,9 +99,9 @@ end
 (* ********************************************* *)
 module AstTds =
 struct
-  type tds_info_ast = (AstSyntax.identifiant) Mtds.info
+  type tds_info_ast = AstSyntax.identifiant Mtds.info
 
-  type identifiant = tds_info_ast
+  type identifiant = tds_info_ast * Type.mark (* marque utilisée dans l'expression/affectation *)
 
   (* Opérateurs unaires de Rat *)
 
@@ -144,11 +144,11 @@ struct
     | Conditionnelle of expression * bloc * bloc
     | TantQue of expression * bloc
       (* les informations sur la fonction à laquelle est associé le retour : *)
-    | Retour of expression * identifiant
+    | Retour of expression * tds_info_ast
       (* les nœuds ayant disparus: Const : *)
     | Empty 
     (* Instructions de boucles *)
-    | Boucle of identifiant * bloc
+    | Boucle of tds_info_ast * bloc
     | Break of string
     | Continue of string
 
@@ -199,7 +199,7 @@ type expression =
 type bloc = (instruction * contexte) list
  and instruction =
   | Declaration of type_info_ast * expression
-  | Affectation of type_info_ast * expression
+  | Affectation of identifiant * expression
   | AffichageInt of expression
   | AffichageRat of expression
   | AffichageBool of expression
@@ -208,7 +208,7 @@ type bloc = (instruction * contexte) list
   | Retour of expression * type_info_ast
   | Empty (* les nœuds ayant disparus: Const *)
   (*Instructions de boucles *)
-  | Boucle of identifiant * bloc
+  | Boucle of type_info_ast * bloc
   | Break of string
   | Continue of string
 
@@ -236,7 +236,7 @@ type identifiant = AstTds.identifiant
 type bloc = (instruction * contexte) list * int (* taille du bloc *)
  and instruction =
  | Declaration of placement_info_ast * expression
- | Affectation of placement_info_ast * expression
+ | Affectation of identifiant * expression
  | AffichageInt of expression
  | AffichageRat of expression
  | AffichageBool of expression
@@ -245,9 +245,9 @@ type bloc = (instruction * contexte) list * int (* taille du bloc *)
  | Retour of expression * int * int (* taille du retour et taille des paramètres *)
  | Empty (* les nœuds ayant disparus: Const *)
  (* Instructions de boucles *)
-| Boucle of identifiant * bloc
-| Break of string
-| Continue of string
+ | Boucle of placement_info_ast * bloc
+ | Break of string
+ | Continue of string
 
 (* informations associées à l'identificateur (dont son nom), liste de paramètres, corps, expression de retour *)
 (* Plus besoin de la liste des paramètres mais on la garde pour les tests du placements mémoire *)

@@ -22,9 +22,8 @@ let assignPtr =
     load  l'@ dest copie
     load  l'@ source copie *)
 "LOAD (1) -1[ST]
-LOAD (1) -2[ST]
-STOREI (1)\n
-"
+LOAD (1) -3[ST]
+STOREI (1)\n"
 
 
 (* analyse_tds_expression : tds -> AstTds.expression -> AstTds.expression *)
@@ -34,29 +33,29 @@ STOREI (1)\n
 en une expression de type AstTds.expression *)
 (* Erreur si mauvaise utilisation des identifiants *)
 let rec ast_to_tam_expression e = match e with
-  | AstType.Identifiant s ->
+  | AstType.Identifiant (s,_) ->
         let (m, taille, depl, reg) = tam_var_of_info_ast s in 
         (* int *** a = ...; ...; b = **a *)
-        (match m with
-          Type.Neant -> load taille !depl !reg
-          |Type.Pointeur _ ->
-            let rec gestion_ptr p = match p with
-              Type.Neant ->
-                (* mettre l'expression dans le tas *)
-                  loadi taille
-              |Type.Pointeur p' ->
-                (* On load l'adresse vers laquelle pointe p' dans la pile
-                * puis on la copie dans le tas avant de la pop *) 
-                  loadi 1 (* load l'@ vers laquelle pointe p' *)
-                ^ gestion_ptr p'
-                ^ pop 0 1 (* pop, on a plus besoin des @ pointées *)
-            in gestion_ptr m)
+        let rec gestion_ptr p = (match p with
+          Type.Neant -> ""
+          |Type.Pointeur(Type.Neant) ->
+            (* mettre l'expression dans le tas *)
+              loadi taille
+          |Type.Pointeur p' ->
+            (* On load l'adresse vers laquelle pointe p' dans la pile
+            * puis on la copie dans le tas avant de la pop *) 
+              loadi 1 (* load l'@ vers laquelle pointe p' *)
+            ^ gestion_ptr p'
+            (*^ pop 0 1*) (* pop, on a plus besoin des @ pointées *))
+        in 
+        load taille !depl !reg
+      ^ gestion_ptr m
   | AstType.NULL -> subr "MVoid"
-  | AstType.New n -> loadl_int (Type.getTaille n) (* déjà géré dans déclaration,
-                                                   * on peut load ce qu'on veut c'est pas important *)
-  | AstType.Adr a -> (* inch' j'ai bien géré les adresses ie elles ont bien le même iast que a *)
+  | AstType.New _ -> loadl_int 4242 (* déjà géré dans déclaration *)
+  | AstType.Adr (a,_) -> (* inch' j'ai bien géré les adresses ie elles ont bien le même iast que a *)
       let (_, _, depl, reg) = tam_var_of_info_ast a in
-      load 1 !depl !reg
+      (*load 1 !depl !reg*)
+      loada !depl !reg
   | AstType.Entier i -> loadl_int i 
   | AstType.Booleen b -> loadl_int (Bool.to_int b)
   | AstType.Binaire (op, e1, e2) -> 
@@ -85,7 +84,7 @@ let rec ast_to_tam_expression e = match e with
     )
   | AstType.AppelFonction (f, l) ->
     (match f with
-    | InfoFun ((name,_), _, _) ->
+    | (InfoFun ((name,_), _, _),_) ->
       List.fold_left (fun acc e -> acc ^ ast_to_tam_expression e) "" l
       ^ call "ST" name
     | _ -> raise Exceptions.ErreurInterne 
@@ -131,9 +130,8 @@ let rec ast_to_tam_instruction i =
             Type.Neant ->
               (* mettre l'expression dans le tas *)
                 ast_to_tam_expression e
-              ^ load 1 (-2) "ST"
+              ^ loada (-(1+taille)) "ST"
               ^ storei taille
-              ^ pop 0 taille
             |Type.Pointeur p' ->
               (* On alloue et load en haut de pile
                * l'adresse vers laquelle pointe p dans la pile
@@ -149,10 +147,10 @@ let rec ast_to_tam_instruction i =
         ^ (subr "MAlloc") (* 1ère @Source pour la copie *)
         ^ gestion_ptr p
       )
-  | AstPlacement.Affectation (iast, e) ->
-    let (m, taille, dep, reg) = (
+  | AstPlacement.Affectation ((iast,m), e) ->
+    let (taille, dep, reg) = (
       match iast with
-        InfoVar((_,m),ty,dep,reg) -> (m, Type.getTaille (!ty,m),dep,reg)
+        InfoVar((_,_),ty,dep,reg) -> (Type.getTaille (!ty,m),dep,reg)
         |_ -> raise Exceptions_identifiants.ErreurInterne) in
     (match m with
       Neant -> 
@@ -160,7 +158,8 @@ let rec ast_to_tam_instruction i =
         ^ store taille !dep !reg
       |Pointeur _ ->
         let rec gestion_ptr p = match p with
-          Type.Neant ->
+          Type.Neant -> raise ErreurInterne
+          |Type.Pointeur(Type.Neant) ->
             (* mettre l'expression dans le tas *)
               ast_to_tam_expression e
             ^ load 1 (-2) "ST"
@@ -172,7 +171,10 @@ let rec ast_to_tam_instruction i =
               loadi 1 (* load l'@ vers laquelle pointe p' *)
             ^ gestion_ptr p'
             ^ pop 0 1 (* pop, on a plus besoin des @ pointées *)
-        in gestion_ptr m )
+        in
+          push 1
+        ^ load taille !dep !reg
+        ^ gestion_ptr m )
   | AstPlacement.AffichageInt e ->
       ast_to_tam_expression e
     ^ subr "IOut"

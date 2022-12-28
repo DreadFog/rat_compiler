@@ -27,6 +27,26 @@ let getTypexMarkOfIast iast = match iast with
   |InfoFun((_,m),t,_) -> (t, m)
   |InfoConst(_) -> (Int, Type.Neant)
   | _ -> raise ErreurInterne
+(*let getTypeOfIast iast = match iast with
+  InfoVar(_,t,_,_) -> !t
+  |InfoFun(_,t,_) -> t
+  |InfoConst(_) -> Int
+  | _ -> raise ErreurInterne*)
+
+(* gestion du cas : (1) int ***a =...; (2) *a = ...; 
+ * il faut a dte de (2) un int ** :
+ * pour cela il faut enlever aux mv * les m * de l'affectations
+ * erreur si m > mv
+ *)
+ let rec gestion_pointeurs minit mcall = match minit, mcall with
+ Type.Neant, (Type.Pointeur _) ->
+         raise Exceptions_identifiants.RefInterdite
+ |(Type.Pointeur _), Type.Neant ->
+         minit
+ |(Type.Pointeur pinit), (Type.Pointeur pcall) -> 
+         gestion_pointeurs pinit pcall
+ |Type.Neant, Type.Neant ->
+         Type.Neant
 
 (* analyse_tds_expression : tds -> AstTds.expression -> AstTds.expression *)
 (* Paramètre tds : la table des symboles courante *)
@@ -35,11 +55,15 @@ let getTypexMarkOfIast iast = match iast with
 en une expression de type AstTds.expression *)
 (* Erreur si mauvaise utilisation des identifiants *)
 let rec analyse_type_expression (e,(ctx:contexte)) = match e with
-  | AstTds.Identifiant iast -> (AstType.Identifiant iast, getTypexMarkOfIast iast)
+  | AstTds.Identifiant (iast,dm) -> 
+    let (t,m) = getTypexMarkOfIast iast in
+    (AstType.Identifiant (iast,dm), (t,gestion_pointeurs m dm))
   | AstTds.Entier i -> (AstType.Entier i, (Int, Neant))
   | AstTds.Booleen b -> (AstType.Booleen b, (Bool, Neant))
   | AstTds.NULL -> (AstType.NULL, (Undefined, Pointeur(Neant)))
-  | AstTds.Adr a -> let (t,m) = getTypexMarkOfIast a in (AstType.Adr a, (t, Pointeur(m)))
+  | AstTds.Adr (a,dm) -> 
+    let (t,m) = getTypexMarkOfIast a in
+    (AstType.Adr (a,dm), (t, Pointeur(gestion_pointeurs m dm)))
   | AstTds.New n -> let (t,m) = n in (AstType.New n, (t, Pointeur(m)))
   | AstTds.Binaire (op, e1, e2) ->
     let (ne1,tm1) = analyse_type_expression (e1,ctx) in 
@@ -75,7 +99,7 @@ let rec analyse_type_expression (e,(ctx:contexte)) = match e with
     else afficher_erreur (TypeInattendu (te1, (Bool,Neant))) ctx
   | AstTds.AppelFonction (f, l) -> 
     match f with
-      |InfoFun((_,Neant),t,lt) -> (* Vérification du bon nombre d'arguments *)
+      |(InfoFun((_,Neant),t,lt),Neant) -> (* Vérification du bon nombre d'arguments *)
           let nl = List.map (fun x -> analyse_type_expression (x,ctx)) l in
           let type_params = List.map snd nl in
           (* check if all params have a correct type*)
@@ -86,7 +110,7 @@ let rec analyse_type_expression (e,(ctx:contexte)) = match e with
           else 
             (* Erreur a adapté pour ajouter les ptrs *)
             afficher_erreur (TypesParametresInattendus (lt', type_params)) ctx
-      |InfoFun(_) -> failwith "Pointeurs de fonctions pas encore supporté"
+      |(InfoFun(_),_) -> failwith "Pointeurs de fonctions pas encore supporté"
       |_ -> raise ErreurInterne
 
 
@@ -109,26 +133,19 @@ let rec analyse_type_instruction (i,(ctx:contexte)) =
   (* match pour l'instruction, le ctx est propagé dans les autres ast 
    * -> on renvoi un couple *)
   (match i with
-  | AstTds.Declaration (t, n, e) ->
-     let nn = (match n with
-                InfoVar((_,mv),_,_,_) -> t,mv
-                |InfoFun((_,mv),_,_) -> t,mv
-                |_ -> raise ErreurInterne) in
+  | AstTds.Declaration (t, (n,mv), e) ->
      let (ne, tme) = analyse_type_expression (e,ctx) in
-     if (Type.est_compatible nn tme) then (
+     if (Type.est_compatible (t,mv) tme) then (
       modifier_type_variable t n; (* modification du type associé *)
       (AstType.Declaration (n, ne))) 
-    else afficher_erreur (TypeInattendu(tme, nn)) ctx
+    else afficher_erreur (TypeInattendu(tme, (t,mv))) ctx
             (* Erreur a adapté pour ajouter les ptrs *)
-  | AstTds.Affectation (n,e) ->
-    let nn = (match n with
-                InfoVar((_,m),t,_,_) -> (!t), m
-                |InfoFun((_,m),t,_) -> t, m
-                |_ -> raise ErreurInterne) in
+  | AstTds.Affectation ((n,dm),e) ->
+    let (t,m) = getTypexMarkOfIast n in
      let (ne, tme) = analyse_type_expression (e,ctx) in
-     if (Type.est_compatible nn tme) then
-          (AstType.Affectation(n, ne))
-     else afficher_erreur (TypeInattendu(tme, nn)) ctx 
+     if (Type.est_compatible (t,gestion_pointeurs m dm) tme) then
+          (AstType.Affectation((n,dm), ne))
+     else afficher_erreur (TypeInattendu(tme, (t,gestion_pointeurs m dm))) ctx 
         (* Erreur a adapté pour ajouter les ptrs *)
   | AstTds.Affichage e ->
      let (ne, te) = analyse_type_expression (e,ctx) in

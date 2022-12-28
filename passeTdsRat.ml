@@ -38,21 +38,6 @@ let giveID =
     num := (!num)+1 ;
     "id"^((string_of_int (!num)))
 
-(* gestion du cas : (1) int ***a =...; (2) *a = ...; 
- * il faut a dte de (2) un int ** :
- * pour cela il faut enlever aux mv * les m * de l'affectations
- * erreur si m > mv
- *)
-let rec gestion_pointeurs minit mcall = match minit, mcall with
-  Type.Neant, (Type.Pointeur _) ->
-          raise Exceptions_identifiants.RefInterdite
-  |(Type.Pointeur _), Type.Neant ->
-          minit
-  |(Type.Pointeur pinit), (Type.Pointeur pcall) -> 
-          gestion_pointeurs pinit pcall
-  |Type.Neant, Type.Neant ->
-          Type.Neant
-
 (* analyse_tds_expression : tds -> AstSyntax.expression -> AstTds.expression *)
 (* Paramètre tds : la table des symboles courante *)
 (* Paramètre e : l'expression à analyser *)
@@ -71,7 +56,7 @@ let rec analyse_tds_expression tds e = match e with
           | InfoFun((f,_), _, _) ->
              raise (MauvaiseUtilisationIdentifiant (print_ident f));
           | InfoVar(_) ->
-            AstTds.Identifiant (info_ast_found)
+            AstTds.Identifiant (info_ast_found, Neant)
           | _ -> raise ErreurInterne
         )
       |_ -> AstTds.Identifiant (analyse_tds_identifiant tds r)
@@ -84,7 +69,7 @@ let rec analyse_tds_expression tds e = match e with
         (
         match info_ast_found with 
           | InfoConst(_,_) -> raise RefInterdite
-          | _ -> AstTds.Adr (info_ast_found)
+          | _ -> AstTds.Adr (info_ast_found, Neant)
         )
       |_ -> AstTds.Adr (analyse_tds_identifiant tds a)
     )
@@ -97,7 +82,7 @@ let rec analyse_tds_expression tds e = match e with
     let f_tds = chercherGlobalementUnsafeIdent tds f in
     (* On vérifie qu'on appel bien une fonction *)
     (match f_tds with
-      InfoFun(_,_,_) -> AstTds.AppelFonction ( f_tds
+      InfoFun((_,Neant),_,_) -> AstTds.AppelFonction ( (f_tds,Neant)
                                 , List.map (analyse_tds_expression tds) l)
       |_ -> raise (MauvaiseUtilisationIdentifiant (print_ident f)));
   | AstSyntax.Unaire (op, e) ->
@@ -107,12 +92,12 @@ let rec analyse_tds_expression tds e = match e with
     AstTds.Ternaire (analyse_tds_expression tds e1, analyse_tds_expression tds e2, analyse_tds_expression tds e3)
 
 
-and analyse_tds_identifiant tds ((s,ms)) = 
+and analyse_tds_identifiant tds (s,ms) = 
   let info_ast_found = chercherGlobalementUnsafeIdent tds s in
   (
   match info_ast_found with 
-    | InfoVar((id,m),t,d,b)-> InfoVar((id,gestion_pointeurs m ms),t,d,b)
-    | InfoFun((f,m),t,lp) -> InfoFun((f,gestion_pointeurs m ms),t,lp)
+    | InfoVar((_,_),_,_,_)-> (info_ast_found, ms)
+    | InfoFun((_,_),_,_) -> (info_ast_found, ms)
     | _ -> (raise Exceptions_identifiants.RefInterdite)
   )
 
@@ -148,7 +133,7 @@ let rec analyse_tds_instruction tds oia optBoucle i num_inst ctx =
             ajouter tds n info;
             (* Renvoie de la nouvelle déclaration où le nom a été remplacé par l'information
             et l'expression remplacée par l'expression issue de l'analyse *)
-            ((AstTds.Declaration (t, info, ne), ctx), num_inst+1)
+            ((AstTds.Declaration (t, (info,m), ne), ctx), num_inst+1)
         | Some _ ->
             (* L'identifiant est trouvé dans la tds locale,
             il a donc déjà été déclaré dans le bloc courant *)
@@ -172,7 +157,7 @@ let rec analyse_tds_instruction tds oia optBoucle i num_inst ctx =
               let ne = analyse_tds_expression tds e in
               (* Renvoie de la nouvelle affectation où le nom a été remplacé par l'information
                  et l'expression remplacée par l'expression issue de l'analyse *)
-              ((AstTds.Affectation (InfoVar((id,gestion_pointeurs mv m),t,d,b), ne), ctx), num_inst+1)
+              ((AstTds.Affectation ((InfoVar((id,mv),t,d,b), m), ne), ctx), num_inst+1)
             |  _ ->
               (* Modification d'une constante ou d'une fonction *)
               raise (MauvaiseUtilisationIdentifiant (print_ident n))
