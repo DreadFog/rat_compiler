@@ -1,6 +1,6 @@
 main{
-  int **b = new (int *);
+  int ***b = new (int **);
   int c = 42;
-  *b = &c;
-  print **b;
+  **b = &c;
+  print ***b;
 }
