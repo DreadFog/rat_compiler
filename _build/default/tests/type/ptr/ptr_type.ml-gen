@@ -1,0 +1,2 @@
+(** @canonical Ptr_type.Test *)
+module Test = Ptr_type__Test

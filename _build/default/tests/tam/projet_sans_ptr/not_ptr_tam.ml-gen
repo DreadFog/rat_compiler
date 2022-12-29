@@ -1,0 +1,2 @@
+(** @canonical Not_ptr_tam.Test *)
+module Test = Not_ptr_tam__Test

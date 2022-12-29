@@ -1,0 +1,4 @@
+test{
+  const a = 42;
+  int *x = &a;
+}

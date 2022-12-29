@@ -24,8 +24,16 @@ let string_of_binaire = function
   | Equ -> "="
 
 
-(* Fonction qui affiche une erreur *)
-let afficher_erreur exn ((numero_ligne, contexte):Ast.contexte) = 
+(*
+  Fonction affichant une backtrace pour localiser l'erreur dans le code original
+  afficher_contexte: string*int list -> string
+*)
+let afficher_contexte(contexte) = List.fold_right (fun (nom, ligne) s -> s ^ "\nInstruction " ^ (string_of_int ligne) ^ " : " ^ nom ) contexte ""
+(*
+  Fonction affichant un erreur de compilation de manière conviviale à l'utilisateur
+  afficher_erreur: exn -> int * (string*int) list -> unit
+*)
+let afficher_erreur exn ((numero_ligne, contexte)) = 
   print_endline("===== ERROR =====");
   let msg = match exn with
     | ErreurInterne -> "Erreur interne"
@@ -42,9 +50,8 @@ let afficher_erreur exn ((numero_ligne, contexte):Ast.contexte) =
     (*| RetourDansMain -> "Retour dans le programme principal"*)
     | _ -> "Erreur inconnue au niveau du handler d'erreurs"
   in
-  print_endline ("Erreur à la ligne " ^ (string_of_int numero_ligne) ^ "\n" ^ msg );
+  print_endline ("Contexte :" ^ (afficher_contexte contexte));
+  print_endline ("Erreur instruction " ^ (string_of_int numero_ligne) ^ "\n" ^ msg );
   print_endline ("===== END ERROR =====");
   (*print_endline ("Contexte : " ^ contexte);*)
   raise exn
-
-(* Fonction qui renvoie le type d'une expression *)

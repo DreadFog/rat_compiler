@@ -1,0 +1,6 @@
+test{
+  int *b = new (int);
+  int c = *b;
+  int a = 1;
+  *b = a;
+}
