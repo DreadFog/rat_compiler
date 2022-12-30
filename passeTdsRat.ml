@@ -22,16 +22,23 @@ let second f (x,y) = (x, f y)
 (* Application de f sur le premier élément d'un couple *)
 let first f (x,y) = (f x, y)
 
-(*let rec print_ident (r:AstSyntax.identifiant) = (match r with
-  |Identifiant(s,Neant) -> s
-  |Identifiant(s,Pointeur(p)) -> "*"^(print_ident (Identifiant(s,p))))*)
-let print_ident s = s
+(* print_ident : 'a -> 'a 
+   Utilisé pour des types simples / primitifs d'identifiants
+*)
+  let print_ident s = s
 
+(* chercherGlobalementUnsafeIdent: (string * AstSyntax.Identifiant info) tds -> string -> AstSyntax.identifiant info
+   Utilisation de print_ident pour chercherGlobalementUnsafe *)
 let chercherGlobalementUnsafeIdent = chercherGlobalementUnsafe print_ident
-
+(* AbsentLocalementUnsafeIdent: (string * AstSyntax.Identifiant info) tds -> string -> unit
+   Utilisation de print_ident pour AbsentLocalementUnsafe *)
 let absentLocalementUnsafeIdent = absentLocalementUnsafe print_ident
 
-(* Anticipation: mise d'un identifiant aux boucles sans identifiant *)
+(* giveID : unit -> string *)
+(* Génère un identifiant unique.
+   Utilisé lorsqu'une boucle, un break ou un continue sont utilisés sans label.
+   Permet d'associer chacune de ces instructions à un élément dans la TDS
+   De plus, permet de donner un identifiant unique à deux loop ayant le même label, puisque la surcharge est autorisée. *)
 let giveID = 
   let num = ref 0 in
   fun () ->
@@ -88,10 +95,16 @@ let rec analyse_tds_expression tds e = match e with
   | AstSyntax.Unaire (op, e) ->
     AstTds.Unaire (op, analyse_tds_expression tds e) 
   | AstSyntax.NULL -> AstTds.NULL
+  (* Implémentation des expressions ternaires.*)
   | AstSyntax.Ternaire (e1, e2, e3) -> 
     AstTds.Ternaire (analyse_tds_expression tds e1, analyse_tds_expression tds e2, analyse_tds_expression tds e3)
 
-
+(* analyse_tds_identifiant: tds -> AstSyntax.Identifiant -> AstTds.Identifiant
+    Paramètre tds : la table des symboles courante
+    Paramètre i : l'identifiant à analyser, décomposé en un string * Type.mark
+    Vérifie la bonne utilisation des identifiants et tranforme l'identifiant en une identifiant de type AstTds.Identifiant
+    Erreur si mauvaise utilisation des identifiants
+*)
 and analyse_tds_identifiant tds (s,ms) = 
   let info_ast_found = chercherGlobalementUnsafeIdent tds s in
   (
@@ -101,14 +114,10 @@ and analyse_tds_identifiant tds (s,ms) =
     | _ -> (raise Exceptions_identifiants.RefInterdite)
   )
 
-  (* analyse_tds_instruction : tds -> AstSyntax.instruction -> AstTds.instruction *)
-(* Paramètre tds : la table des symboles courante *)
-(* Paramètre i : l'instruction à analyser *)
-(* Vérifie la bonne utilisation des identifiants et tranforme l'instruction *)
 
-
-(* analyse_tds_instruction : tds -> info_ast option -> AstSyntax.instruction
-                                    -> AstTds.instruction *)
+(* analyse_tds_instruction : tds -> info_ast option -> identifiant info option -> AstSyntax.instruction
+                            -> int -> string * int list          
+                            -> AstTds.instruction * (string * int) list * int *)
 (* Paramètre tds : la table des symboles courante *)
 (* Paramètre oia : None si l'instruction i est dans le bloc principal,
                    Some ia où ia est l'information associée à la fonction
