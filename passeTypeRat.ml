@@ -4,7 +4,6 @@
 open Mtds
 open Exceptions
 open Ast
-(*open Either*)
 
 type t1 = Ast.AstTds.programme
 type t2 = Ast.AstType.programme
@@ -48,12 +47,11 @@ let getTypexMarkOfIast iast = match iast with
  |Type.Neant, Type.Neant ->
          Type.Neant
 
-(* analyse_tds_expression : tds -> AstTds.expression -> AstTds.expression *)
-(* Paramètre tds : la table des symboles courante *)
+(* analyse_type_expression : AstTds.expression * contexte -> AstType.expression *)
 (* Paramètre e : l'expression à analyser *)
-(* Vérifie la bonne utilisation des identifiants et tranforme l'expression
-en une expression de type AstTds.expression *)
-(* Erreur si mauvaise utilisation des identifiants *)
+(* Paramètre ctx : le contexte *)
+(* Retourne l'expression d'entrée conformément typée, ainsi que le type et la marque de l'expression *)
+(* Erreur si mauvaise logique au niveau des types dans le programme *)
 let rec analyse_type_expression (e,(ctx:contexte)) = match e with
   | AstTds.Identifiant (iast,dm) -> 
     let (t,m) = getTypexMarkOfIast iast in
@@ -88,11 +86,14 @@ let rec analyse_type_expression (e,(ctx:contexte)) = match e with
      |Denominateur, Rat -> AstType.Unaire (AstType.Denominateur, ne), (Int,Neant)
      |_ -> afficher_erreur (TypeInattendu (te, (Rat,Neant))) ctx
      )
+  (* Implémentation du ternaire *)
   | AstTds.Ternaire(e1, e2, e3) -> 
     let (ne1, te1) = analyse_type_expression (e1,ctx) in
     let (ne2, te2) = analyse_type_expression (e2,ctx) in
     let (ne3, te3) = analyse_type_expression (e3,ctx) in
+    (* la première expression doit être booléenne *)
     if (Type.est_compatible te1 (Bool,Neant)) then
+      (* les deux autres doivent être du même type *)
       if (Type.est_compatible te2 te3) then
         (AstType.Ternaire (ne1, ne2, ne3), te2)
       else afficher_erreur (TypeInattendu (te3, te2)) ctx
@@ -114,20 +115,12 @@ let rec analyse_type_expression (e,(ctx:contexte)) = match e with
       |_ -> raise ErreurInterne
 
 
-(* analyse_tds_instruction : tds -> AstTds.instruction -> AstTds.instruction *)
-(* Paramètre tds : la table des symboles courante *)
-(* Paramètre i : l'instruction à analyser *)
-(* Vérifie la bonne utilisation des identifiants et tranforme l'instruction *)
-
-
-(* analyse_tds_instruction : tds -> info_ast option -> AstTds.instruction -> AstTds.instruction *)
-(* Paramètre tds : la table des symboles courante *)
-(* Paramètre oia : None si l'instruction i est dans le bloc principal,
-                   Some ia où ia est l'information associée à la fonction dans laquelle est l'instruction i sinon *)
-(* Paramètre i : l'instruction à analyser *)
-(* Vérifie la bonne utilisation des identifiants et tranforme l'instruction
-en une instruction de type AstTds.instruction *)
-(* Erreur si mauvaise utilisation des identifiants *)
+(* analyse_type_instruction : AstTds.instruction * contexte -> AstType.instruction
+  * Analyse le type d'une instruction et renvoi une instruction typée
+  * Paramètres : 
+  *   - i : l'instruction à analyser
+  *   - ctx : le contexte de l'instruction
+  * Erreur si les types ne sont pas compatibles *)
 let rec analyse_type_instruction (i,(ctx:contexte)) =
   (
   (* match pour l'instruction, le ctx est propagé dans les autres ast 
@@ -177,36 +170,34 @@ let rec analyse_type_instruction (i,(ctx:contexte)) =
     else afficher_erreur (TypeInattendu(te, (t,Neant))) ctx
     (* Erreur a adapté pour ajouter les ptrs *)
   | AstTds.Empty -> AstType.Empty
-  (* Gestion des boucles*)
+  (* Gestion des boucles
+     * Une gestion de typage au niveau du bloc de la boucle est nécessaire.*)
   | AstTds.Boucle (ia, b) -> AstType.Boucle (ia, analyse_type_bloc b)
   | AstTds.Break s -> AstType.Break s
   | AstTds.Continue s -> AstType.Continue s)
   , ctx)
 
-(* analyse_tds_bloc : tds -> info_ast option -> AstTds.bloc -> AstTds.bloc *)
-(* Paramètre tds : la table des symboles courante *)
-(* Paramètre oia : None si le bloc li est dans le programme principal,
-                   Some ia où ia est l'information associée à la fonction dans laquelle est le bloc li sinon *)
-(* Paramètre li : liste d'instructions à analyser *)
-(* Vérifie la bonne utilisation des identifiants et tranforme le bloc en un bloc de type AstTds.bloc *)
-(* Erreur si mauvaise utilisation des identifiants *)
+(* analyse_type_bloc : AstTds.bloc -> AstType.bloc 
+  * Analyse le type d'un bloc et renvoi un bloc typé
+  * Paramètres : 
+  *   - b : le bloc à analyser
+  * Erreur potentielle propagée de l'analyse du bloc *)  
 and analyse_type_bloc b = List.map analyse_type_instruction b
 
-(* analyse_tds_fonction : tds -> AstTds.fonction -> AstTds.fonction *)
-(* Paramètre tds : la table des symboles courante *)
-(* Paramètre : la fonction à analyser *)
-(* Vérifie la bonne utilisation des identifiants et tranforme la fonction
-en une fonction de type AstTds.fonction *)
-(* Erreur si mauvaise utilisation des identifiants *)
+(* analyse_type_fonction : AstTds.fonction -> AstType.fonction *)
+(* Analyse le type d'une fonction et renvoi une fonction typée *)
+(* Paramètres : 
+  *   - f : la fonction à analyser
+  * Erreur si mauvais typage au niveau des instructions de la fonction *)
 let analyse_type_fonction (AstTds.Fonction(_,iast,l_param,l_inst)) =
   AstType.Fonction(iast, List.map snd l_param, analyse_type_bloc l_inst)
 
 
-(* analyser : AstTds.programme -> AstType.programme *)
-(* Paramètre : le programme à analyser *)
-(* Vérifie le bon typage des identifiants et tranforme le programme
-en un programme de type AstType.programme *)
-(* Erreur si mauvais typage *)
+(* analyser : AstTds.programme -> AstType.programme 
+  * Analyse le type d'un programme et renvoi un programme typé
+  * Paramètres : 
+  *   - prog : le programme à analyser
+  * Erreur si mauvais typage au sein du programme *)
 let analyser (AstTds.Programme (fonctions,prog)) =
   let nf = List.map analyse_type_fonction fonctions in
   let nb = analyse_type_bloc prog in

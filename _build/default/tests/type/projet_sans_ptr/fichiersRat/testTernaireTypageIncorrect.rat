@@ -1,5 +1,0 @@
-main {
-    bool choix = true;
-    int x = (choix ? false : 7);
-    print x;
-}

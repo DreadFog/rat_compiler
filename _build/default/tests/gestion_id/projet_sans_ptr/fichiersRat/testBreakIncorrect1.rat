@@ -1,4 +1,0 @@
-test {
-    int n = 5;
-    break;
-}

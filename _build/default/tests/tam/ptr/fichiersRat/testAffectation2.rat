@@ -1,5 +1,0 @@
-main{
-  int a = 42;
-  int *b = &a;
-  print *b;
-}

@@ -1,4 +1,4 @@
-(* Module de la passe de gestion du typage *)
+(* Module de la passe de génération de code *)
 (* doit être conforme à l'interface Passe *)
 open Mtds
 open Exceptions
@@ -16,7 +16,8 @@ let tam_var_of_info_ast iast =
     |_ -> raise Exceptions_identifiants.ErreurInterne
 
 
-(* a modif pour fcts *)
+(* assignPtr: unit -> string *)
+(* Renvoie le code TAM pour assigner une valeur à un pointeur *)
 let assignPtr =
 (* loadl la taille du ptr : 1
     load  l'@ dest copie
@@ -26,12 +27,9 @@ LOAD (1) -3[ST]
 STOREI (1)\n"
 
 
-(* analyse_tds_expression : tds -> AstTds.expression -> AstTds.expression *)
-(* Paramètre tds : la table des symboles courante *)
-(* Paramètre e : l'expression à analyser *)
-(* Vérifie la bonne utilisation des identifiants et tranforme l'expression
-en une expression de type AstTds.expression *)
-(* Erreur si mauvaise utilisation des identifiants *)
+(* ast_to_tam_expression : AstType.expression -> string
+  * Paramètre e : l'expression à analyser
+  * Renvoie le code TAM correspondant à l'expression *)
 let rec ast_to_tam_expression e = match e with
   | AstType.Identifiant (s,_) ->
         let (m, taille, depl, reg) = tam_var_of_info_ast s in 
@@ -89,6 +87,8 @@ let rec ast_to_tam_expression e = match e with
       ^ call "ST" name
     | _ -> raise Exceptions.ErreurInterne 
     )
+  (* Gestion des expressions ternaires:
+     Similaire à un if / else, un jump est réalisé conditionnellement sur la valeur de la première expression *)
   | AstType.Ternaire(e1, e2, e3) -> 
       let labElse = getEtiquette ()
       and labEndIF = getEtiquette () in
@@ -101,14 +101,9 @@ let rec ast_to_tam_expression e = match e with
       ^ label labEndIF
 
 
-(* analyse_tds_instruction : tds -> info_ast option -> AstPlacement.instruction -> AstPlacement.instruction *)
-(* Paramètre tds : la table des symboles courante *)
-(* Paramètre oia : None si l'instruction i est dans le bloc principal,
-                   Some ia où ia est l'information associée à la fonction dans laquelle est l'instruction i sinon *)
-(* Paramètre i : l'instruction à analyser *)
-(* Vérifie la bonne utilisation des identifiants et tranforme l'instruction
-en une instruction de type AstPlacement.instruction *)
-(* Erreur si mauvaise utilisation des identifiants *)
+(* ast_to_tam_instruction : AstType.instruction -> string
+  * Paramètre i : l'instruction à analyser
+  * Renvoie le code TAM correspondant à l'instruction *)
 let rec ast_to_tam_instruction i =
   match i with
   | AstPlacement.Declaration (iast, e) ->
@@ -122,7 +117,7 @@ let rec ast_to_tam_instruction i =
             push taille
           ^ ast_to_tam_expression e
           ^ store taille !dep !reg
-        (* Pour les pointeurs on as dans la pile l'adr du 1er *
+        (* Pour les pointeurs on a dans la pile l'adr du 1er *
            le reste est dans le tas *)
         | Type.Pointeur p ->
           (* int **a; pile : @( *a ) tas : *a et a *)
@@ -220,6 +215,7 @@ let rec ast_to_tam_instruction i =
                                       TODO: vérifier qu'il faut pas reprendre l *)*)
 
         let (labLoop, labEndLoop) = List.hd l in 
+        (* TODO: supprimer ces commentaires quand Nathan m'aura expliqué pourquoi ça marchait pas lol *)
         (*supprimer_premier_liste_boucle ia; (* Si deux boucles ont le même nom, on supprime celle utilisée *)
         inverser_liste_boucle ia; (* On remet la liste dans l'ordre: mauvaise complexité, mais liste courte *)*)
         label labLoop
@@ -228,40 +224,29 @@ let rec ast_to_tam_instruction i =
         ^ label labEndLoop
       | _ -> raise Exceptions.ErreurInterne
     end
-  | AstPlacement.Break s -> jump s (* d'où la nécessité de l'avoir déjà avant*)
+  | AstPlacement.Break s -> jump s (* Grâce à la passe TDS et l'association des bons labels, cette passe est élémentaire *)
   | AstPlacement.Continue s -> jump s (* idem *)
 
-(* analyse_tds_bloc : tds -> info_ast option -> AstPlacement.bloc -> AstPlacement.bloc *)
-(* Paramètre tds : la table des symboles courante *)
-(* Paramètre oia : None si le bloc li est dans le programme principal,
-                   Some ia où ia est l'information associée
-                    à la fonction dans laquelle est le bloc li sinon *)
-(* Paramètre li : liste d'instructions à analyser *)
-(* Vérifie la bonne utilisation des identifiants et
- *  tranforme le bloc en un bloc de type AstPlacement.bloc *)
-(* Erreur si mauvaise utilisation des identifiants *)
+(* ast_to_tam_bloc : AstPlacement.bloc -> string
+  * Paramètre : le bloc à analyser ainsi que sa taille mémoire
+  * Transforme le bloc en code TAM *)
 and ast_to_tam_bloc (l_inst, taille_bloc) =
     List.fold_left (fun prev_str inst -> prev_str ^ ast_to_tam_instruction inst)
                     "" (List.map fst l_inst (* contexte inutile ici *))
   ^ pop 0 taille_bloc
 
-(* analyse_tds_fonction : tds -> AstPlacement.fonction -> AstPlacement.fonction *)
-(* Paramètre tds : la table des symboles courante *)
-(* Paramètre : la fonction à analyser *)
-(* Vérifie la bonne utilisation des identifiants et tranforme la fonction
-en une fonction de type AstPlacement.fonction *)
-(* Erreur si mauvaise utilisation des identifiants *)
+(* ast_to_tam_fonction : AstPlacement.fonction -> string
+  * Paramètre : la fonction à analyser
+  * Transforme la fonction en code TAM *)
 let ast_to_tam_fonction (AstPlacement.Fonction(iast,_,l_inst)) =
   (* Rq : On n'autorise pas les fonctions auxillaires *)
   match iast with 
   | InfoFun ((nom,_), _, _) -> label nom ^ ast_to_tam_bloc l_inst
   | _ -> raise ErreurInterne
   
-(* analyser : AstPlacement.programme -> AstPlacement.programme *)
-(* Paramètre : le programme à analyser *)
-(* Vérifie le bon typage des identifiants et tranforme le programme
-en un programme de type AstPlacement.programme *)
-(* Erreur si mauvais typage *)
+(* analyser : AstPlacement.programme -> string
+  * Paramètre : le programme à analyser
+  * Transforme le programme en code TAM *)
 let analyser (AstPlacement.Programme (fonctions,bloc)) = 
     getEntete ()
   (* Analyse des fonctions *)

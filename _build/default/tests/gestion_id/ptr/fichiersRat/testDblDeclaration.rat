@@ -1,4 +1,0 @@
-test{
-  int **x = new (int *);
-  int *x = null;
-}

@@ -1,3 +1,4 @@
+(* Ce fichier existe en tant que hotfix: il permet de break une interdépendance entre le module type et les autres*)
 (* Exceptions pour la gestion des identificateurs *)
 exception DoubleDeclaration of string 
 exception IdentifiantNonDeclare of string 

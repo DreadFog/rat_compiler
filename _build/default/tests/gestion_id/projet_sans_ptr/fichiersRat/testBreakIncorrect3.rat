@@ -1,6 +1,0 @@
-test {
-    int n = 5;
-    define l : loop {
-            break inconnu;
-    };
-}

@@ -122,7 +122,12 @@ and analyse_tds_identifiant tds (s,ms) =
 (* Paramètre oia : None si l'instruction i est dans le bloc principal,
                    Some ia où ia est l'information associée à la fonction
                    dans laquelle est l'instruction i sinon *)
+(* Paramètre optBoucle : None si l'instruction i n'est pas dans une boucle,
+                         Some (id, l) où id est l'identifiant de la boucle
+                         et l est la liste des étiquettes de la boucle *)
 (* Paramètre i : l'instruction à analyser *)
+(* Paramètre num_inst : le numéro de l'instruction dans le bloc courant *)
+(* Paramètre ctx : le contexte dans lequel est l'instruction i *)
 (* Vérifie la bonne utilisation des identifiants et tranforme l'instruction
 en une instruction de type AstTds.instruction *)
 (* Erreur si mauvaise utilisation des identifiants *)
@@ -229,6 +234,7 @@ let rec analyse_tds_instruction tds oia optBoucle i num_inst ctx =
     begin
       match nOpt with
       | None -> (* boucle sans identifiant *)
+      (* Création d'un id unique pour la boucle sans id, utilisable depuis l'intérieur de son bloc *)
         let id = giveID () in
         let info = InfoBoucle([id, id^"fin"]) in
         ajouter tdsFille id info;
@@ -238,7 +244,7 @@ let rec analyse_tds_instruction tds oia optBoucle i num_inst ctx =
       | Some n -> (* boucle avec identifiant *)
         begin
           match chercherGlobalement tds n with
-          | None -> 
+          | None -> (* pas de surcharge d'identifiant, donc création d'un nouvel élément dans la TDS *)
             let info = InfoBoucle([n,n^"fin"]) in
             ajouter tdsFille n info;
             let (nli, nl) = analyse_tds_bloc tdsFille oia (Some info) li (num_inst + 1) (("boucle rust", num_inst + 1)::ctx) in
@@ -251,7 +257,7 @@ let rec analyse_tds_instruction tds oia optBoucle i num_inst ctx =
               ajouter tdsFille n r';
               let (nli, nl) = analyse_tds_bloc tdsFille oia (Some r') li (num_inst + 1) (("boucle rust", num_inst + 1)::ctx) in
                 ((AstTds.Boucle(r', nli), ctx), nl+1)
-            | _ -> raise (DoubleDeclaration n))
+            | _ -> raise (DoubleDeclaration n)) (* identifiant déjà utilisé pour autre chose que boucle -> erreur *)
         end
     end
   | AstSyntax.Break nOpt -> 
@@ -259,29 +265,29 @@ let rec analyse_tds_instruction tds oia optBoucle i num_inst ctx =
       match nOpt with 
       | None -> (* break sans identifiant *)
         begin
-          match optBoucle with 
+          match optBoucle with (* on regarde si on est dans une boucle *)
           | None -> raise BreakHorsBoucle
           | Some ia -> 
             begin
               match ia with
                 | InfoBoucle l -> ((AstTds.Break (snd (List.hd (l))), ctx), num_inst+1)
-                | _ -> raise ErreurInterne
+                | _ -> raise ErreurInterne (*optBoucle n'est pas une Infoboucle *)
             end
         end
 
       | Some n -> (* break avec identifiant *)
         begin
           match chercherGlobalement tds n with 
-          | None -> raise (IdentifiantNonDeclare n)
+          | None -> raise (IdentifiantNonDeclare n) 
           | Some r ->
             begin
               match r with 
               | InfoBoucle l -> ((AstTds.Break (snd (List.hd (l))), ctx), num_inst+1)
-              | _ -> raise (MauvaiseUtilisationIdentifiant n)
+              | _ -> raise (MauvaiseUtilisationIdentifiant n) (* identifiant utilisé pour autre chose que boucle -> erreur *)
             end
         end
     end
-  | AstSyntax.Continue nOpt -> 
+  | AstSyntax.Continue nOpt -> (* Analyse analogue à un break *)
     begin
       match nOpt with 
       | None -> (* continue sans identifiant *)
@@ -314,7 +320,12 @@ let rec analyse_tds_instruction tds oia optBoucle i num_inst ctx =
 (* Paramètre oia : None si le bloc li est dans le programme principal,
                    Some ia où ia est l'information associée
                     à la fonction dans laquelle est le bloc li sinon *)
+(* Paramètre optBoucle : None si le bloc li n'est pas dans une boucle,
+                    Some ia où ia est l'information associée
+                    à la boucle dans laquelle est le bloc li sinon *)
 (* Paramètre li : liste d'instructions à analyser *)
+(* Paramètre nb_lignes : numéro de l'instruction en début de bloc *)
+(* Paramètre ctx : contexte du bloc *)
 (* Vérifie la bonne utilisation des identifiants et tranforme le bloc
    en un bloc de type AstTds.bloc *)
 (* Erreur si mauvaise utilisation des identifiants *)
@@ -335,6 +346,7 @@ and analyse_tds_bloc tds oia optBoucle li nb_lignes ctx =
 (* analyse_tds_fonction : tds -> AstSyntax.fonction -> AstTds.fonction *)
 (* Paramètre tds : la table des symboles courante *)
 (* Paramètre : la fonction à analyser *)
+(* Paramètre nb_lignes : numéro de l'instruction en début de fonction *)
 (* Vérifie la bonne utilisation des identifiants et tranforme la fonction
 en une fonction de type AstTds.fonction *)
 (* Erreur si mauvaise utilisation des identifiants *)
@@ -382,5 +394,6 @@ let analyser (AstSyntax.Programme (fonctions,prog)) =
   let getContext (l_done, line_number) to_get_ctx =
     let (nf, nl) = analyse_tds_fonction tds to_get_ctx line_number in (l_done@[nf], nl) in
   let (nf, nl) = List.fold_left getContext ([], 1) fonctions in
+  (* Récupération du numéro de la dernière ligne issue de l'analyse des fonctions *)
   let (nb, _) = analyse_tds_bloc tds None None prog (nl + 1) [("main", nl)] in
   AstTds.Programme (nf,nb)

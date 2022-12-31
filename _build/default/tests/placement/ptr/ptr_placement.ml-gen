@@ -1,2 +1,0 @@
-(** @canonical Ptr_placement.Test *)
-module Test = Ptr_placement__Test

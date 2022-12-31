@@ -1,2 +1,0 @@
-(** @canonical Projet_sans_ptr_type.Test *)
-module Test = Projet_sans_ptr_type__Test

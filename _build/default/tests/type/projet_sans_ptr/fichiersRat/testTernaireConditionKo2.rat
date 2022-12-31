@@ -1,5 +1,0 @@
-main {
-    rat choix = [1/2];
-    int x = (choix ? 2 : 1);
-    print x;
-}
