@@ -71,8 +71,6 @@ main : lfi=prog EOF     {lfi}
 prog : lf=fonc* ID li=bloc  {Programme (lf,li)}
 
 r :
-(*|ident=ID              {Symbole ident} (* a = 7 -> *a *)*)
-(*| MULT r1 = r             {Pointeur(r1)} (* a = 7; b = *a; c = b *)*)
 |ladr=MULT* ident=ID     {(ident, fold_left (fun x _ -> Pointeur(x)) Neant ladr)}        
 
 fonc : t=typ n=r PO lp=param* PF li=bloc {Fonction(t,n,lp,li)}
@@ -109,12 +107,10 @@ typ :
 | BOOL        {Bool}
 | INT         {Int}
 | RAT         {Rat}
-(*| t=typ r1=r  {t,r} (* int ** a = *b *) + rq: avant marchait pas, typ doit renvoyer un Type.typ*)
 
 e : 
 | CALL n=r PO lp=e* PF              {AppelFonction (n,lp)}
 | CO e1=e SLASH e2=e CF             {Binaire(Fraction,e1,e2)}
-(*| n=ID                    {Ident n}*)
 | TRUE                              {Booleen true}
 | FALSE                             {Booleen false}
 | e=ENTIER                          {Entier e}
@@ -126,7 +122,7 @@ e :
 | PO e1=e INF e2=e PF               {Binaire (Inf,e1,e2)}
 | PO exp=e PF                       {exp}
 | r1=r                              {Identifiant(r1)}
-(* pointers *)
+(* pointeurs *)
 | NEW PO t=typ ladr=MULT* PF        {New (t, fold_left (fun x _ -> Pointeur(x)) Neant ladr)}
 | NULL                              {NULL}
 | ADR ident=r                       {Adr(ident)}

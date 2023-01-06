@@ -1,7 +1,7 @@
 open Rat
 open Compilateur
 (*open Exceptions*)
-open Exceptions_identifiants
+open Exceptions_non_parametrees
 
 exception ErreurNonDetectee
 let pathFichiersRat = "./fichiersRat/"

@@ -76,8 +76,11 @@ struct
         | InfoVar (n,_,d,r) -> [(n,(d,r))]
         | _ -> []
         end
-    | Ast.AstPlacement.Conditionnelle(_,(bt,_),(be,_)) -> (List.flatten (List.map (analyser_instruction) (List.map fst bt)))@(List.flatten (List.map (analyser_instruction) (List.map fst be)))
-    | Ast.AstPlacement.TantQue (_,(b,_)) -> (List.flatten (List.map (analyser_instruction) (List.map fst b)))
+    | Ast.AstPlacement.Conditionnelle(_,(bt,_),(be,_)) ->
+        (List.flatten (List.map (analyser_instruction) (List.map fst bt)))
+      @ (List.flatten (List.map (analyser_instruction) (List.map fst be)))
+    | Ast.AstPlacement.TantQue (_,(b,_)) ->
+        (List.flatten (List.map (analyser_instruction) (List.map fst b)))
     | _ -> [] 
 
 
@@ -92,11 +95,15 @@ let analyser_param info =
     (*La liste des paramètres n'est plus présente, pour tester le placement des paramètres, on utilisera une astuce :
     il faudra écrire un programme qui renvoie le paramètre *)
     match info with
-    | InfoFun(n,_,_) -> [(n,(List.flatten (List.map analyser_param lp))@(List.flatten (List.map (analyser_instruction) (List.map fst li))))]
+    | InfoFun(n,_) -> [(n, 
+                         (List.flatten (List.map analyser_param lp))
+                        @(List.flatten (List.map (analyser_instruction) (List.map fst li)))
+                      )]
     | _ -> failwith "Internal error"
 
   (* Renvoie la suite des adresses des variables déclarées dans les fonctions et dans le programme principal *)
   let analyser (Ast.AstPlacement.Programme (fonctions, (prog,_))) =
-    (("main",Type.Neant), List.flatten (List.map (analyser_instruction) (List.map fst prog)))::(List.flatten (List.map (analyser_fonction) fonctions))
+      (("main",Type.Neant), List.flatten (List.map (analyser_instruction) (List.map fst prog)))
+    ::(List.flatten (List.map (analyser_fonction) fonctions))
 
 end

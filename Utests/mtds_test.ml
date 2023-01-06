@@ -1,7 +1,7 @@
 open Rat
 open Mtds
 open Type
-open Exceptions_identifiants
+open Exceptions_non_parametrees
 
 
 (* ====== Test chercherLocalement ====== *)

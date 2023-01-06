@@ -1,12 +1,13 @@
 open Type
 open Hashtbl
-open Exceptions_identifiants
+open Exceptions_non_parametrees
 
 (* Définition du type des informations associées aux identifiants *)
 type 'a info =
   | InfoConst of string * int (* pas de marqueur pour les constantes *)
   | InfoVar of 'a * typ ref * int ref * string ref
-  | InfoFun of 'a * typ * (typ ref*'a) list
+   (* | InfoFun of 'a * typ * (typ ref*'a) list *) 
+  | InfoFun of 'a * (typ * (typ (*ref*)*'a) list) list
   | InfoBoucle of (string * string) list (* Les étiquettes de début et fin de boucle *)
   (*| InfoParam of string * typ*)
 
@@ -57,7 +58,9 @@ let chercherLocalementUnsafe print_err tds ident = unwrap ident (chercherLocalem
 let absentLocalementUnsafe print_err tds nom =
   match chercherLocalement tds nom with
   |None -> ()
-  |Some _ -> raise (Exceptions_identifiants.DoubleDeclaration (print_err nom))
+  |Some _ -> raise (DoubleDeclaration (print_err nom))
+
+  
 
 let rec chercherGlobalement tds nom =
   match tds with
@@ -83,8 +86,8 @@ let type_of_info_ast iast =
   match iast with
     |InfoConst(_,_) -> Int
     |InfoVar(_,t,_,_) -> !t
-    |InfoFun(_,t,_) -> t
-    |InfoBoucle(_) -> raise Exceptions_identifiants.ErreurInterne
+    |InfoFun(_,[t,_]) -> t
+    |_ -> raise ErreurInterne
 
 (* Ajouter à une infoboucle un nouvel élément *)
 let ajouter_liste_boucle i e1 e2 =

@@ -2,7 +2,7 @@ open Rat
 open Compilateur
 open Passe
 (* 
-open Exceptions_identifiants
+open Exceptions_non_parametrees
  *)
 exception ErreurNonDetectee
 

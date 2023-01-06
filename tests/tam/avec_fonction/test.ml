@@ -51,7 +51,8 @@ let%expect_test "testfun4" =
 
 let%expect_test "testfun5" =
   runtam (pathFichiersRat^"testfun5.rat");
-  [%expect{| |}]
+  [%expect{| tam.TamException: Tam error : Program has failed due to a memory or stack error |}]
+  (* Une erreur survient car la fonction n'a pas de retour. Erreur -> cas norminal *) 
 
 let%expect_test "testfun6" =
   runtam (pathFichiersRat^"testfun6.rat");

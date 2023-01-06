@@ -1,7 +1,7 @@
 open Rat
 open Compilateur
 open Exceptions
-(*open Exceptions_identifiants*)
+open Exceptions_non_parametrees
 
 exception ErreurNonDetectee
 
@@ -39,42 +39,42 @@ let%test_unit "testAppel6"=
     let _ = compiler (pathFichiersRat^"testAppel6.rat")
     in raise ErreurNonDetectee
   with
-  | TypesParametresInattendus _ -> ()
+  | SurchargeImpossible -> ()
 
 let%test_unit "testAppel7"= 
   try 
     let _ = compiler (pathFichiersRat^"testAppel7.rat")
     in raise ErreurNonDetectee
   with
-  | TypesParametresInattendus _ -> ()
+  | SurchargeImpossible -> ()
 
 let%test_unit "testAppel8"= 
   try 
     let _ = compiler (pathFichiersRat^"testAppel8.rat")
     in raise ErreurNonDetectee
   with
-  | TypesParametresInattendus _ -> ()
+  | SurchargeImpossible -> ()
 
 let%test_unit "testAppel9"= 
   try 
     let _ = compiler (pathFichiersRat^"testAppel9.rat")
     in raise ErreurNonDetectee
   with
-  | TypesParametresInattendus _ -> ()
+  | SurchargeImpossible -> ()
 
 let%test_unit "testAppel10"= 
   try 
     let _ = compiler (pathFichiersRat^"testAppel10.rat")
     in raise ErreurNonDetectee
   with
-  | TypesParametresInattendus _  -> ()
+  | SurchargeImpossible -> ()
 
 let%test_unit "testAppel11"= 
   try 
     let _ = compiler (pathFichiersRat^"testAppel11.rat")
     in raise ErreurNonDetectee
   with
-  | TypesParametresInattendus _  -> ()
+  | SurchargeImpossible -> ()
 
 let%test_unit "testAppel12"= 
   try 

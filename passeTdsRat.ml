@@ -1,18 +1,12 @@
 (* Module de la passe de gestion des identifiants *)
 (* doit être conforme à l'interface Passe *)
 (* open Tds*)
-open Exceptions_identifiants
+open Exceptions_non_parametrees
 open Ast
 open Mtds
 
 type t1 = Ast.AstSyntax.programme
 type t2 = Ast.AstTds.programme
-  
-(* snd_zip : ('a*'b) list -> ('c*'d) list -> ('b*'d) lits *)
-(* Paramètres : les listes a fusionnées *)
-(* Fusionne des listes [(ai,bi)] en [(b1,b2)] *)
-(* fzip avec snd mais la gestion de polymorphisme avec fzip n'est bien gérée par caml *)
-let snd_zip l1 l2 = List.combine (List.map snd l1) (List.map snd l2)
 
 (* second : ('a -> 'b) -> 'c*'a -> 'c*'b *)
 (* Application de f sur le second élément d'un couple *)
@@ -25,7 +19,7 @@ let first f (x,y) = (f x, y)
 (* print_ident : 'a -> 'a 
    Utilisé pour des types simples / primitifs d'identifiants
 *)
-  let print_ident s = s
+let print_ident s = s
 
 (* chercherGlobalementUnsafeIdent: (string * AstSyntax.Identifiant info) tds -> string -> AstSyntax.identifiant info
    Utilisation de print_ident pour chercherGlobalementUnsafe *)
@@ -33,6 +27,7 @@ let chercherGlobalementUnsafeIdent = chercherGlobalementUnsafe print_ident
 (* AbsentLocalementUnsafeIdent: (string * AstSyntax.Identifiant info) tds -> string -> unit
    Utilisation de print_ident pour AbsentLocalementUnsafe *)
 let absentLocalementUnsafeIdent = absentLocalementUnsafe print_ident
+
 
 (* giveID : unit -> string *)
 (* Génère un identifiant unique.
@@ -60,7 +55,7 @@ let rec analyse_tds_expression tds e = match e with
         (
         match info_ast_found with 
           | InfoConst(_,i) -> AstTds.Entier i
-          | InfoFun((f,_), _, _) ->
+          | InfoFun((f,_), _) ->
              raise (MauvaiseUtilisationIdentifiant (print_ident f));
           | InfoVar(_) ->
             AstTds.Identifiant (info_ast_found, Neant)
@@ -89,8 +84,9 @@ let rec analyse_tds_expression tds e = match e with
     let f_tds = chercherGlobalementUnsafeIdent tds f in
     (* On vérifie qu'on appel bien une fonction *)
     (match f_tds with
-      InfoFun((_,Neant),_,_) -> AstTds.AppelFonction ( (f_tds,Neant)
-                                , List.map (analyse_tds_expression tds) l)
+      InfoFun((_,Neant), _) -> AstTds.AppelFonction ( (f_tds,Neant) 
+      (* f_tds est une infofun ayant toutes les signatures possibles (surcharge)*)
+                                                    , List.map (analyse_tds_expression tds) l)
       |_ -> raise (MauvaiseUtilisationIdentifiant (print_ident f)));
   | AstSyntax.Unaire (op, e) ->
     AstTds.Unaire (op, analyse_tds_expression tds e) 
@@ -110,8 +106,8 @@ and analyse_tds_identifiant tds (s,ms) =
   (
   match info_ast_found with 
     | InfoVar((_,_),_,_,_)-> (info_ast_found, ms)
-    | InfoFun((_,_),_,_) -> (info_ast_found, ms)
-    | _ -> (raise Exceptions_identifiants.RefInterdite)
+    | InfoFun((_,_),_) -> (info_ast_found, ms)
+    | _ -> (raise Exceptions_non_parametrees.RefInterdite)
   )
 
 
@@ -352,14 +348,28 @@ en une fonction de type AstTds.fonction *)
 (* Erreur si mauvaise utilisation des identifiants *)
 let analyse_tds_fonction maintds (AstSyntax.Fonction(t,(id,m),l_param_unref,l_inst)) nb_lignes =
   (* On passe les types en référence pour les traiter comme des infovar *)
-  let l_param = List.map (fun (t,y) -> (ref t,y)) l_param_unref in
-  (* On vérifie que la fonction n'est pas déjà déclarée *)
-  absentLocalementUnsafeIdent maintds id;
+  (*let l_param = List.map (fun (t,y) -> (ref t,y)) l_param_unref in*)
+  (* On vérifie si la fonction n'est pas déjà déclarée. *)
+
+  let prevDeclared =
+    (match chercherGlobalement maintds id with
+    (* Infofun -> [(typeRetour, [liste_type_params]), (autre)] *)
+      |None -> [] (* Aucune fonction n'existe avec ce nom. Création d'une Infofun*)
+      |Some (InfoFun (_,lp)) -> 
+        let lp' = List.map snd lp in
+        let getTypexMark = List.map (fun (t, (_,m)) -> (t,m)) in
+        let fun_compatible params = 
+          Type.est_compatible_list (getTypexMark l_param_unref) (getTypexMark params) in
+          (* fun_is_found renvoie vrai si une des signatures déjà existantes matche *)
+        let fun_is_found = List.fold_left (||) false (List.map fun_compatible lp') in
+        if fun_is_found then raise (DoubleDeclaration id) else lp
+      |Some _ -> raise (DoubleDeclaration id)
+    ) in
   (* création de la td fille : tds liée au bloc de la fonction *) 
   let tds_fille = creerTDSFille maintds in
 
   let l_param_tds' =
-    List.map (fun (t,s) -> ((t,s), (InfoVar(s, t, ref 0, ref  "")))) l_param in
+    List.map (fun (t,s) -> ((t,s), (InfoVar(s, ref t, ref 0, ref  "")))) l_param_unref in
   
   let getSeconds = List.map (fun (c,iast') -> (snd c, iast')) in
   let getFirsts = List.map (fun (c,iast') -> (fst c, iast')) in
@@ -373,16 +383,14 @@ let analyse_tds_fonction maintds (AstSyntax.Fonction(t,(id,m),l_param_unref,l_in
 
   (* ajout de la fonction dans la tds mère *)
   (* On conserve aussi l'identifiant bien que ça ne soit pas nécessaire *)
-  ajouter maintds id ((InfoFun ((id,m), t, l_param)));
-
-  (* Redéfinition à koz 2 la boté de kaml *)
-  let getFirsts = List.map (fun (c,iast') -> (fst c, iast')) in
+  ajouter maintds id ((InfoFun ((id,m), (t, l_param_unref)::prevDeclared)));
 
   (* liste des ASTTds instructions *)
   let (l_inst_tds, nb) = analyse_tds_bloc tds_fille (chercherGlobalement tds_fille id) None l_inst nb_lignes [(id, 0)] in
   let id_tds = chercherGlobalementUnsafeIdent tds_fille id in
-  let l = getFirsts l_param_tds' in
-  (AstTds.Fonction(t, id_tds, l, l_inst_tds),nb)
+  let map_fun (t, id) = (t, chercherGlobalementUnsafeIdent tds_fille (fst id)) in
+  let l' = List.map (map_fun) l_param_unref in
+  (AstTds.Fonction(t, id_tds, l', l_inst_tds),nb)
 
 (* analyser : AstSyntax.programme -> AstTds.programme *)
 (* Paramètre : le programme à analyser *)

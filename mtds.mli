@@ -4,7 +4,7 @@ open Type
 type 'a info =
   | InfoConst of string * int (* pas de marqueur pour les constantes *)
   | InfoVar of 'a * typ ref * int ref * string ref
-  | InfoFun of 'a * typ * (typ ref*'a) list
+  | InfoFun of 'a * (typ * (typ (*ref*)*'a) list) list
   | InfoBoucle of (string * string) list
 
 (* Table des symboles hiérarchique *)

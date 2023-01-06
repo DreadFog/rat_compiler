@@ -1,7 +1,7 @@
 (* Module de la passe de génération de code *)
 (* doit être conforme à l'interface Passe *)
 open Mtds
-open Exceptions
+open Exceptions_non_parametrees
 open Ast
 open Tam
 open Code
@@ -9,15 +9,17 @@ open Code
 type t1 = Ast.AstPlacement.programme
 type t2 = string
 
-(* Récupère les infos d'une info_ast *)
+(* tam_var_of_info_ast : ('a * Type.mark) info -> Type.mark * int * int ref * string ref
+ * Paramètre : iast, l'info ast associé à la variable tam
+ * Retourne : les infos d'une info_ast *)
 let tam_var_of_info_ast iast =
   match iast with
     InfoVar((_,m),ty,dep,reg) -> (m, Type.getTaille (!ty,m), dep, reg)
-    |_ -> raise Exceptions_identifiants.ErreurInterne
+    |_ -> raise ErreurInterne
 
 
-(* assignPtr: unit -> string *)
-(* Renvoie le code TAM pour assigner une valeur à un pointeur *)
+(* assignPtr: unit -> string
+ * Retouirne : le code TAM pour assigner une valeur à un pointeur *)
 let assignPtr =
 (* loadl la taille du ptr : 1
     load  l'@ dest copie
@@ -82,10 +84,10 @@ let rec ast_to_tam_expression e = match e with
     )
   | AstType.AppelFonction (f, l) ->
     (match f with
-    | (InfoFun ((name,_), _, _),_) ->
+    | (InfoFun ((name,_), _),_) ->
       List.fold_left (fun acc e -> acc ^ ast_to_tam_expression e) "" l
       ^ call "ST" name
-    | _ -> raise Exceptions.ErreurInterne 
+    | _ -> raise ErreurInterne 
     )
   (* Gestion des expressions ternaires:
      Similaire à un if / else, un jump est réalisé conditionnellement sur la valeur de la première expression *)
@@ -110,7 +112,7 @@ let rec ast_to_tam_instruction i =
     let (ty, m, taille, dep, reg) = 
       match iast with
         InfoVar((_,m),ty,dep,reg) -> (ty, m, Type.getTaille (!ty,m),dep,reg)
-        |_ -> raise Exceptions_identifiants.ErreurInterne
+        |_ -> raise ErreurInterne
     in
       (match m with
         Type.Neant -> 
@@ -146,7 +148,7 @@ let rec ast_to_tam_instruction i =
     let (taille, dep, reg) = (
       match iast with
         InfoVar((_,_),ty,dep,reg) -> (Type.getTaille (!ty,m),dep,reg)
-        |_ -> raise Exceptions_identifiants.ErreurInterne) in
+        |_ -> raise ErreurInterne) in
     (match m with
       Neant -> 
           ast_to_tam_expression e
@@ -222,7 +224,7 @@ let rec ast_to_tam_instruction i =
         ^ ast_to_tam_bloc b
         ^ jump labLoop
         ^ label labEndLoop
-      | _ -> raise Exceptions.ErreurInterne
+      | _ -> raise ErreurInterne
     end
   | AstPlacement.Break s -> jump s (* Grâce à la passe TDS et l'association des bons labels, cette passe est élémentaire *)
   | AstPlacement.Continue s -> jump s (* idem *)
@@ -241,7 +243,7 @@ and ast_to_tam_bloc (l_inst, taille_bloc) =
 let ast_to_tam_fonction (AstPlacement.Fonction(iast,_,l_inst)) =
   (* Rq : On n'autorise pas les fonctions auxillaires *)
   match iast with 
-  | InfoFun ((nom,_), _, _) -> label nom ^ ast_to_tam_bloc l_inst
+  | InfoFun ((nom,_), _) -> label nom ^ ast_to_tam_bloc l_inst
   | _ -> raise ErreurInterne
   
 (* analyser : AstPlacement.programme -> string

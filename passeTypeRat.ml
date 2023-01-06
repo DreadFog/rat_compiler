@@ -2,6 +2,7 @@
 (* doit être conforme à l'interface Passe *)
 
 open Mtds
+open Exceptions_non_parametrees
 open Exceptions
 open Ast
 
@@ -9,37 +10,30 @@ type t1 = Ast.AstTds.programme
 type t2 = Ast.AstType.programme
 
 
-(*let rec getIast ident = match ident with
-  |AstTds.Iast iast -> iast
-  |AstTds.Pointeur p -> getIast p
-
-let rec getTypeOfIast ident = match ident with
-|AstTds.Iast iast -> type_of_info_ast iast
-|AstTds.Pointeur p -> Type.Pointeur (getTypeOfIast p)
-
-let rec getTypeOfDeclaration t n = match n with
-  |AstSyntax.Symbole _ -> t
-  |AstSyntax.Pointeur p -> Type.Pointeur (getTypeOfDeclaration t p)*)
-
+(* getTypexMarkOfIast  : ('a * Type.mark) info -> Type.Typ * Type.mark 
+ * Paramètre : iast l'info associée à la variable ou fonction. 
+ * Retourne la marque et le type associé à l'iast
+ * Lève une erreur interne en cas d'info boucle
+ *   : on est pas censé appeler cette fonction
+ *)
 let getTypexMarkOfIast iast = match iast with
   InfoVar((_,m),t,_,_) -> (!t, m)
-  |InfoFun((_,m),t,_) -> (t, m)
+  |InfoFun((_,m),[t,_]) -> (t, m)
   |InfoConst(_) -> (Int, Type.Neant)
   | _ -> raise ErreurInterne
-(*let getTypeOfIast iast = match iast with
-  InfoVar(_,t,_,_) -> !t
-  |InfoFun(_,t,_) -> t
-  |InfoConst(_) -> Int
-  | _ -> raise ErreurInterne*)
 
-(* gestion du cas : (1) int ***a =...; (2) *a = ...; 
+(* gestion_pointeurs : Type.mark -> Type.mark -> Type.mark
+ * Paramètre : minit la marque initiale (celle donnée lors de la déclaration de la variable)
+ *             mcall la marque avec laquelle on appel la variable dans le code 
+ * Retourne la "différence" des marques
+ * gestion du cas : (1) int ***a =...; (2) *a = ...; 
  * il faut a dte de (2) un int ** :
  * pour cela il faut enlever aux mv * les m * de l'affectations
  * erreur si m > mv
  *)
  let rec gestion_pointeurs minit mcall = match minit, mcall with
  Type.Neant, (Type.Pointeur _) ->
-         raise Exceptions_identifiants.RefInterdite
+         raise Exceptions_non_parametrees.RefInterdite
  |(Type.Pointeur _), Type.Neant ->
          minit
  |(Type.Pointeur pinit), (Type.Pointeur pcall) -> 
@@ -100,18 +94,21 @@ let rec analyse_type_expression (e,(ctx:contexte)) = match e with
     else afficher_erreur (TypeInattendu (te1, (Bool,Neant))) ctx
   | AstTds.AppelFonction (f, l) -> 
     match f with
-      |(InfoFun((_,Neant),t,lt),Neant) -> (* Vérification du bon nombre d'arguments *)
+      |(InfoFun((n,Neant),lp'), Neant) -> (* Vérification du bon nombre d'arguments *)
           let nl = List.map (fun x -> analyse_type_expression (x,ctx)) l in
           let type_params = List.map snd nl in
-          (* check if all params have a correct type*)
-          let lt' = List.map (fun (x,(_,y)) -> (!x,y)) lt in
-          (* Test des types ET marqueurs *)
-          if (Type.est_compatible_list lt' type_params) then
-            (AstType.AppelFonction (f, List.map fst nl), (t,Neant))
-          else 
-            (* Erreur a adapté pour ajouter les ptrs *)
-            afficher_erreur (TypesParametresInattendus (lt', type_params)) ctx
-      |(InfoFun(_),_) -> failwith "Pointeurs de fonctions pas encore supporté"
+          let rec resolveType lp = (match lp with
+            [] -> afficher_erreur SurchargeImpossible ctx
+            |(t,lt)::q -> 
+              (* check if all params have a correct type *)
+              let lt' = List.map (fun (x,(_,y)) -> (x,y)) lt in
+              (* Test des types ET marqueurs *)
+              if (Type.est_compatible_list lt' type_params) then
+                let f' = (InfoFun((n,Type.Neant), [(t,lt)]), Type.Neant) in
+                (AstType.AppelFonction (f', List.map fst nl), (t,Type.Neant))
+              else
+                  resolveType q)
+          in resolveType lp'
       |_ -> raise ErreurInterne
 
 
@@ -142,7 +139,7 @@ let rec analyse_type_instruction (i,(ctx:contexte)) =
         (* Erreur a adapté pour ajouter les ptrs *)
   | AstTds.Affichage e ->
      let (ne, te) = analyse_type_expression (e,ctx) in
-     if snd te <> Neant then raise Exceptions.MarqueurInattendu (* pas de print(&a); *)
+     if snd te <> Neant then raise MarqueurInattendu (* pas de print(&a); *)
      else (match fst te with
       Int -> AstType.AffichageInt ne
       |Bool -> AstType.AffichageBool ne

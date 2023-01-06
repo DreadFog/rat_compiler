@@ -2,13 +2,15 @@
 exception RetourDansMain *)
 open Type
 open Ast.AstSyntax
+open Exceptions_non_parametrees
 
-exception ErreurInterne
-exception MarqueurInattendu
 
 (* Exceptions pour le typage *)
 (* Le premier type est le type réel, le second est le type attendu *)
 exception TypeInattendu of (typ * mark) * (typ * mark)
+(* TypesParametresInattendus : Exception utilisée lorsqu'un appel de fonction est réalisé avec
+   des paramètres de mauvais type.
+   La première liste est celle attendue, la seconde est celle utilisée. *)
 exception TypesParametresInattendus of (typ * mark) list * (typ * mark) list
 (* les types sont les types réels non compatible avec les signatures connues de l'opérateur *)
 exception TypeBinaireInattendu of binaire * (typ * mark) * (typ * mark)
@@ -27,13 +29,23 @@ let string_of_binaire = function
 (*
   Fonction affichant une backtrace pour localiser l'erreur dans le code original
   afficher_contexte: string*int list -> string
+  Argument : liste de paires (nom de l'instruction, numéro de ligne)
+  Retourne : une chaîne de caractères contenant la backtrace
 *)
-let afficher_contexte(contexte) = List.fold_right (fun (nom, ligne) s -> s ^ "\nInstruction " ^ (string_of_int ligne) ^ " : " ^ nom ) contexte ""
+let afficher_contexte(contexte) =
+  let printInstruction (nom, ligne) s =
+     s  ^ "\nInstruction " ^ (string_of_int ligne) ^ " : " ^ nom in
+   List.fold_right printInstruction contexte ""
 (*
   Fonction affichant un erreur de compilation de manière conviviale à l'utilisateur
   afficher_erreur: exn -> int * (string*int) list -> unit
+  Arguments : 
+    - l'exception levée
+    - le numéro de ligne de l'instruction en erreur
+    - le contexte de l'erreur (backtrace)
+  Retourne : unit (affiche l'erreur à l'écran)
 *)
-let afficher_erreur exn ((numero_ligne, contexte)) = 
+let afficher_erreur exn (numero_ligne, contexte) = 
   print_endline("===== ERROR =====");
   let msg = match exn with
     | ErreurInterne -> "Erreur interne"
@@ -53,5 +65,4 @@ let afficher_erreur exn ((numero_ligne, contexte)) =
   print_endline ("Contexte :" ^ (afficher_contexte contexte));
   print_endline ("Erreur instruction " ^ (string_of_int numero_ligne) ^ "\n" ^ msg );
   print_endline ("===== END ERROR =====");
-  (*print_endline ("Contexte : " ^ contexte);*)
   raise exn
