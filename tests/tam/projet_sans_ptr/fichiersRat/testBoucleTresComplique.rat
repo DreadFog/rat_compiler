@@ -1,0 +1,12 @@
+test{
+  int x = 2;
+  loop {
+    int b = 3;
+    rat c = [3/5];
+    if (true) { break; }
+    int d = 9;
+  };
+  int p = 40;
+  p = (2+p);
+  print p;
+}

@@ -44,3 +44,7 @@ let%expect_test "test" =
 let%expect_test "test" =
   runtam (pathFichiersRat^"testBoucleSurcharge.rat");
   [%expect{| 11 |}]
+
+let%expect_test "test" = 
+  runtam (pathFichiersRat^"testBoucleTresComplique.rat");
+  [%expect{| 42 |}]
