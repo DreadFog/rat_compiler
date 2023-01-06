@@ -246,8 +246,8 @@ type bloc = (instruction * contexte) list * int (* taille du bloc *)
  | Empty (* les nœuds ayant disparus: Const *)
  (* Instructions de boucles *)
  | Boucle of placement_info_ast * bloc
- | Break of string
- | Continue of string
+ | Break of string (* int nom boucle, déplacement*)
+ | Continue of string (* int nom boucle, déplacement*)
 
 (* informations associées à l'identificateur (dont son nom), liste de paramètres, corps, expression de retour *)
 (* Plus besoin de la liste des paramètres mais on la garde pour les tests du placements mémoire *)

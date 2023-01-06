@@ -226,8 +226,10 @@ let rec ast_to_tam_instruction i =
         ^ label labEndLoop
       | _ -> raise ErreurInterne
     end
-  | AstPlacement.Break s -> jump s (* Grâce à la passe TDS et l'association des bons labels, cette passe est élémentaire *)
-  | AstPlacement.Continue s -> jump s (* idem *)
+  | AstPlacement.Break s -> 
+    jump s (* Grâce à la passe TDS et l'association des bons labels, cette passe est élémentaire *)
+  | AstPlacement.Continue s -> 
+    jump s (* idem *)
 
 (* ast_to_tam_bloc : AstPlacement.bloc -> string
   * Paramètre : le bloc à analyser ainsi que sa taille mémoire

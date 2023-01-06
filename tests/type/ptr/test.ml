@@ -6,7 +6,7 @@ open Exceptions
 open Type
 
 exception ErreurNonDetectee
-let pathFichiersRat = "./fichiersRat/"
+let pathFichiersRat = "../../../../../tests/type/ptr/fichiersRat/"
 
 (**********)
 (*  TESTS *)

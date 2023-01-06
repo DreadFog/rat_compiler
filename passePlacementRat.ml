@@ -8,10 +8,6 @@ open Ast
 type t1 = Ast.AstType.programme
 type t2 = Ast.AstPlacement.programme
 
-(* first : ('a -> 'b) -> 'c*'a -> 'c*'b *)
-(* Application de f sur le premier élément d'un couple *)
-let first f (x,y) = (f x, y)
-
 (* analyse_placement_instruction : string -> int -> AstType.instruction -> AstType.instruction *)
 (* Paramètre reg : le registre courant *)
 (* Paramètre depl : le déplacement courant *)
@@ -48,7 +44,7 @@ let rec analyse_placement_instruction reg depl (i,(_:contexte)) =
     (AstPlacement.TantQue (e, nb), depl)
   | AstType.Retour (e,iast) ->
     (match iast with
-      InfoFun((_,m), [ty, param_t]) ->
+      InfoFun((_,m), [(ty, param_t)]) ->
         let getSeconds = List.map (fun (c,b) -> (c, snd b)) in
         let add_tailles = (fun param taille -> Type.getTaille param + taille) in
         (*let param_t' = List.map fst param_t in*)

@@ -43,7 +43,7 @@ let test fichier fonction (var,occ) (dep,registre) =
 (****************************************)
 
 
-let pathFichiersRat = "./fichiersRat/"
+let pathFichiersRat = "../../../../../tests/placement/projet_sans_ptr/fichiersRat/"
 
 (**********)
 (*  TESTS *)

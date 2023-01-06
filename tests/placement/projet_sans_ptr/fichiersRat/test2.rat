@@ -1,11 +1,11 @@
 main {
     bool x = true;
-    rat y = [0/1];
-    int z = 0;
+    rat y = [2/3];
+    int z = 4;
     define test : loop {
        bool x = true;
-       rat y = [0/1];
-       int z = 0;
+       rat y = [5/8];
+       int z = 9;
        if (x) { break test; }
     };
     bool x1 = true;

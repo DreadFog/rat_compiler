@@ -25,7 +25,7 @@ let runtam ratfile =
 (** Chemin d'accès aux fichiers de test *)
 (****************************************)
 
-let pathFichiersRat = "./fichiersRat/"
+let pathFichiersRat = "../../../../../tests/tam/projet_sans_ptr/fichiersRat/"
 
 (**********)
 (*  TESTS *)

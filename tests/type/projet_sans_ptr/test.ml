@@ -4,7 +4,7 @@ open Compilateur
 open Exceptions
 
 exception ErreurNonDetectee
-let pathFichiersRat = "./fichiersRat/"
+let pathFichiersRat = "../../../../../tests/type/projet_sans_ptr/fichiersRat/"
 
 (**********)
 (*  TESTS *)

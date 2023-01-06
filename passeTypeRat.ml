@@ -167,7 +167,7 @@ let rec analyse_type_instruction (i,(ctx:contexte)) =
     else afficher_erreur (TypeInattendu(te, (t,Neant))) ctx
     (* Erreur a adapté pour ajouter les ptrs *)
   | AstTds.Empty -> AstType.Empty
-  (* Gestion des boucles
+    (* Gestion des boucles
      * Une gestion de typage au niveau du bloc de la boucle est nécessaire.*)
   | AstTds.Boucle (ia, b) -> AstType.Boucle (ia, analyse_type_bloc b)
   | AstTds.Break s -> AstType.Break s

@@ -4,7 +4,7 @@ open Compilateur
 open Exceptions_non_parametrees
 
 exception ErreurNonDetectee
-let pathFichiersRat = "./fichiersRat/"
+let pathFichiersRat = "../../../../../tests/gestion_id/ptr/fichiersRat/"
 
 (**********)
 (*  TESTS *)
@@ -24,3 +24,9 @@ let%test_unit "testPtrConstante"=
     let _ = compiler (pathFichiersRat^"testPtrConstante.rat")
     in raise ErreurNonDetectee
     with RefInterdite -> ()
+let%test_unit "testPtrFonction"= 
+    try
+        let _ = compiler (pathFichiersRat^"testPtrFonction.rat")
+    in raise ErreurNonDetectee
+    with
+        | MauvaiseUtilisationIdentifiant "f" -> ()

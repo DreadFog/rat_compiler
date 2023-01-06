@@ -386,7 +386,7 @@ let analyse_tds_fonction maintds (AstSyntax.Fonction(t,(id,m),l_param_unref,l_in
   ajouter maintds id ((InfoFun ((id,m), (t, l_param_unref)::prevDeclared)));
 
   (* liste des ASTTds instructions *)
-  let (l_inst_tds, nb) = analyse_tds_bloc tds_fille (chercherGlobalement tds_fille id) None l_inst nb_lignes [(id, 0)] in
+  let (l_inst_tds, nb) = analyse_tds_bloc tds_fille (Some (InfoFun((id, m), [(t,l_param_unref)]))) None l_inst nb_lignes [(id, 0)] in
   let id_tds = chercherGlobalementUnsafeIdent tds_fille id in
   let map_fun (t, id) = (t, chercherGlobalementUnsafeIdent tds_fille (fst id)) in
   let l' = List.map (map_fun) l_param_unref in
