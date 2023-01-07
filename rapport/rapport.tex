@@ -1,7 +1,86 @@
-% (* Rq : question cruciale : est-ce que int *a c'est ( int * ) a ou int ( *a ) ? 
+\documentclass[french]{article}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage[utf8]{inputenc}
+%\usepackage{a4wide}
+\usepackage{amssymb}
+%\usepackage{tickz} % Jugements de typage en tikz ?
+
+
+\begin{document}
+
+
+\title{\textbf{Traduction des Langages}}
+\author{Quentin \textsc{Fraty}\\
+        Nathan \textsc{Maillet}}
+\date{}
+
+\maketitle
+
+% Transversale (?)
+% !! Penser a traiter les évolutions des AST !!
+% Justifications pertinentes et complètes sur l'evolution de la structure des AST.
+% Comparaison avec d'autres choix de conception
+% Effacer les lignes de ce message UNIQUEMENT lorsque qu'elles ont été traitées
+
+\section{Introduction}
+% Bonne description du sujet et des points abordés dans la suite du rapport
+% pas de copier/coller du sujet !!
+% Effacer les lignes de ce message UNIQUEMENT lorsque qu'elles ont été traitées
+
+\section{Mutation de \emph{tds.ml} en \emph{mtds}}
+% Rq : mtds a pour vocation de généraliser tds
+%      plutôt que de changer tds.ml pour inclure les ptrs et
+%      galérer dans le cas où on veut revenir en arrière ou modifier
+%      les identifiants a l'avenir (casts, expliciter les kinds -btw, ça existe ? ça marche comment en cpp ?)
+%      il n'y aura pas besoin de changer mtds
+%      -> cela nous a été utile car on a changé de stratégie pour les ptrs
+%      mtds n'est pas contraint par une structure de monade car je ne vois pas l'intérêt dans le monde OCaml pré version 5...
+% Effacer les lignes de ce message UNIQUEMENT lorsque qu'elles ont été traitées
+
+\section{Pointeurs}
+% Explications pertinentes et complètes sur leur traitement (sans...). Comparaison avec d’autres choix de conception.
+% Ne pas oublier les jugements de typage !
+% Rq : question cruciale : est-ce que int *a c'est ( int * ) a ou int ( *a ) ? 
 %         choix : int ( *a ), on traite ( *a )
-%         comme l'indentifiant, constitué d'un marqueur : Ident ou Pointeur
-%         -> On autorise les fonctions d'ordre supérieur avec les pointeurs mais
-%         attention a gérer le LB !!
-%         Par contre, on autorise pas les pointeurs dans les paramètres, faudra voir pour les typedef struct
-% *)
+%         comme l'indentifiant, constitué d'un marqueur : * et d'un symbole/identifiant : a 
+% Effacer les lignes de ce message UNIQUEMENT lorsque qu'elles ont été traitées
+
+\section{Bloc else optionnel}
+% Explications pertinentes et complètes sur leur traitement (sans...). Comparaison avec d’autres choix de conception.
+% Ne pas oublier les jugements de typage !
+% Effacer les lignes de ce message UNIQUEMENT lorsque qu'elles ont été traitées
+
+\section{Conditionnelle ternaire}
+% Explications pertinentes et complètes sur leur traitement (sans...). Comparaison avec d’autres choix de conception.
+% Ne pas oublier les jugements de typage !
+% Effacer les lignes de ce message UNIQUEMENT lorsque qu'elles ont été traitées
+
+\section{Loop à la Rust}
+% Explications pertinentes et complètes sur leur traitement (sans...). Comparaison avec d’autres choix de conception.
+% Ne pas oublier les jugements de typage !
+% Rq : Problème de la pile a évoqué
+% Effacer les lignes de ce message UNIQUEMENT lorsque qu'elles ont été traitées
+
+\section{Surcharge de fonctions}
+% Explications pertinentes et complètes sur leur traitement (sans...). Comparaison avec d’autres choix de conception.
+% Effacer les lignes de ce message UNIQUEMENT lorsque qu'elles ont été traitées
+
+\section{Incréments}
+% Explications pertinentes et complètes sur leur traitement (sans...). Comparaison avec d’autres choix de conception.
+% Ne pas oublier les jugements de typage !
+% Effacer les lignes de ce message UNIQUEMENT lorsque qu'elles ont été traitées
+
+\section{Affichage des erreurs}
+% Explications pertinentes et complètes sur leur traitement (sans...). Comparaison avec d’autres choix de conception.
+% Effacer les lignes de ce message UNIQUEMENT lorsque qu'elles ont été traitées
+
+\section{Conclusion}
+% Bon recul sur les difficultés rencontrées et améliorations éventuelles
+% Améliorations éventuelles :
+% On n'autorise pas les fonctions d'ordre supérieur avec les pointeurs mais
+% attention a gérer le LB !!
+% On autorise les pointeurs dans les paramètres mais pas en retour
+% Effacer les lignes de ce message UNIQUEMENT lorsque qu'elles ont été traitées
+
+\end{document}

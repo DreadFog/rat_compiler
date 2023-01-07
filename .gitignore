@@ -1,1 +1,9 @@
+# Ignore des builds du compilateur
 _build/*
+
+# Ignore les builds latex (ici ignore ceux fait avec latexmk)
+rapport/*.aux
+rapport/*.fdb_latexmk
+rapport/*.fls
+rapport/*.log
+rapport/*.synctex.gz
