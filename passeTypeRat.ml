@@ -14,8 +14,7 @@ type t2 = Ast.AstType.programme
  * Paramètre : iast l'info associée à la variable ou fonction. 
  * Retourne la marque et le type associé à l'iast
  * Lève une erreur interne en cas d'info boucle
- *   : on est pas censé appeler cette fonction
- *)
+ *   : on est pas censé appeler cette fonction *)
 let getTypexMarkOfIast iast = match iast with
   InfoVar((_,m),t,_,_) -> (!t, m)
   |InfoFun((_,m),[t,_]) -> (t, m)
@@ -29,23 +28,22 @@ let getTypexMarkOfIast iast = match iast with
  * gestion du cas : (1) int ***a =...; (2) *a = ...; 
  * il faut a dte de (2) un int ** :
  * pour cela il faut enlever aux mv * les m * de l'affectations
- * erreur si m > mv
- *)
+ * erreur si m > mv *)
  let rec gestion_pointeurs minit mcall = match minit, mcall with
- Type.Neant, (Type.Pointeur _) ->
-         raise Exceptions_non_parametrees.RefInterdite
- |(Type.Pointeur _), Type.Neant ->
-         minit
- |(Type.Pointeur pinit), (Type.Pointeur pcall) -> 
-         gestion_pointeurs pinit pcall
- |Type.Neant, Type.Neant ->
-         Type.Neant
+  Type.Neant, (Type.Pointeur _) ->
+          raise Exceptions_non_parametrees.RefInterdite
+  |(Type.Pointeur _), Type.Neant ->
+          minit
+  |(Type.Pointeur pinit), (Type.Pointeur pcall) -> 
+          gestion_pointeurs pinit pcall
+  |Type.Neant, Type.Neant ->
+          Type.Neant
 
-(* analyse_type_expression : AstTds.expression * contexte -> AstType.expression *)
-(* Paramètre e : l'expression à analyser *)
-(* Paramètre ctx : le contexte *)
-(* Retourne l'expression d'entrée conformément typée, ainsi que le type et la marque de l'expression *)
-(* Erreur si mauvaise logique au niveau des types dans le programme *)
+(* analyse_type_expression : AstTds.expression * contexte -> AstType.expression
+ * Paramètres : e l'expression à analyser
+ *              ctx le contexte
+ * Retourne l'expression d'entrée conformément typée, ainsi que le type et la marque de l'expression
+ * Erreur si mauvaise logique au niveau des types dans le programme *)
 let rec analyse_type_expression (e,(ctx:contexte)) = match e with
   | AstTds.Identifiant (iast,dm) -> 
     let (t,m) = getTypexMarkOfIast iast in
@@ -162,7 +160,7 @@ let rec analyse_type_instruction (i,(ctx:contexte)) =
     (* Erreur a adapté pour ajouter les ptrs *)
   | AstTds.Retour (e,iast) ->
     let (ne, te) = analyse_type_expression (e,ctx) 
-    and t = type_of_info_ast iast in
+    and t = type_of_info iast in
     if (Type.est_compatible (t,Neant) te) then (AstType.Retour(ne, iast))
     else afficher_erreur (TypeInattendu(te, (t,Neant))) ctx
     (* Erreur a adapté pour ajouter les ptrs *)
@@ -176,25 +174,22 @@ let rec analyse_type_instruction (i,(ctx:contexte)) =
 
 (* analyse_type_bloc : AstTds.bloc -> AstType.bloc 
   * Analyse le type d'un bloc et renvoi un bloc typé
-  * Paramètres : 
-  *   - b : le bloc à analyser
+  * Paramètre : b le bloc à analyser
   * Erreur potentielle propagée de l'analyse du bloc *)  
 and analyse_type_bloc b = List.map analyse_type_instruction b
 
-(* analyse_type_fonction : AstTds.fonction -> AstType.fonction *)
-(* Analyse le type d'une fonction et renvoi une fonction typée *)
-(* Paramètres : 
-  *   - f : la fonction à analyser
-  * Erreur si mauvais typage au niveau des instructions de la fonction *)
+(* analyse_type_fonction : AstTds.fonction -> AstType.fonction
+ * Analyse le type d'une fonction et renvoi une fonction typée
+ * Paramètre :  la fonction à analyser
+ * Erreur si mauvais typage au niveau des instructions de la fonction *)
 let analyse_type_fonction (AstTds.Fonction(_,iast,l_param,l_inst)) =
   AstType.Fonction(iast, List.map snd l_param, analyse_type_bloc l_inst)
 
 
 (* analyser : AstTds.programme -> AstType.programme 
-  * Analyse le type d'un programme et renvoi un programme typé
-  * Paramètres : 
-  *   - prog : le programme à analyser
-  * Erreur si mauvais typage au sein du programme *)
+ * Analyse le type d'un programme et renvoi un programme typé
+ * Paramètre : prog le programme à analyser
+ * Erreur si mauvais typage au sein du programme *)
 let analyser (AstTds.Programme (fonctions,prog)) =
   let nf = List.map analyse_type_fonction fonctions in
   let nb = analyse_type_bloc prog in

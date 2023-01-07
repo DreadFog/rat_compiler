@@ -19,19 +19,16 @@ let tam_var_of_info_ast iast =
 
 
 (* assignPtr: unit -> string
- * Retouirne : le code TAM pour assigner une valeur à un pointeur *)
+ * Retourne : le code TAM pour assigner une valeur à un pointeur *)
 let assignPtr =
-(* loadl la taille du ptr : 1
-    load  l'@ dest copie
-    load  l'@ source copie *)
-"LOAD (1) -1[ST]
-LOAD (1) -3[ST]
-STOREI (1)\n"
+    "LOAD (1) -1[ST]\n"   (* loadl la taille du ptr : 1 *)
+  ^ "LOAD (1) -3[ST]\n"   (* load  l'@ dest copie *)
+  ^ "STOREI (1)\n"        (* load  l'@ source copie *)
 
 
 (* ast_to_tam_expression : AstType.expression -> string
-  * Paramètre e : l'expression à analyser
-  * Renvoie le code TAM correspondant à l'expression *)
+ * Paramètre e : l'expression à analyser
+ * Renvoie le code TAM correspondant à l'expression *)
 let rec ast_to_tam_expression e = match e with
   | AstType.Identifiant (s,_) ->
         let (m, taille, depl, reg) = tam_var_of_info_ast s in 
@@ -45,16 +42,14 @@ let rec ast_to_tam_expression e = match e with
             (* On load l'adresse vers laquelle pointe p' dans la pile
             * puis on la copie dans le tas avant de la pop *) 
               loadi 1 (* load l'@ vers laquelle pointe p' *)
-            ^ gestion_ptr p'
-            (*^ pop 0 1*) (* pop, on a plus besoin des @ pointées *))
+            ^ gestion_ptr p')
         in 
         load taille !depl !reg
       ^ gestion_ptr m
   | AstType.NULL -> subr "MVoid"
   | AstType.New _ -> loadl_int 4242 (* déjà géré dans déclaration *)
-  | AstType.Adr (a,_) -> (* inch' j'ai bien géré les adresses ie elles ont bien le même iast que a *)
+  | AstType.Adr (a,_) ->
       let (_, _, depl, reg) = tam_var_of_info_ast a in
-      (*load 1 !depl !reg*)
       loada !depl !reg
   | AstType.Entier i -> loadl_int i 
   | AstType.Booleen b -> loadl_int (Bool.to_int b)
@@ -77,8 +72,8 @@ let rec ast_to_tam_expression e = match e with
     ^ (
       match op with
       (* idée: on a le résultat en sommet de pile ( -1 et -2 ST
-          si on désire le numérateur, on pop 1 pour avoir ST au bon endroit
-          si on désire le dénominateur, on déplace celui-ci en -2 ST et on pop 1)*)
+       *   si on désire le numérateur, on pop 1 pour avoir ST au bon endroit
+       *   si on désire le dénominateur, on déplace celui-ci en -2 ST et on pop 1) *)
       | Numerateur -> pop 0 1
       | Denominateur -> store 1 (-2) "ST" 
     )
@@ -90,7 +85,7 @@ let rec ast_to_tam_expression e = match e with
     | _ -> raise ErreurInterne 
     )
   (* Gestion des expressions ternaires:
-     Similaire à un if / else, un jump est réalisé conditionnellement sur la valeur de la première expression *)
+   * Similaire à un if / else, un jump est réalisé conditionnellement sur la valeur de la première expression *)
   | AstType.Ternaire(e1, e2, e3) -> 
       let labElse = getEtiquette ()
       and labEndIF = getEtiquette () in
@@ -104,8 +99,8 @@ let rec ast_to_tam_expression e = match e with
 
 
 (* ast_to_tam_instruction : AstType.instruction -> string
-  * Paramètre i : l'instruction à analyser
-  * Renvoie le code TAM correspondant à l'instruction *)
+ * Paramètre i : l'instruction à analyser
+ * Renvoie le code TAM correspondant à l'instruction *)
 let rec ast_to_tam_instruction i =
   match i with
   | AstPlacement.Declaration (iast, e) ->
@@ -120,7 +115,7 @@ let rec ast_to_tam_instruction i =
           ^ ast_to_tam_expression e
           ^ store taille !dep !reg
         (* Pour les pointeurs on a dans la pile l'adr du 1er *
-           le reste est dans le tas *)
+         * le reste est dans le tas *)
         | Type.Pointeur p ->
           (* int **a; pile : @( *a ) tas : *a et a *)
           let rec gestion_ptr p = match p with
@@ -164,7 +159,7 @@ let rec ast_to_tam_instruction i =
             ^ pop 0 taille
           |Type.Pointeur p' ->
             (* On load l'adresse vers laquelle pointe p' dans la pile
-            * puis on la copie dans le tas avant de la pop *) 
+             * puis on la copie dans le tas avant de la pop *) 
               loadi 1 (* load l'@ vers laquelle pointe p' *)
             ^ gestion_ptr p'
             ^ pop 0 1 (* pop, on a plus besoin des @ pointées *)
@@ -204,7 +199,7 @@ let rec ast_to_tam_instruction i =
     ^ label labEndLoop
   | AstPlacement.Retour (e, taille_ret, taille_param) ->
   (* Rq : pas besoin de pop, le pointeur de pile sera remis au bon endroit 
-     grâce aux instructions d'activation *)
+   *      grâce aux instructions d'activation *)
       ast_to_tam_expression e
     ^ return taille_ret taille_param
   | AstPlacement.Empty -> ""
@@ -232,16 +227,16 @@ let rec ast_to_tam_instruction i =
     jump s (* idem *)
 
 (* ast_to_tam_bloc : AstPlacement.bloc -> string
-  * Paramètre : le bloc à analyser ainsi que sa taille mémoire
-  * Transforme le bloc en code TAM *)
+ * Paramètre : le bloc à analyser ainsi que sa taille mémoire
+ * Transforme le bloc en code TAM *)
 and ast_to_tam_bloc (l_inst, taille_bloc) =
     List.fold_left (fun prev_str inst -> prev_str ^ ast_to_tam_instruction inst)
                     "" (List.map fst l_inst (* contexte inutile ici *))
   ^ pop 0 taille_bloc
 
 (* ast_to_tam_fonction : AstPlacement.fonction -> string
-  * Paramètre : la fonction à analyser
-  * Transforme la fonction en code TAM *)
+ * Paramètre : la fonction à analyser
+ * Transforme la fonction en code TAM *)
 let ast_to_tam_fonction (AstPlacement.Fonction(iast,_,l_inst)) =
   (* Rq : On n'autorise pas les fonctions auxillaires *)
   match iast with 

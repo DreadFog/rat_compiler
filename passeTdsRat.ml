@@ -8,44 +8,36 @@ open Mtds
 type t1 = Ast.AstSyntax.programme
 type t2 = Ast.AstTds.programme
 
-(* second : ('a -> 'b) -> 'c*'a -> 'c*'b *)
-(* Application de f sur le second élément d'un couple *)
-let second f (x,y) = (x, f y)
-
-(* first : ('a -> 'b) -> 'c*'a -> 'c*'b *)
-(* Application de f sur le premier élément d'un couple *)
-let first f (x,y) = (f x, y)
-
 (* print_ident : 'a -> 'a 
-   Utilisé pour des types simples / primitifs d'identifiants
-*)
+ * Fonction identitée.
+ * Utilisé pour des types simples / primitifs d'identifiants *)
 let print_ident s = s
 
 (* chercherGlobalementUnsafeIdent: (string * AstSyntax.Identifiant info) tds -> string -> AstSyntax.identifiant info
-   Utilisation de print_ident pour chercherGlobalementUnsafe *)
+ * Utilisation de print_ident pour chercherGlobalementUnsafe *)
 let chercherGlobalementUnsafeIdent = chercherGlobalementUnsafe print_ident
 (* AbsentLocalementUnsafeIdent: (string * AstSyntax.Identifiant info) tds -> string -> unit
-   Utilisation de print_ident pour AbsentLocalementUnsafe *)
+ * Utilisation de print_ident pour AbsentLocalementUnsafe *)
 let absentLocalementUnsafeIdent = absentLocalementUnsafe print_ident
 
 
-(* giveID : unit -> string *)
-(* Génère un identifiant unique.
-   Utilisé lorsqu'une boucle, un break ou un continue sont utilisés sans label.
-   Permet d'associer chacune de ces instructions à un élément dans la TDS
-   De plus, permet de donner un identifiant unique à deux loop ayant le même label, puisque la surcharge est autorisée. *)
+(* giveID : unit -> string
+ * Génère un identifiant unique.
+ * Utilisé lorsqu'une boucle, un break ou un continue sont utilisés sans label.
+ * Permet d'associer chacune de ces instructions à un élément dans la TDS
+ * De plus, permet de donner un identifiant unique à deux loop ayant le même label, puisque la surcharge est autorisée. *)
 let giveID = 
   let num = ref 0 in
   fun () ->
     num := (!num)+1 ;
     "id"^((string_of_int (!num)))
 
-(* analyse_tds_expression : tds -> AstSyntax.expression -> AstTds.expression *)
-(* Paramètre tds : la table des symboles courante *)
-(* Paramètre e : l'expression à analyser *)
-(* Vérifie la bonne utilisation des identifiants et tranforme l'expression
-en une expression de type AstTds.expression *)
-(* Erreur si mauvaise utilisation des identifiants *)
+(* analyse_tds_expression : tds -> AstSyntax.expression -> AstTds.expression
+ * Paramètre tds : la table des symboles courante
+ * Paramètre e : l'expression à analyser
+ * Vérifie la bonne utilisation des identifiants et tranforme l'expression
+ * en une expression de type AstTds.expression
+ * Erreur si mauvaise utilisation des identifiants *)
 let rec analyse_tds_expression tds e = match e with
   | AstSyntax.Identifiant r ->
     (match r with
@@ -85,7 +77,7 @@ let rec analyse_tds_expression tds e = match e with
     (* On vérifie qu'on appel bien une fonction *)
     (match f_tds with
       InfoFun((_,Neant), _) -> AstTds.AppelFonction ( (f_tds,Neant) 
-      (* f_tds est une infofun ayant toutes les signatures possibles (surcharge)*)
+      (* f_tds est une infofun ayant toutes les signatures possibles (surcharge) *)
                                                     , List.map (analyse_tds_expression tds) l)
       |_ -> raise (MauvaiseUtilisationIdentifiant (print_ident f)));
   | AstSyntax.Unaire (op, e) ->
@@ -96,37 +88,33 @@ let rec analyse_tds_expression tds e = match e with
     AstTds.Ternaire (analyse_tds_expression tds e1, analyse_tds_expression tds e2, analyse_tds_expression tds e3)
 
 (* analyse_tds_identifiant: tds -> AstSyntax.Identifiant -> AstTds.Identifiant
-    Paramètre tds : la table des symboles courante
-    Paramètre i : l'identifiant à analyser, décomposé en un string * Type.mark
-    Vérifie la bonne utilisation des identifiants et tranforme l'identifiant en une identifiant de type AstTds.Identifiant
-    Erreur si mauvaise utilisation des identifiants
-*)
+ * Paramètre : tds la table des symboles courante
+ *             i l'identifiant à analyser, décomposé en un string * Type.mark
+ * Vérifie la bonne utilisation des identifiants et tranforme l'identifiant en une identifiant de type AstTds.Identifiant
+ * Erreur si mauvaise utilisation des identifiants *)
 and analyse_tds_identifiant tds (s,ms) = 
   let info_ast_found = chercherGlobalementUnsafeIdent tds s in
-  (
-  match info_ast_found with 
-    | InfoVar((_,_),_,_,_)-> (info_ast_found, ms)
-    | InfoFun((_,_),_) -> (info_ast_found, ms)
-    | _ -> (raise Exceptions_non_parametrees.RefInterdite)
-  )
+  ( match info_ast_found with 
+    | InfoVar(_) | InfoFun(_) -> (info_ast_found, ms)
+    | _ -> (raise Exceptions_non_parametrees.RefInterdite))
 
 
 (* analyse_tds_instruction : tds -> info_ast option -> identifiant info option -> AstSyntax.instruction
-                            -> int -> string * int list          
-                            -> AstTds.instruction * (string * int) list * int *)
-(* Paramètre tds : la table des symboles courante *)
-(* Paramètre oia : None si l'instruction i est dans le bloc principal,
-                   Some ia où ia est l'information associée à la fonction
-                   dans laquelle est l'instruction i sinon *)
-(* Paramètre optBoucle : None si l'instruction i n'est pas dans une boucle,
-                         Some (id, l) où id est l'identifiant de la boucle
-                         et l est la liste des étiquettes de la boucle *)
-(* Paramètre i : l'instruction à analyser *)
-(* Paramètre num_inst : le numéro de l'instruction dans le bloc courant *)
-(* Paramètre ctx : le contexte dans lequel est l'instruction i *)
-(* Vérifie la bonne utilisation des identifiants et tranforme l'instruction
-en une instruction de type AstTds.instruction *)
-(* Erreur si mauvaise utilisation des identifiants *)
+ *                          -> int -> string * int list          
+ *                          -> AstTds.instruction * (string * int) list * int
+ * Paramètres : tds la table des symboles courante
+ *              oia None si l'instruction i est dans le bloc principal,
+ *                 Some ia où ia est l'information associée à la fonction
+ *                 dans laquelle est l'instruction i sinon
+ *              optBoucle None si l'instruction i n'est pas dans une boucle,
+ *                       Some (id, l) où id est l'identifiant de la boucle
+ *                       et l est la liste des étiquettes de la boucle
+ *              i l'instruction à analyser
+ *              num_inst le numéro de l'instruction dans le bloc courant
+ *              ctx le contexte dans lequel est l'instruction i
+ * Vérifie la bonne utilisation des identifiants et tranforme l'instruction
+ * en une instruction de type AstTds.instruction
+ * Erreur si mauvaise utilisation des identifiants *)
 let rec analyse_tds_instruction tds oia optBoucle i num_inst ctx =
   match i with
   | AstSyntax.Declaration (t, (n,m), e) ->
@@ -311,20 +299,20 @@ let rec analyse_tds_instruction tds oia optBoucle i num_inst ctx =
         end
     end
 
-(* analyse_tds_bloc : tds -> info_ast option -> AstSyntax.bloc -> AstTds.bloc *)
-(* Paramètre tds : la table des symboles courante *)
-(* Paramètre oia : None si le bloc li est dans le programme principal,
-                   Some ia où ia est l'information associée
-                    à la fonction dans laquelle est le bloc li sinon *)
-(* Paramètre optBoucle : None si le bloc li n'est pas dans une boucle,
-                    Some ia où ia est l'information associée
-                    à la boucle dans laquelle est le bloc li sinon *)
-(* Paramètre li : liste d'instructions à analyser *)
-(* Paramètre nb_lignes : numéro de l'instruction en début de bloc *)
-(* Paramètre ctx : contexte du bloc *)
-(* Vérifie la bonne utilisation des identifiants et tranforme le bloc
-   en un bloc de type AstTds.bloc *)
-(* Erreur si mauvaise utilisation des identifiants *)
+(* analyse_tds_bloc : tds -> info_ast option -> AstSyntax.bloc -> AstTds.bloc
+ * Paramètres : tds la table des symboles courante
+ *              oia None si le bloc li est dans le programme principal,
+ *                  Some ia où ia est l'information associée
+ *                  à la fonction dans laquelle est le bloc li sinon
+ *              optBoucle None si le bloc li n'est pas dans une boucle,
+ *                        Some ia où ia est l'information associée
+ *                        à la boucle dans laquelle est le bloc li sinon
+ *              li liste d'instructions à analyser
+ *              nb_lignes numéro de l'instruction en début de bloc
+ *              ctx contexte du bloc
+ * Vérifie la bonne utilisation des identifiants et tranforme le bloc
+ *  en un bloc de type AstTds.bloc
+ * Erreur si mauvaise utilisation des identifiants *)
 and analyse_tds_bloc tds oia optBoucle li nb_lignes ctx =
   (* Entrée dans un nouveau bloc, donc création d'une nouvelle tds locale
   pointant sur la table du bloc parent *)
@@ -339,64 +327,67 @@ and analyse_tds_bloc tds oia optBoucle li nb_lignes ctx =
   let complete_context = ((fun nb_l (inst, ctx)  -> (inst, (nb_l,ctx))) nb_lignes) in
   ((List.map complete_context nli), nb_lignes)
 
-(* analyse_tds_fonction : tds -> AstSyntax.fonction -> AstTds.fonction *)
-(* Paramètre tds : la table des symboles courante *)
-(* Paramètre : la fonction à analyser *)
-(* Paramètre nb_lignes : numéro de l'instruction en début de fonction *)
-(* Vérifie la bonne utilisation des identifiants et tranforme la fonction
-en une fonction de type AstTds.fonction *)
-(* Erreur si mauvaise utilisation des identifiants *)
-let analyse_tds_fonction maintds (AstSyntax.Fonction(t,(id,m),l_param_unref,l_inst)) nb_lignes =
-  (* On passe les types en référence pour les traiter comme des infovar *)
-  (*let l_param = List.map (fun (t,y) -> (ref t,y)) l_param_unref in*)
-  (* On vérifie si la fonction n'est pas déjà déclarée. *)
-
+(* analyse_tds_fonction : tds -> AstSyntax.fonction -> AstTds.fonction
+ * Paramètres : tds la table des symboles courante
+ *              f la fonction à analyser
+ *              nb_lignes numéro de l'instruction en début de fonction
+ * Vérifie la bonne utilisation des identifiants et tranforme la fonction
+ * en une fonction de type AstTds.fonction
+ * Erreur si mauvaise utilisation des identifiants *)
+let analyse_tds_fonction maintds (AstSyntax.Fonction(t,(id,m),l_param,l_inst)) nb_lignes =
+  (* prevDeclared : fonction auxillaire permettant de récupérer toutes les fonctions
+   * candidates pour gérer la surcharge *)
   let prevDeclared =
     (match chercherGlobalement maintds id with
-    (* Infofun -> [(typeRetour, [liste_type_params]), (autre)] *)
-      |None -> [] (* Aucune fonction n'existe avec ce nom. Création d'une Infofun*)
+    (* Infofun -> [(typeRetour, [liste_type_params]), autres] *)
+      |None -> [] (* Aucune fonction n'existe avec ce nom. *)
       |Some (InfoFun (_,lp)) -> 
         let lp' = List.map snd lp in
         let getTypexMark = List.map (fun (t, (_,m)) -> (t,m)) in
+        (* On vérifie si la fonction n'est pas déjà déclarée. *)
         let fun_compatible params = 
-          Type.est_compatible_list (getTypexMark l_param_unref) (getTypexMark params) in
+          Type.est_compatible_list (getTypexMark l_param) (getTypexMark params) in
           (* fun_is_found renvoie vrai si une des signatures déjà existantes matche *)
         let fun_is_found = List.fold_left (||) false (List.map fun_compatible lp') in
         if fun_is_found then raise (DoubleDeclaration id) else lp
       |Some _ -> raise (DoubleDeclaration id)
     ) in
+  
   (* création de la td fille : tds liée au bloc de la fonction *) 
   let tds_fille = creerTDSFille maintds in
 
+  (* Transformation des paramètres en variables dans la fonction *)
   let l_param_tds' =
-    List.map (fun (t,s) -> ((t,s), (InfoVar(s, ref t, ref 0, ref  "")))) l_param_unref in
-  
-  let getSeconds = List.map (fun (c,iast') -> (snd c, iast')) in
-  let getFirsts = List.map (fun (c,iast') -> (fst c, iast')) in
+    List.map (fun (t,(id,m)) -> (id, (InfoVar((id,m), ref t, ref 0, ref  "")))) l_param in
+
+  (* Ajout d'un paramètre a la tds fille *)
+  let ajouter_parametre (id, infovar) () =
+      absentLocalementUnsafeIdent tds_fille id;
+      ajouter tds_fille id infovar; in
+
   (* ajouter les paramètres dans la tds fille pour l'analyse du bloc
    * on fait attention aux possibles doublons
    * Remarque : ici, choix qu'on peut avoir une variable déclarée dans le bloc englobant et
    * un paramètre de même nom *)
-  List.fold_right (fun curr () -> absentLocalementUnsafeIdent tds_fille (fst curr);
-                                  ajouter tds_fille (fst curr) (snd curr))
-                  (getFirsts (getSeconds l_param_tds')) ();
-
-  (* ajout de la fonction dans la tds mère *)
-  (* On conserve aussi l'identifiant bien que ça ne soit pas nécessaire *)
-  ajouter maintds id ((InfoFun ((id,m), (t, l_param_unref)::prevDeclared)));
+  List.fold_right ajouter_parametre l_param_tds' ();
+  
+  (* ajout de la fonction dans la tds mère
+   * On conserve aussi l'identifiant bien que ça ne soit pas nécessaire *)
+  ajouter maintds id ((InfoFun ((id,m), (t, l_param)::prevDeclared)));
 
   (* liste des ASTTds instructions *)
-  let (l_inst_tds, nb) = analyse_tds_bloc tds_fille (Some (InfoFun((id, m), [(t,l_param_unref)]))) None l_inst nb_lignes [(id, 0)] in
+  let (l_inst_tds, nb) = analyse_tds_bloc tds_fille (Some (InfoFun((id, m), [(t,l_param)]))) None l_inst nb_lignes [(id, 0)] in
   let id_tds = chercherGlobalementUnsafeIdent tds_fille id in
-  let map_fun (t, id) = (t, chercherGlobalementUnsafeIdent tds_fille (fst id)) in
-  let l' = List.map (map_fun) l_param_unref in
+  let get_typexinfo (t, id) = (t, chercherGlobalementUnsafeIdent tds_fille (fst id)) in
+  let l' = List.map get_typexinfo l_param in
+  
   (AstTds.Fonction(t, id_tds, l', l_inst_tds),nb)
 
-(* analyser : AstSyntax.programme -> AstTds.programme *)
-(* Paramètre : le programme à analyser *)
-(* Vérifie la bonne utilisation des identifiants et tranforme le programme
-en un programme de type AstTds.programme *)
-(* Erreur si mauvaise utilisation des identifiants *)
+(* analyser : AstSyntax.programme -> AstTds.programme
+ * Paramètre : le programme à analyser
+ * Vérifie la bonne utilisation des identifiants et tranforme le programme
+ * en un programme de type AstTds.programme
+ * Erreur si mauvaise utilisation des identifiants *)
 let analyser (AstSyntax.Programme (fonctions,prog)) =
   let tds = creerTDSMere () in
   let getContext (l_done, line_number) to_get_ctx =

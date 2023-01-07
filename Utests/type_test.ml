@@ -21,9 +21,10 @@ let%test _ = not (est_compatible (Bool, Neant) (Undefined, Neant))
 let%test _ = not (est_compatible (Undefined, Neant) (Int, Neant))
 let%test _ = not (est_compatible (Undefined, Neant) (Rat, Neant))
 let%test _ = not (est_compatible (Undefined, Neant) (Bool, Neant))
+let%test _ = not (est_compatible (Int, Pointeur(Neant)) (Int,Pointeur(Pointeur(Neant))))
 
 
-(* ====== Test est_compatible ====== *)
+(* ====== Test est_compatible_list ====== *)
 let%test _ = est_compatible_list [] []
 let%test _ = est_compatible_list [(Int, Neant) ; (Rat, Neant)] [(Int, Neant) ; (Rat, Neant)]
 let%test _ = est_compatible_list [(Bool, Neant) ; (Rat, Neant) ; (Bool, Neant)] [(Bool, Neant) ; (Rat, Neant) ; (Bool, Neant)]

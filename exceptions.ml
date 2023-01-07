@@ -6,18 +6,24 @@ open Exceptions_non_parametrees
 
 
 (* Exceptions pour le typage *)
-(* Le premier type est le type réel, le second est le type attendu *)
+
+(* TypeInattendu : Le premier type est le type réel, le second est le type attendu *)
 exception TypeInattendu of (typ * mark) * (typ * mark)
+
 (* TypesParametresInattendus : Exception utilisée lorsqu'un appel de fonction est réalisé avec
-   des paramètres de mauvais type.
-   La première liste est celle attendue, la seconde est celle utilisée. *)
+ * des paramètres de mauvais type.
+ * La première liste est celle attendue, la seconde est celle utilisée. *)
 exception TypesParametresInattendus of (typ * mark) list * (typ * mark) list
-(* les types sont les types réels non compatible avec les signatures connues de l'opérateur *)
+
+(* TypeBinaireInattendu : les types sont les types réels non compatible avec les signatures connues de l'opérateur *)
 exception TypeBinaireInattendu of binaire * (typ * mark) * (typ * mark)
 
 
+
+(* Affichage des erreurs *)
+
 (* Utilisation illégale de return dans le programme principal 
-exception RetourDansMain *)
+ * exception RetourDansMain *)
 let string_of_binaire = function
   | Plus -> "+"
   | Mult -> "*"
@@ -26,25 +32,22 @@ let string_of_binaire = function
   | Equ -> "="
 
 
-(*
-  Fonction affichant une backtrace pour localiser l'erreur dans le code original
-  afficher_contexte: string*int list -> string
-  Argument : liste de paires (nom de l'instruction, numéro de ligne)
-  Retourne : une chaîne de caractères contenant la backtrace
-*)
+(* Fonction affichant une backtrace pour localiser l'erreur dans le code original
+ * afficher_contexte: string*int list -> string
+ * Argument : liste de paires (nom de l'instruction, numéro de ligne)
+ * Retourne : une chaîne de caractères contenant la backtrace *)
 let afficher_contexte(contexte) =
   let printInstruction (nom, ligne) s =
      s  ^ "\nInstruction " ^ (string_of_int ligne) ^ " : " ^ nom in
    List.fold_right printInstruction contexte ""
-(*
-  Fonction affichant un erreur de compilation de manière conviviale à l'utilisateur
-  afficher_erreur: exn -> int * (string*int) list -> unit
-  Arguments : 
-    - l'exception levée
-    - le numéro de ligne de l'instruction en erreur
-    - le contexte de l'erreur (backtrace)
-  Retourne : unit (affiche l'erreur à l'écran)
-*)
+
+(* Fonction affichant un erreur de compilation de manière conviviale à l'utilisateur
+ * afficher_erreur: exn -> int * (string*int) list -> unit
+ * Arguments : 
+ *  - l'exception levée
+ *  - le numéro de ligne de l'instruction en erreur
+ *  - le contexte de l'erreur (backtrace)
+ * Retourne : unit (affiche l'erreur à l'écran) *)
 let afficher_erreur exn (numero_ligne, contexte) = 
   print_endline("===== ERROR =====");
   let msg = match exn with

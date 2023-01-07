@@ -3,64 +3,68 @@ open Type
 (* Définition du type des informations associées aux identifiants *)
 type 'a info =
   | InfoConst of string * int (* pas de marqueur pour les constantes *)
-  | InfoVar of 'a * typ ref * int ref * string ref
-  | InfoFun of 'a * (typ * (typ (*ref*)*'a) list) list
-  | InfoBoucle of (string * string) list
+  | InfoVar of 'a * typ ref * int ref * string ref (* identifiant x type x déplacement x registre *)
+  | InfoFun of 'a * (typ * (typ*'a) list) list (* liste de liste pour la surcharge *)
+  | InfoBoucle of (string * string) list (* Les étiquettes de début et fin de boucle *)
 
-(* Table des symboles hiérarchique *)
-(* Les tables locales sont codées à l'aide d'une hashtable *)
+(* Table des symboles hiérarchique
+ * Les tables locales sont codées à l'aide d'une hashtable *)
 type ('a,'b) tds
 
 (* unwrap : string -> a Option -> a 
-  * Paramètre s : l'identifiant qu'on essaie de unwrap
-  * Paramètre aOpt : une option d'info associé à s
-  * Si l'option est vide, lève une erreur. Sinon, unwrap l'option.
-  *)
+ * Si l'option est vide, lève une erreur. Sinon, unwrap l'option.
+ * Remarque : fonction unsafe, levée d'erreur et possible affichage *)
 val unwrap : 'a -> 'b option -> ('a -> string) -> 'b
 
-(* Création d'une table des symboles à la racine *)
+(* creerTDSMere : unit -> ('a, 'b) tds
+ * Création d'une table des symboles à la racine *)
 val creerTDSMere : unit -> ('a,'b) tds
 
-(* Création d'une table des symboles fille *)
-(* Le paramètre est la table mère *)
+(* creerTDSFille : ('a, 'b) tds -> ('a, 'b) tds
+ * Création d'une table des symboles fille *)
 val creerTDSFille : ('a,'b) tds -> ('a,'b) tds
 
 (* Ajoute une information dans la table des symboles locale *)
-(* tds : la tds courante *)
-(* string : l'identifiant *)
-(* info : l'information à associer à l'identificateur *)
-(* Si l'identificateur est déjà présent dans TDS, l'information est écrasée *)
-(* retour : unit *)
 val ajouter : ('a,'b) tds -> 'a -> 'b -> unit
 
-(* Recherche les informations d'un identificateur dans la tds locale *)
-(* Ne cherche que dans la tds de plus bas niveau *)
+(* chercherLocalement : ('a, 'b) tds -> 'a -> 'b option
+ * Recherche les informations d'un identificateur dans la tds locale
+ * Ne cherche que dans la tds de plus bas niveau *)
 val chercherLocalement : ('a,'b) tds -> 'a -> 'b option
 
-(* Prend une fonction pour print les identifiants print_err *)
+(* chercherLocalementUnsafe : ('a -> string) -> ('a, 'b) tds -> 'a -> 'b
+ * Remarque : fonction unsafe, levée d'erreur et possible affichage *)
 val chercherLocalementUnsafe : ('a -> string) -> ('a,'b) tds -> 'a -> 'b
 
+(* absentLocalementUnsafe : ('a -> string) -> ('a, 'b) tds -> 'a -> unit
+ * Objectif : assurer (assert) de l'absence d'une clé nom
+ * Remarque : fonction unsafe, levée d'erreur et possible affichage *)
 val absentLocalementUnsafe : ('a -> string) -> ('a,'b) tds -> 'a -> unit
 
+(* chercherGlobalement : ('a, 'b) tds -> 'a -> 'b option
+ * Recherche les informations d'un identificateur dans la tds locale
+ * puis les tds mères de celle-ci si ident n'est pas trouvé. *)
 val chercherGlobalement : ('a,'b) tds -> 'a -> 'b option
 
+(* chercherGlobalementUnsafe : ('a -> string) -> ('a, 'b) tds -> 'a -> 'b
+ * Remarque : fonction unsafe, levée d'erreur et possible affichage *)
 val chercherGlobalementUnsafe : ('a -> string) -> ('a,'b) tds -> 'a -> 'b
 
+(* modifier_type_variable : typ -> 'a info -> unit
+ * Précondition : Levée d'erreur si l'info donnée n'est pas une info sur une variable 
+ * Remarque : fonction inpure, utilisation de pointeur *)
 val modifier_type_variable : typ -> 'a info -> unit
-  
+
+(* modifier_adresse_variable : int -> string -> 'a info -> unit
+ * Précondition : Levée d'erreur si l'info donnée n'est pas une info sur une variable 
+ * Remarque : fonction inpure, utilisation de pointeur *)
 val modifier_adresse_variable : int -> string -> 'a info -> unit
 
-val type_of_info_ast : 'a info -> typ
+(* type_of_info : 'a info -> typ
+ * Précondition : Levée d'erreur si l'info est une InfoBoucle *)
+val type_of_info : 'a info -> typ
 
-(* Ajouter à une infoboucle un nouvel élément *)
+(* ajouter_liste_boucle : 'a info -> string -> string -> 'b info
+ * Précondition : Levée d'erreur si l'info n'est pas une info boucle *)
 val ajouter_liste_boucle : 'a info -> string -> string -> 'a info
 
-(* Inverser la liste d'une infoboucle
-   Utilité: lors de la génération de code, nécessité de parcourir celle_ci en sens inverse *)
-val inverser_liste_boucle : 'a info -> 'a info
-
-(* Supprimer le premier élément d'une liste d'infoboucle 
-   Utilité: Dans le cas où plusieures boucles auraient le même nom, la boucle suivante sera associée aux labels
-   présents en tête de boucle. D'où la nécessité de supprimer ceux actuels après utilisation lors de la génération
-   de code.*)
-val supprimer_premier_liste_boucle : 'a info -> 'a info

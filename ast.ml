@@ -20,14 +20,7 @@ end
 module AstSyntax =
 struct
 
-(* Rq : question cruciale : est-ce que int *a c'est ( int * ) a ou int ( *a ) ? 
-        choix : int ( *a ), on traite ( *a )
-        comme l'indentifiant, constitué d'un marqueur : Ident ou Pointeur
-        -> On autorise les fonctions d'ordre supérieur avec les pointeurs mais
-        attention a gérer le LB !!
-        Par contre, on autorise pas les pointeurs dans les paramètres, faudra voir pour les typedef struct
-*)
-
+(* Identifiant de Rat *)
 type identifiant = string * Type.mark
 
 (* Opérateurs unaires de Rat *)

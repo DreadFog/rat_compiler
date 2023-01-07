@@ -27,9 +27,3 @@ let%test_unit "testAffectation3"=
         in raise ErreurNonDetectee 
     with TypeInattendu((Int,Pointeur(Neant)),(Int,Neant)) -> ()
 
-let%test_unit "testAffectation4"= 
-    try
-        let _ = compiler (pathFichiersRat^"testAffectation4.rat")
-        in raise ErreurNonDetectee
-    with Parser.Error -> ()
-

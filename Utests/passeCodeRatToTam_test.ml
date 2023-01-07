@@ -1,3 +1,0 @@
-(* open Rat
-open PasseCodeRatToTam
- *)

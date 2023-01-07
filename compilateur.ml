@@ -1,11 +1,10 @@
 open Passe
 
 (* Définition d'un compilateur comme l'enchaînement de 
-quatre passes (gestion des identifiants, typage, placement mémoire
-génération de code). Chaque passe prend en entrée le type de
-sortie de la passe précédente.
-La dernière passe doit renvoyer une chaîne de caractères (le code généré)
-*)
+ * quatre passes (gestion des identifiants, typage, placement mémoire
+ * génération de code). Chaque passe prend en entrée le type de
+ * sortie de la passe précédente.
+ * La dernière passe doit renvoyer une chaîne de caractères (le code généré) *)
 module Compilateur (Ptds:Passe) 
                     (Ptype:Passe with type t1 = Ptds.t2) 
                     (Pdep:Passe with type t1 = Ptype.t2) 

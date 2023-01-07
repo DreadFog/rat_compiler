@@ -80,11 +80,10 @@ CALL (ST) norm
 RETURN (2) 4\n\n"
 
 (* Entête des fichiers Rat  contenant :
-- un saut vers le programme principal
-- la fonction pgcd nécessaire à la normalisation des rationnels
-- une fonction de normalisation des rationnels
-- les fonctions d'affichage (ROut), d'addition (RAdd) et de multiplication (RMult) de rationnel
-*)
+ *    - un saut vers le programme principal
+ *    - la fonction pgcd nécessaire à la normalisation des rationnels
+ *    - une fonction de normalisation des rationnels
+ *    - les fonctions d'affichage (ROut), d'addition (RAdd) et de multiplication (RMult) de rationnel *)
 let getEntete () =
   "JUMP main\n\n"
   ^pgcd
@@ -93,7 +92,7 @@ let getEntete () =
   ^radd
   ^rmul
 
-(*Ecriture dans un fichier *)
+(* Ecriture dans un fichier *)
 let ecrireFichier nom texte =
   let fich = open_out nom in
   output_string fich texte ;

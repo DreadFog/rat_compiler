@@ -8,12 +8,12 @@ open Ast
 type t1 = Ast.AstType.programme
 type t2 = Ast.AstPlacement.programme
 
-(* analyse_placement_instruction : string -> int -> AstType.instruction -> AstType.instruction *)
-(* Paramètre reg : le registre courant *)
-(* Paramètre depl : le déplacement courant *)
-(* Paramètre i : l'instruction à analyser *)
-(* Associe à chaque variable déclarée son placement mémoire dans la pile.
-   C'est pourquoi seulement les instructions de déclaration, et par suite toute instruction ayant un bloc, sont analysées. *)
+(* analyse_placement_instruction : string -> int -> AstType.instruction -> AstType.instruction
+ * Paramètres : reg le registre courant
+ *              depl le déplacement courant
+ *              i l'instruction à analyser
+ * Associe à chaque variable déclarée son placement mémoire dans la pile.
+ *  C'est pourquoi seulement les instructions de déclaration, et par suite toute instruction ayant un bloc, sont analysées. *)
 let rec analyse_placement_instruction reg depl (i,(_:contexte)) =
   (* ici pas besoin de renvoyer le contexte, on l'a déjà avec analyse_bloc *)
   match i with
@@ -62,29 +62,31 @@ let rec analyse_placement_instruction reg depl (i,(_:contexte)) =
   | AstType.Continue s -> (AstPlacement.Continue s, depl)
 
 (* analyse_placement_bloc : string -> int -> AstType.bloc -> AstType.bloc 
-  * Paramètre reg : le registre courant
-  * Paramètre depl : le déplacement courant
-  * Paramètre b : le bloc à analyser
-  * Associe à chaque variable du bloc son placement mémoire dans la pile *)
+ * Paramètres : reg le registre courant
+ *              depl le déplacement courant
+ *              b le bloc à analyser
+ * Associe à chaque variable du bloc son placement mémoire dans la pile *)
 and analyse_placement_bloc reg depl b = 
-  let f (pred, taille) inst =
+  let getInstsnGivePlacements (pred, taille) inst =
+    (* On obtient l'AstPlacement.instruction et le déplacement pour le réinjecter dans
+     * l'analyse des instructions *)
     let (ni,nfdepl) = analyse_placement_instruction reg (taille+depl) inst in
-    (pred @ [(ni,snd inst)], nfdepl-depl) in (* a améliorer ? hopefully ocaml fix it*)
-  (List.fold_left f ([], 0) b, depl)
+    (pred @ [(ni,snd inst)], nfdepl-depl) in
+  (List.fold_left getInstsnGivePlacements ([], 0) b, depl)
 
-(* getTypexMarkOfIast : AstType.info_ast -> Type.type_ast * Type.mark *)
-(* Paramètre iast : l'info_ast dont on veut le type et le marquage *)
-(* Renvoie le type et le marquage de l'info_ast *)
+(* getTypexMarkOfIast : AstType.info_ast -> Type.type_ast * Type.mark
+ * Paramètre : iast l'info_ast dont on veut le type et le marquage
+ * Renvoie le type et le marquage de l'info_ast *)
 let getTypexMarkOfIast iast = match iast with
-  InfoVar((_,m),_,_,_) -> (type_of_info_ast iast, m)
-  |InfoFun((_,m),__) -> (type_of_info_ast iast, m)
-  |InfoConst(_) -> (type_of_info_ast iast, Type.Neant)
+  InfoVar((_,m),t,_,_) -> (!t, m)
+  |InfoFun((_,m),[t,_]) -> (t, m)
+  |InfoConst(_) -> (Type.Int, Type.Neant)
   |_ -> raise ErreurInterne
 
 (* analyse_placement_fonction : string -> AstType.fonction -> AstType.fonction
-  * Paramètre reg : le registre courant
-  * Paramètre f : la fonction à analyser
-  * Associe à chaque variable de la fonction son placement mémoire dans la pile *)
+ * Paramètre : reg le registre courant
+ *             f (AstType.Fonction(iast,l_param,l_inst)) la fonction à analyser
+ * Associe à chaque variable de la fonction son placement mémoire dans la pile *)
 let analyse_placement_fonction reg (AstType.Fonction(iast,l_param,l_inst)) =
   (* traitement des paramères *)
   (* f(int a, int b) -> @a : -4LB; @b : -3LB *)
@@ -97,10 +99,10 @@ let analyse_placement_fonction reg (AstType.Fonction(iast,l_param,l_inst)) =
   let (nb, taille) = analyse_placement_bloc reg 3 l_inst in
   (AstPlacement.Fonction(iast, l_param, nb), taille)
 
-(* analyser : AstType.programme -> AstPlacement.programme *)
-(* Paramètre : le programme à analyser *)
-(* Vérifie le bon typage des identifiants et tranforme le programme
-en un programme de type AstPlacement.programme *)
+(* analyser : AstType.programme -> AstPlacement.programme
+ * Paramètre : le programme à analyser
+ * Vérifie le bon typage des identifiants et tranforme le programme
+ * en un programme de type AstPlacement.programme *)
 let analyser (AstType.Programme (fonctions,blocs)) =
   let nf = List.map (fun x -> fst (analyse_placement_fonction "LB" x)) fonctions in
   let nb = fst (analyse_placement_bloc "SB" 0 blocs) in

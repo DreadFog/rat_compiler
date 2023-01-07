@@ -1,14 +1,11 @@
 open Rat
-open PasseTdsRat
+open PasseTypeRat
 (* open Compilateur
 open Type
-(*open Exceptions*)
-open Exceptions_non_parametrees *)
+(*open Exceptions*)*)
+open Exceptions_non_parametrees
 
-(* ====== Test snd_zip, second, first, addSecond ====== *)
-let%test _ = second ((+) 1) ("1",0) = ("1",1)
-let%test _ = first ((+) 1) (-1,true) = (0,true)
-(* 
+
 (* ====== Test gestion_pointeurs ====== *)
 let%test _ = gestion_pointeurs (Pointeur(Pointeur(Neant))) Neant = Pointeur(Pointeur(Neant))
 let%test _ = try
@@ -17,4 +14,4 @@ let%test _ = try
   with RefInterdite -> true
 let%test _ = gestion_pointeurs Neant Neant = Neant
 let%test _ = gestion_pointeurs (Pointeur(Pointeur(Neant))) (Pointeur(Pointeur(Neant))) = Neant
- *)
+
