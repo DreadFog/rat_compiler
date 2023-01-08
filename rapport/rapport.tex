@@ -4,8 +4,46 @@
 \usepackage[utf8]{inputenc}
 %\usepackage{a4wide}
 \usepackage{amssymb}
+\usepackage{amsmath}
 %\usepackage{tickz} % Jugements de typage en tikz ?
 
+% --JUGEMENTS-- %
+\newcommand{\jugementPointeur}{
+        \dfrac{\sigma \vdash id : \tau}
+              {\sigma \vdash *id : \tau, \pi} \text{où }\pi \text{ est la marque.}\\
+        \text{Par suite, } \tau_r \text{ est l'environnement de type et de marque.}\\
+        \text{Les jugements de typages sont alors inchangés, simplement on peut remplacer}\\
+        \text{pour les variables id par *id en suivant le typage ci-dessus.}
+        }
+
+\newcommand{\jugementElseOpt}{
+        \dfrac{\sigma \vdash E : \text{bool} \hspace*{10pt} \sigma, \tau_r \vdash \text{BLOC} : \text{void}}
+              {\sigma, \tau_r \vdash \text{if } E \text{ BLOC} : \text{void}, []}
+        }
+
+\newcommand{\jugementTernaire}{
+        \dfrac{\sigma \vdash E : \text{bool} \hspace*{10pt} \sigma \vdash E_1 : \tau \hspace*{10pt} \sigma \vdash E_2 : \tau }
+              {\sigma \vdash (E \text{ ? } E_1 : E_2) : \tau}
+        }
+
+\newcommand{\jugementLoop}{
+        \dfrac{\sigma, \tau_r \vdash \text{BLOC} : \text{void}}
+              {\sigma, \tau_r \vdash \text{loop} \text{ BLOC} : \text{void}, []}
+        }
+\newcommand{\jugementLoopId}{
+        \dfrac{id::\sigma, \tau_r \vdash \text{BLOC} : \text{void}}
+              {\sigma, \tau_r \vdash \text{define id : loop} \text{ BLOC} : \text{void}, []}
+        }
+
+\newcommand{\jugementIncrementPost}{
+        \dfrac{\sigma \vdash id : \text{Int}}
+              {\sigma \vdash \text{id}++ : \text{Int}}
+        }
+
+\newcommand{\jugementIncrementPre}{
+        \dfrac{\sigma \vdash id : \text{Int}}
+              {\sigma \vdash ++\text{id} : \text{Int}}
+        }
 
 \begin{document}
 
