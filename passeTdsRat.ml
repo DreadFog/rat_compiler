@@ -190,7 +190,7 @@ let rec analyse_tds_instruction tds oia optBoucle i num_inst ctx =
       (* Analyse du bloc then *)
       let (tast,nl1) = analyse_tds_bloc tds oia optBoucle t (num_inst+1) (("bloc then", num_inst+1)::ctx) in
       (* Analyse du bloc else *)
-      let (east,nl2) = analyse_tds_bloc tds oia optBoucle e (nl1+1) (("bloc then", num_inst+1)::ctx) in
+      let (east,nl2) = analyse_tds_bloc tds oia optBoucle e (nl1+1) (("bloc else", num_inst+1)::ctx) in
       (* Renvoie la nouvelle structure de la conditionnelle *)
       ((AstTds.Conditionnelle (nc, tast, east), ctx), nl2+1)
   | AstSyntax.TantQue (c,b) ->

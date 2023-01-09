@@ -6,6 +6,7 @@
 \usepackage{amssymb}
 \usepackage{amsmath}
 \usepackage{listings}
+\usepackage{graphicx}
 
 % --JUGEMENTS-- %
 \newcommand{\jugementPointeur}{
@@ -65,7 +66,24 @@
 % Bonne description du sujet et des points abordés dans la suite du rapport
 % pas de copier/coller du sujet !!
 % Effacer les lignes de ce message UNIQUEMENT lorsque qu'elles ont été traitées
-
+\paragraph{Dans la continuité des cours / TDs / TPs effectués en rapport avec le concept de Traduction des Langages, un projet de développement de compilateur
+a été réalisé. Le langage d'origine choisi fut le Rat, car étant largement limité en termes d'opérations réalisables dans un programme.\\
+Le langage cible, quand à lui était un pseudo langage assembleur pouvant être exécuté directement à travers un programme spécialisé.}
+\paragraph{Comme nous allons le voir tout au long de ce rapport, une grande variété de fonctionnalités ont été ajoutées au langage Rat,
+avec comme objectif de le rendre plus complet, et plus proche des langages bas niveau manipulés aujourd'hui (Rust, C).\\
+Notamment, voici les différentes fonctionnalités implémentées et opérationnelles, qui seront abordées:}
+\begin{itemize}
+        \item Ajout des pointeurs, et accès par référence à des variables.
+        \item Ajout du côté optionel au bloc else d'une conditionnelle.
+        \item Ajout des expressions ternaires.
+        \item Ajout des boucles `à la Rust'.
+\end{itemize}
+\paragraph{Voici ensuite les fonctionnalités non demandées implémentées:}
+\begin{itemize}
+        \item Ajout de la surcharge de fonctions (même nom, différents types de paramètres).
+        \item Ajout d'instructions pour l'incrémentation rapide (v++, ++v, v+=42).
+        \item Ajout d'une backtrace en cas d'erreur.
+\end{itemize}
 \section{Mutation de \emph{tds.ml} en \emph{mtds}}
 % Rq : mtds a pour vocation de généraliser tds
 %      plutôt que de changer tds.ml pour inclure les ptrs et
@@ -77,8 +95,8 @@
 % Effacer les lignes de ce message UNIQUEMENT lorsque qu'elles ont été traitées
 \paragraph*{La première étape avant de se lancer sur le projet était de modifier \emph{tds.ml} afin de ne plus le modifier,
 même si par la suite nous voulions modifier notre raisonnement, comme par exemple sur les pointeurs.}
-\subparagraph*{\emph{mtds.ml} a donc pour but de généraliser \emph{tds.ml}. Nous sommes donc passer d'Identifiants \emph{string}
-en \emph{'a}, ce qui explicite l'apect monadique de la tds sans pour autant la contraindre, ce qui aurait été un apport négligeable en OCaml 4.}
+\subparagraph*{\emph{mtds.ml} a donc pour but de généraliser \emph{tds.ml}. Nous sommes donc passés d'Identifiants \emph{string}
+en \emph{'a}, ce qui explicite l'aspect monadique de la tds sans pour autant la contraindre, ce qui aurait été un apport négligeable en OCaml 4.}
 
 \section{Pointeurs}
 % Explications pertinentes et complètes sur leur traitement (sans...). Comparaison avec d’autres choix de conception.
@@ -231,7 +249,20 @@ De manière similaire, l'opérateur '+=' a été ajouté au langage Rat, et ce g
 \section{Affichage des erreurs}
 % Explications pertinentes et complètes sur leur traitement (sans...). Comparaison avec d’autres choix de conception.
 % Effacer les lignes de ce message UNIQUEMENT lorsque qu'elles ont été traitées
-
+\paragraph{La génération de backtrace est la dernière fonctionnalité optionnelle que nous avons ajouté à notre compilateur Rat. \\
+Celle-ci permet à un développeur de savoir précisément à quelle ligne de quel bloc se situe l'erreur empêchant la compilation. 
+Voici par exemple la backtrace générée:}
+\begin{center}
+        \includegraphics[scale=0.4]{code_compile_pas.png}
+        \includegraphics[scale=0.4]{backtrace.png}
+\end{center}
+\paragraph{
+Même si cette fonctionnalité reste au niveau de preuve de concept (mot-clé `fonction' non utilisé, numérotation commençant à 0), celle-ci
+permet à un utilisateur développant un plus gros programme de retrouver rapidement dans son code l'instruction fautive. \\
+Ce résultat utilise le concept de décoration d'arbre, comme réalisé pour d'autres fonctionnalités: après la passe de gestion des identifants,
+à chaque instruction est rajouté un contexte. Il s'agit d'une liste de couple (numéro de ligne, nom du bloc) représentant avec précision la localisation
+de chaque instruction dans le code. Ainsi, toute erreur levée fait désormais appel à notre fonction `afficher\_erreur' prenant en paramètres
+un contexte,une exception et son numéro de ligne, et l'affichant comme montré précédemment.}
 \section{Conclusion}
 % Bon recul sur les difficultés rencontrées et améliorations éventuelles
 % Améliorations éventuelles :
