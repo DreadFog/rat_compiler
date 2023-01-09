@@ -258,7 +258,6 @@ let rec analyse_tds_instruction tds oia optBoucle i num_inst ctx =
                 | _ -> raise ErreurInterne (*optBoucle n'est pas une Infoboucle *)
             end
         end
-
       | Some n -> (* break avec identifiant *)
         begin
           match chercherGlobalement tds n with 
@@ -285,7 +284,6 @@ let rec analyse_tds_instruction tds oia optBoucle i num_inst ctx =
                 | _ -> raise ErreurInterne
             end
         end
-
       | Some n -> (* continue avec identifiant *)
         begin
           match chercherGlobalement tds n with 

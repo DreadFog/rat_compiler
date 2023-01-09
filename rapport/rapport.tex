@@ -125,46 +125,48 @@ Notamment, voici les différentes fonctionnalités implémentées et opérationn
         \item Ajout d'une backtrace en cas d'erreur.
 \end{itemize}}
 
+
 \section{Mutation de \emph{tds.ml} en \emph{mtds}}
-% Rq : mtds a pour vocation de généraliser tds
-%      plutôt que de changer tds.ml pour inclure les ptrs et
-%      galérer dans le cas où on veut revenir en arrière ou modifier
-%      les identifiants a l'avenir (casts, expliciter les kinds -btw, ça existe ? ça marche comment en cpp ?)
-%      il n'y aura pas besoin de changer mtds
-%      -> cela nous a été utile car on a changé de stratégie pour les ptrs
-%      mtds n'est pas contraint par une structure de monade car je ne vois pas l'intérêt dans le monde OCaml pré version 5...
-% Effacer les lignes de ce message UNIQUEMENT lorsque qu'elles ont été traitées
 \paragraph*{La première étape avant de se lancer sur le projet était de modifier \emph{tds.ml} afin de ne plus le modifier,
-même si par la suite nous voulions modifier notre raisonnement, comme par exemple sur les pointeurs.}
+même si par la suite nous voulions modifier notre raisonnement, comme par exemple ce qui est arrivé sur les pointeurs (cf 3.Pointeurs).}
 \subparagraph*{\emph{mtds.ml} a donc pour but de généraliser \emph{tds.ml}. Nous sommes donc passés d'Identifiants \emph{string}
-en \emph{'a}, ce qui explicite l'aspect monadique de la tds sans pour autant la contraindre, ce qui aurait été un apport négligeable en OCaml 4.}
+en un type paramétré \emph{'a}, ce qui explicite l'aspect monadique de la tds sans pour contraindre le module, ce qui aurait été un apport négligeable en OCaml 4.
+Par ailleurs, dans le cas où nous voulions plus tard modifier notre langage rat il aurait été intéressant d'avoir parétrer \emph{tds.ml} pour ajouter, par exemple,
+des casts de type ou si nous voulions donner la possibilité au codeur d'expliciter les kinds de ses types s'ils étaient implémentés.}
 
 \section{Pointeurs}
-% Explications pertinentes et complètes sur leur traitement (sans...). Comparaison avec d’autres choix de conception.
-% Ne pas oublier les jugements de typage !
-% Rq : question cruciale : est-ce que int *a c'est ( int * ) a ou int ( *a ) ? 
-%         choix : int ( *a ), on traite ( *a )
-%         comme l'indentifiant, constitué d'un marqueur : * et d'un symbole/identifiant : a 
-% Effacer les lignes de ce message UNIQUEMENT lorsque qu'elles ont été traitées
+\paragraph*{Le choix lié au traitement des pointeurs revient a se demander comment nous considérons les mots \emph{int * a}.
+Alors que nous pouvons considérer une variable de type \emph{Pointeur(int)} et d'indentifiant \emph{a}, il nous semblait plus
+famillier de voir ça comme une variable de type \emph{int} et d'identifiant \emph{Pointeur(a)}.}
+\paragraph*{Cela nous a mené vers une première tentative qui était devenue trop rigide pour les manipulations que nous voulions faire avec les pointeurs.
+C'est alors que nous avons changé pour une troisième façon de voir les choses~: c'est tout simplement une variable avec un type \emph{int}, une
+\emph{marque} \emph{Pointeur(Neant)} et un symbole \emph{a}, la \emph{marque} et le symbole formant l'identifiant.}
+\subparagraph*{Une marque représente alors le niveau de pointeurs et n'est ni lié au type ni au symbole. Avec cette représentation, nous avons alors pu
+nous lancer sereinement dans l'implémentation des pointeurs, avec une modification de tous nos jugements de typages suivant celui ci-dessous~:\\}
+\(\jugementPointeur\)
+
+\paragraph*{Pour les ASTs, seul les ajouts lexicaux ont été inclus sans nouvelle modification.}
+
+\paragraph*{On peut noter que dans l'implémentation des pointeurs que nous avons fait, il est possible d'affecter un pointeur à la déclaration.
+Par exemple, est possible~:}
+\,
+\begin{lstlisting}[language=ratcode]
+int a = 5;
+int *b = &a;
+\end{lstlisting}
 
 \section{Bloc else optionnel}
-% Explications pertinentes et complètes sur leur traitement (sans...). Comparaison avec d’autres choix de conception.
-% Ne pas oublier les jugements de typage !
-% Effacer les lignes de ce message UNIQUEMENT lorsque qu'elles ont été traitées
 \paragraph*{Grâce à la façon choisie initialement pour traiter les blocs conditionnels, il fut assez simple d'implémenter cette fonctionnalité.
-En effet, lors du parsing, il suffit de créer un \textit{AstSyntax.Conditionnelle} avec un bloc else vide, et de le traiter comme un bloc conditionnel classique.
+En effet, lors du parsing, il suffit de créer un \emph{AstSyntax.Conditionnelle} avec un bloc else vide, et de le traiter comme un bloc conditionnel classique.
 Le typage est inchangé, et le code produit est le même que si le bloc else était présent.}
-\paragraph*{Cette solution permet de minimiser la redondance de code, et de ne pas avoir à traiter le bloc else comme un cas particulier, avec comme seul bémol
-que la passe de génération de code rajoute dans tous les cas un label pour le else, qu'il soit vide ou non. Cela n'a aucun impact sur l'exécution du programme.}
+\paragraph*{Cette solution permet de minimiser la redondance de code, et de ne pas avoir à traiter le bloc else comme un cas particulier, avec
+un ajout d'un else dans la passe de génération de code dans tous les cas. Cela n'a aucun impact sur l'exécution du programme.}
 \paragraph*{Au niveau du jugement de typage, dans la mesure où le bloc else est vide, celui-ci peut être résumé comme suit:}
 \[\jugementElseOpt\]
 
 \section{Conditionnelle ternaire}
-% Explications pertinentes et complètes sur leur traitement (sans...). Comparaison avec d’autres choix de conception.
-% Ne pas oublier les jugements de typage !
-% Effacer les lignes de ce message UNIQUEMENT lorsque qu'elles ont été traitées
-\paragraph*{Cette fonctionnalité ajoutée au langage Rat a nécessité de créer un nouveau type d'expression, \textit{AstSyntax.Ternaire}.
-Tout d'abord, il a fallu modifier la grammaire pour accepter cette nouvelle expression~:}
+\paragraph*{Cette fonctionnalité ajoutée au langage Rat a nécessité de créer un nouveau type d'expression, \emph{AstSyntax.Ternaire}.
+Tout d'abord, il a fallu modifier la grammaire pour accepter cette nouvelle expression.}
 \subparagraph*{Au niveau du lexer, il a fallu ajouter le symbole \texttt{?} et \texttt{:} dans la liste des symboles à accepter. Au niveau du parser, il a fallu ajouter une règle pour accepter cette nouvelle expression~:}
 \,% les listings sont kssé
 \begin{lstlisting}
@@ -194,24 +196,25 @@ dans la mesure où la valeur mise en sommet de pile est celle de l'une des deux 
 \end{lstlisting}
 
 \section{Loop à la Rust}
-% Explications pertinentes et complètes sur leur traitement (sans...). Comparaison avec d’autres choix de conception.
-% Ne pas oublier les jugements de typage !
-% Rq : Problème de la pile a évoqué
-% Effacer les lignes de ce message UNIQUEMENT lorsque qu'elles ont été traitées
+% Manque de parler de si on autorise ou non une variable id si id est déjà pris pour une boucle !
+% D'ailleurs, giveID ne risque pas de donner un nom de variable sans faire exprès ? On pourrait ajouter '+' dans l'id
+
 \paragraph*{Les loop à la rust sont une extension du langage Rat qui permet de créer des boucles infinies,
-avec la possibilité de les casser à l'aide du mot clé \texttt{break} 
+avec la possibilité d'en sortir à l'aide du mot clé \texttt{break} 
 et de terminer prématurément une itération à l'aide du mot clé \texttt{continue}.}
-\paragraph*{TODO:\@ grammaire}
+% TODO %
+\paragraph*{TODO~:\@ grammaire}
+% TODO %
 \paragraph*{Comme nous allons le voir, toute la complexité des boucles à la rust est liée à la gestion des labels, qui est exclusivement gérée par la passe de gestion d'identifiants.\\
-Tout d'abord, il a été choisi de créer un nouveau type de données insérables dans la table des symboles.}
+Tout d'abord, il a été choisi de créer un nouveau type de données insérable dans la table des symboles.}
 \subparagraph*{En effet, il est nécessaire de stocker les informations liées à une boucle pour pouvoir la terminer, ou la recommencer
-lorsqu'un break ou continue est utilisé.\\
+lorsqu'un \texttt{break} ou \texttt{continue} est utilisé.\\
 Cependant, et ce comme énoncé dans le sujet, il fallait donner la possibilité à l'utilisateur d'imbriquer des fonctions de même label.\\
-Pour ce faire, ce nouvel élément de la TDS associe à un label une InfoBoucle, qui contient en réalité une liste d'informations associées à ce label.\\
+Pour ce faire, ce nouvel élément de la TDS associe à un label une InfoBoucle, qui contient en réalité une liste d'informations (couple de \emph{string}) associées à ce label.\\
 Cela permet de prendre en compte le cas où deux boucles de même label sont imbriquées, et de pouvoir les distinguer. \\} % Espacement voulu
-\subparagraph*{Un deuxième choix de conception réside dans le choix des informations stockées dans la TDS pour les boucles.\\
-Tout d'abord, à toute boucle est associé un identifiant pour la TDS:\@soit celui donné par l'utilisateur, soit un identifiant uniqué généré par le compilateur
-de manière analoque à la génération de labels lors de la passe de génération de code.}
+\subparagraph*{Un deuxième choix de conception que nous avons fait est sur les identifiants de boucles dans la TDS.\\
+Tout d'abord, à toute boucle est associé un identifiant pour la TDS~: soit celui donné par l'utilisateur, soit un identifiant uniqué généré par le compilateur
+de manière analogue à la génération de labels lors de la passe de génération de code.}
 \,
 \begin{lstlisting}[language=Ocaml]
 let giveID = 
@@ -221,25 +224,25 @@ let giveID =
     "id"^((string_of_int (!num)))
 \end{lstlisting}
 \paragraph*{Ensuite, l'information associée à une boucle est le couple (label de début, label de fin), qui sont générés par le compilateur à partir du label précédent. \\
-Ainsi, lorsque deux boucles de même label sont utilisées, l'infoboucle associée au label est une liste de couples 
+Ainsi, lorsque deux boucles de même label sont utilisées, l'\emph{infoboucle} associée au label est une liste de couples 
 (label de début, label de fin), dont la tête est le couple associé à la plus imbriquée.
-Grâce à la récursivité du langage fonctionnel, il est possible de récupérer le label de début/fin de la boucle la plus imbriquée de manière efficace,
-ce qui est la logique choisie pour le break et le continue.}
-\subparagraph*{De plus, il fallait donner la possibilité à l'utilisateur de ne pas utiliser de labels pour les loops, break et continue. Le comportement
-choisi devait alors être que tout break / continue aurait un effet sur la boucle courante, et dans le cas d'imbrication de boucles, celle la 
+En exploitant l'aspect récursif des fonctions, il est possible de récupérer le label de début/fin de la boucle la plus imbriquée facilement,
+ce qui est la logique choisie pour le \texttt{break} et le \texttt{continue}.}\,
+\subparagraph*{De plus, il fallait donner la possibilité à l'utilisateur de ne pas utiliser de labels pour les \texttt{loops}, \texttt{break} et \texttt{continue}. Le comportement
+choisi devait alors être que tout \texttt{break} / \texttt{continue} aurait un effet sur la boucle courante, et dans le cas d'imbrication de boucles, celle la 
 plus imbriquée.\\
-Pour pouvoir implémenter cela, il a été choisi de \textit{décorer l'arbre} avec l'infoboucle associée à la boucle courante pour pouvoir associer au break / continue
+Pour pouvoir implémenter cela, il a été choisi de \emph{décorer l'arbre} avec l'infoboucle associée à la boucle courante pour pouvoir associer au \texttt{break} / \texttt{continue}
 la bonne boucle.}
 \paragraph*{Suite à cette passe, celle de typage est comparativement triviale, dans la mesure où celle-ci revient à une analyse
 du typage d'un bloc. Voici les jugements de typage associé~:}
  \[\jugementLoop \text{ et } \jugementLoopId\]
 \paragraph*{La passe de placement mémoire, de manière analogue, revient à analyser le placement mémoire des variables du bloc de la boucle.}
-\paragraph*{En revanche, la passe de génération de code s'avéra poser des difficultés que nous n'avions pas anticipé. En effet, chaque itération de boucle doit
-écrire ses variables locales au même endroit, ce qui pose des problèmes lorsqu'un break ou un continue sont utilisés: alors que le TantQue
+\paragraph*{En revanche, la passe de génération de code s'avérera poser des difficultés que nous n'avions pas anticipé. En effet, chaque itération de boucle doit
+écrire ses variables locales au même endroit, ce qui pose des problèmes lorsqu'un \texttt{break} ou un \texttt{continue} sont utilisés: alors que le TantQue
 implémenté en Rat assurait l'exécution entière de son bloc courant avant de se finir, ce n'est pas le cas de la boucle à la Rust. \\
-Ainsi, en imaginant qu'un break prématuré puisse faire 'éviter' une déclaration de variable (et donc un push de la pile), il s'avérait nécessaire
-d'avoir le nombre de déclarations dans la boucle actuelle en tant que paramètre hérité (décoration d'arbre). Cependant même avec une telle chose, 
-le cas d'imbrication de boucle ne semblait pas traitable, dans la mesure où un break peut aussi faire sortir d'une boucle moins imbriqué, comme dans 
+Ainsi, en imaginant qu'après un \texttt{break} il y a une déclaration de variable (et donc un push de la pile), il s'avérait nécessaire
+d'avoir le déplacement dans la boucle jusqu'au \texttt{break} en tant que paramètre hérité (décoration d'arbre). Cependant même avec une telle chose, 
+le cas d'imbrication de boucle ne semblait pas traitable facilement de manière pure, dans la mesure où un \texttt{break} peut aussi faire sortir d'une boucle moins imbriqué, comme dans 
 l'exemple suivant~:}
 
 \, % les listings sont kssé
@@ -257,21 +260,25 @@ main {
     };
 }
 \end{lstlisting}
-\paragraph*{Ici, il faudrait \textit{se rappeler} au niveau du break l que cela revient à pop 1, et pas 2 ou 3 qui serait obtenu si on prenait toutes les déclarations réalisées.\\
-N'ayant pas de solution simple à ce problème et par manque de temps, il a été choisi de ne \textbf{pas} pop le contexte d'une boucle en cas de break ou continue.
-Ce choix, bien que semblant fonctionner, peut poser des problèmes de pile si un utilisateur venait à réaliser un \textit{continue inconditionnel} dans une boucle, 
-ce qui dupliquerait le contexte à chaque itération.}
+\paragraph*{Ici, il faudrait se rappeler au niveau du \texttt{break} l que cela revient à pop 1, et pas 2 ou 3 qui serait obtenu si on prenait toutes les déclarations réalisées.\\
+N'ayant pas de solution simple à ce problème et par manque de temps, il a été choisi de ne \emph{pas} pop le contexte d'une boucle en cas de \texttt{break} ou \texttt{continue}.
+Ce choix, bien que semblant fonctionner, peut poser des problèmes de pile. En effet, si un \emph{print} survient après la boucle, il sera en haut de ce qui n'a pas été nettoyer dans la pile.
+Dans le cas où nous sommes en haut de la pile, ce \emph{print} va donc load dans le tas ou échoué, ce qui n'aurait pas eu lieu avec une pile mieux gérée.}
 
 \section{Surcharge de fonctions}
 % Explications pertinentes et complètes sur leur traitement (sans...). Comparaison avec d’autres choix de conception.
 % Effacer les lignes de ce message UNIQUEMENT lorsque qu'elles ont été traitées
+% Changement dans mtds -> InfoFun devient un 'a x ... list list pour gérer la surcharge
+% PasseTds : changements dans la gestion des déclarations : on lève double déclaration QUE si les types sont =
+% PasseType : résolution de surcharge sur les fonctions
 
 \section{Incréments}
+% réécrire la partie sur le compteur ?
 % Explications pertinentes et complètes sur leur traitement (sans...). Comparaison avec d’autres choix de conception.
 % Ne pas oublier les jugements de typage !
 % Effacer les lignes de ce message UNIQUEMENT lorsque qu'elles ont été traitées
 \paragraph*{Il a été choisi d'implémenter dans le langage Rat de nouvelles fonctionnalités qui puissent êtres traitées au niveau du parseur. C'est pourquoi
-l'incrémentation comme en C (variable++ et ++variable) a été partiellement ajoutée: contrairement à C, ces deux éléments sont considérés comme
+l'incrémentation comme en C (variable++ et ++variable) a été partiellement ajoutée~: contrairement à C, ces deux éléments sont considérés comme
 des instructions à part entière, ce qui limite leur intérét à celui d'un compteur. Voici les lignes associées dans le fichier Parser~:}
 \,
 \begin{lstlisting}
@@ -290,12 +297,12 @@ des instructions à part entière, ce qui limite leur intérét à celui d'un co
 
 \paragraph*{Ainsi, dans la mesure où ces instructions sont `converties' en combinaisons d'éléments simples compris par notre compilateur, aucune passe n'a
 à être adaptée pour prendre en compte ces opérations.}
+\paragraph*{Les jugements de typages liés à ces instructions peuvent alors être obtenu par déduction de ceux sur les affectations d'entiers~:}
+\[\jugementIncrementPost \text{ et } \jugementIncrementPre\]
 
 \section{Affichage des erreurs}
-% Explications pertinentes et complètes sur leur traitement (sans...). Comparaison avec d’autres choix de conception.
-% Effacer les lignes de ce message UNIQUEMENT lorsque qu'elles ont été traitées
 \paragraph*{La génération de backtrace est la dernière fonctionnalité optionnelle que nous avons ajouté à notre compilateur Rat. \\
-Celle-ci permet à un développeur de savoir précisément à quelle ligne de quel bloc se situe l'erreur empêchant la compilation. 
+Celle-ci permet à un développeur de savoir précisément à quelle instruction de quel bloc se situe l'erreur empêchant la compilation. 
 Voici par exemple la backtrace générée~:}
 
 \begin{center}
@@ -303,9 +310,7 @@ Voici par exemple la backtrace générée~:}
 \end{center}
 \includegraphics[width=\textwidth]{backtrace.png}
 
-\paragraph*{Même si cette fonctionnalité reste au niveau de preuve de concept (mot-clé `fonction' non utilisé, numérotation commençant à 0), celle-ci
-permet à un utilisateur développant un plus gros programme de retrouver rapidement dans son code l'instruction fautive. \\
-Ce résultat utilise le concept de décoration d'arbre, comme réalisé pour d'autres fonctionnalités: après la passe de gestion des identifants,
+\paragraph*{Ce résultat utilise le concept de décoration d'arbre, comme réalisé pour d'autres fonctionnalités~: après la passe de gestion des identifants,
 à chaque instruction est rajouté un contexte. Il s'agit d'une liste de couple (numéro de ligne, nom du bloc) représentant avec précision la localisation
 de chaque instruction dans le code. Ainsi, toute erreur levée fait désormais appel à notre fonction `afficher\_erreur' prenant en paramètres
 un contexte,une exception et son numéro de ligne, et l'affichant comme montré précédemment.}
