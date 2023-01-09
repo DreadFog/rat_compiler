@@ -144,7 +144,7 @@ Cependant, et ce comme énoncé dans le sujet, il fallait donner la possibilité
 Pour ce faire, ce nouvel élément de la TDS associe à un label une InfoBoucle, qui contient en réalité une liste d'informations associées à ce label.\\
 Cela permet de prendre en compte le cas où deux boucles de même label sont imbriquées, et de pouvoir les distinguer. \\\\ % Espacement voulu
 Un deuxième choix de conception réside dans le choix des informations stockées dans la TDS pour les boucles: \\
-Tout d'abord, à toute boucle est associé un identifiant pour la TDS:\@soit celui donné par l'utilisateur, soit un identifiant uniqué généré par le compilateur
+Tout d'abord, à toute boucle est associé un identifiant pour la TDS:\@ soit celui donné par l'utilisateur, soit un identifiant uniqué généré par le compilateur
 de manière analoque à la génération de labels lors de la passe de génération de code. \\
 \begin{lstlisting}
 let giveID = 
@@ -156,8 +156,42 @@ let giveID =
 Ensuite, l'information associée à une boucle est le couple (label de début, label de fin), qui sont générés par le compilateur à partir du label précédent. \\
 Ainsi, lorsque deux boucles de même label sont utilisées, l'infoboucle associée au label est une liste de couples 
 (label de début, label de fin), dont la tête est le couple associé à la plus imbriquée.
-Grâce à la récursivité du langage fonctionnel, il est possible de récupérer le label de début/fin de la boucle la plus imbriquée,
+Grâce à la récursivité du langage fonctionnel, il est possible de récupérer le label de début/fin de la boucle la plus imbriquée de manière efficace,
 ce qui est la logique choisie pour le break et le continue. \\
+De plus, il fallait donner la possibilité à l'utilisateur de ne pas utiliser de labels pour les loops, break et continue. Le comportement
+choisi devait alors être que tout break / continue aurait un effet sur la boucle courante, et dans le cas d'imbrication de boucles, celle la 
+plus imbriquée.\\
+Pour pouvoir implémenter cela, il a été choisi de \textit{décorer l'arbre} avec l'infoboucle associée à la boucle courante pour pouvoir associer au break / continue
+la bonne boucle.\\\\
+Suite à cette passe, celle de typage est comparativement triviale, dans la mesure où celle-ci revient à une analyse
+du typage d'un bloc. Voici les jugements de typage associé:\\
+ \(\jugementLoop\) et: \(\jugementLoopId\) \\\\
+La passe de placement mémoire, de manière analogue, revient à analyser le placement mémoire des variables du bloc de la boucle.\\\\
+En revanche, la passe de génération de code s'avéra poser des difficultés que nous n'avions pas anticipé. En effet, chaque itération de boucle doit
+écrire ses variables locales au même endroit, ce qui pose des problèmes lorsqu'un break ou un continue sont utilisés: alors que le TantQue
+implémenté en Rat assurait l'exécution entière de son bloc courant avant de se finir, ce n'est pas le cas de la boucle à la Rust. \\
+Ainsi, en imaginant qu'un break prématuré puisse faire 'éviter' une déclaration de variable (et donc un push de la pile), il s'avérait nécessaire
+d'avoir le nombre de déclarations dans la boucle actuelle en tant que paramètre hérité (décoration d'arbre). Cependant même avec une telle chose, 
+le cas d'imbrication de boucle ne semblait pas traitable, dans la mesure où un break peut aussi faire sortir d'une boucle moins imbriqué, comme dans 
+l'exemple suivant:
+\begin{lstlisting}
+        main {
+                int x = 3;
+                define l : loop {
+                        x++;
+                        loop {
+                                int y = 5;
+                                break l;
+                                bool z = true;
+                        };
+                        rat r = [3/2];
+                };
+        }
+\end{lstlisting}
+Ici, il faudrait \textit{se rappeler} au niveau du break l que cela revient à pop 1, et pas 2 ou 3 qui serait obtenu si on prenait toutes les déclarations réalisées.\\
+N'ayant pas de solution simple à ce problème et par manque de temps, il a été choisi de ne \textbf{pas} pop le contexte d'une boucle en cas de break ou continue.
+Ce choix, bien que semblant fonctionner, peut poser des problèmes de pile si un utilisateur venait à réaliser un \textit{continue inconditionnel} dans une boucle, 
+ce qui dupliquerait le contexte à chaque itération.
 \section{Surcharge de fonctions}
 % Explications pertinentes et complètes sur leur traitement (sans...). Comparaison avec d’autres choix de conception.
 % Effacer les lignes de ce message UNIQUEMENT lorsque qu'elles ont été traitées
@@ -166,7 +200,22 @@ ce qui est la logique choisie pour le break et le continue. \\
 % Explications pertinentes et complètes sur leur traitement (sans...). Comparaison avec d’autres choix de conception.
 % Ne pas oublier les jugements de typage !
 % Effacer les lignes de ce message UNIQUEMENT lorsque qu'elles ont été traitées
-
+Il a été choisi d'implémenter dans le langage Rat de nouvelles fonctionnalités qui puissent êtres traitées au niveau du parseur. C'est pourquoi
+l'incrémentation comme en C (variable++ et ++variable) a été partiellement ajoutée: contrairement à C, ces deux éléments sont considérés comme
+des instructions à part entière, ce qui limite leur intérét à celui d'un compteur. Voici les lignes associées dans le fichier Parser:
+\begin{lstlisting}
+| PLUS PLUS n=r PV 
+{Affectation (n,Binaire (Plus,Identifiant n,Entier 1))}
+| n=r PLUS PLUS PV 
+{Affectation (n,Binaire (Plus,Identifiant n,Entier 1))}
+\end{lstlisting}
+De manière similaire, l'opérateur '+=' a été ajouté au langage Rat, et ce grâce à une transformation directement dans le parseur:
+\begin{lstlisting}
+| n=r PLUS EQUAL e1=e PV 
+{Affectation (n,Binaire (Plus,Identifiant n,e1))}
+\end{lstlisting} 
+Ainsi, dans la mesure où ces instructions sont `converties' en combinaisons d'éléments simples compris par notre compilateur, aucune passe n'a
+à être adaptée pour prendre en compte ces opérations.
 \section{Affichage des erreurs}
 % Explications pertinentes et complètes sur leur traitement (sans...). Comparaison avec d’autres choix de conception.
 % Effacer les lignes de ce message UNIQUEMENT lorsque qu'elles ont été traitées
