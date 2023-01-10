@@ -202,9 +202,20 @@ dans la mesure où la valeur mise en sommet de pile est celle de l'une des deux 
 \paragraph*{Les loop à la rust sont une extension du langage Rat qui permet de créer des boucles infinies,
 avec la possibilité d'en sortir à l'aide du mot clé \texttt{break} 
 et de terminer prématurément une itération à l'aide du mot clé \texttt{continue}.}
-% TODO %
-\paragraph*{TODO~:\@ grammaire}
-% TODO %
+\paragraph{Face aux difficultés que celle-ci a pu nous poser, il nous a semblé important de commenter nos choix effectués pour obtenir une grammaire cohérente.
+En effet, en reprenant la syntaxe du sujet pour les boucles nommées (l : loop{bloc}), des problèmes d'ambiguîté empêchaient Menhir de comprendre correctement la grammaire.
+Comme le montre la capture d'écran ci-après, l'erreur ne nous indiquait pas la source de l'ambiguîté. Mais même en analysant les logs de compilation, nous ne sommes
+pas parvenus à déterminer l'origine de ces conflits, empêchant un fonctionnement de notre compilateur:\\}
+\begin{center}
+        \includegraphics[scale=0.5]{shift_reduce.png}
+\end{center}
+\paragraph{Pour éviter cette erreur, nous avons fait le choix de modifier la grammaire d'une telle manière que les règles d'écriture d'une boucle ne pourraient
+plus êtres ambiguês pour Menhir. Ainsi, voici comment nous avons choisi qu'une boucle nommée devait s'écrire: } % TODO: ça s'affiche pas mdr
+\begin{lstlisting}
+        define l : loop {bloc};
+\end{lstlisting}
+\paragraph{Par l'ajout du mot-clé DEFINE en début de règle, et d'un point virgule en fin, l'ambiguîté semble alors levée, et le compilateur fonctionne 
+correctement.}
 \paragraph*{Comme nous allons le voir, toute la complexité des boucles à la rust est liée à la gestion des labels, qui est exclusivement gérée par la passe de gestion d'identifiants.\\
 Tout d'abord, il a été choisi de créer un nouveau type de données insérable dans la table des symboles.}
 \subparagraph*{En effet, il est nécessaire de stocker les informations liées à une boucle pour pouvoir la terminer, ou la recommencer
@@ -263,7 +274,7 @@ main {
 \paragraph*{Ici, il faudrait se rappeler au niveau du \texttt{break} l que cela revient à pop 1, et pas 2 ou 3 qui serait obtenu si on prenait toutes les déclarations réalisées.\\
 N'ayant pas de solution simple à ce problème et par manque de temps, il a été choisi de ne \emph{pas} pop le contexte d'une boucle en cas de \texttt{break} ou \texttt{continue}.
 Ce choix, bien que semblant fonctionner, peut poser des problèmes de pile. En effet, si un \emph{print} survient après la boucle, il sera en haut de ce qui n'a pas été nettoyer dans la pile.
-Dans le cas où nous sommes en haut de la pile, ce \emph{print} va donc load dans le tas ou échoué, ce qui n'aurait pas eu lieu avec une pile mieux gérée.}
+Dans le cas où nous sommes en haut de la pile, ce \emph{print} va donc load dans le tas ou échouer, ce qui n'aurait pas eu lieu avec une pile mieux gérée.}
 
 \section{Surcharge de fonctions}
 % Explications pertinentes et complètes sur leur traitement (sans...). Comparaison avec d’autres choix de conception.
@@ -271,7 +282,16 @@ Dans le cas où nous sommes en haut de la pile, ce \emph{print} va donc load dan
 % Changement dans mtds -> InfoFun devient un 'a x ... list list pour gérer la surcharge
 % PasseTds : changements dans la gestion des déclarations : on lève double déclaration QUE si les types sont =
 % PasseType : résolution de surcharge sur les fonctions
-
+\paragraph{Nous avons décidé d'implémenter en plus dans notre projet une notion évoquée lors de l'examen écrit de TDL: la surcharge de fonctions.
+Ce concept autorise l'existence dans un même programme de fonctions ayant le même nom, mais une signature différente au niveau des paramètres.}
+\paragraph{Pour pouvoir accepter la surcharge de fonctions, il a tout d'abord fallu modifier le type InfoFun, dans la mesure où l'on devait connaître 
+toutes les différentes signatures qui pouvaient êtres associées à un nom. Ainsi, une InfoFun contient désormais une liste de signatures, chacunes représentées sous
+la forme d'une liste de paramètres.}
+\paragraph{Ce changement implique le fait de modifier l'analyse de gestion des identifiants des fonctions dans la passe associée: L'exception DoubleDéclaration
+ne doit désormais être levée que si l'on essaie de définir une fonction avec le même nom et les mêmes types de paramêtres.}
+\paragraph{La dernière modification à effectuer sur le compilateur consiste en la résolution de surcharge lors de l'appel d'une fonction. Cela est réalisé
+dans la passe de Typage, où les types des paramètres utilisés sont comparés aux différentes signatures connues de la fonction appelée. Ainsi, la surcharge
+de fonction est belle et bien fonctionnelle.}
 \section{Incréments}
 % réécrire la partie sur le compteur ?
 % Explications pertinentes et complètes sur leur traitement (sans...). Comparaison avec d’autres choix de conception.
@@ -322,5 +342,20 @@ un contexte,une exception et son numéro de ligne, et l'affichant comme montré 
 % attention a gérer le LB !!
 % On autorise les pointeurs dans les paramètres mais pas en retour
 % Effacer les lignes de ce message UNIQUEMENT lorsque qu'elles ont été traitées
-
+\paragraph{Puisqu'étant notre premier compilateur, il est difficile d'avoir un avis objectif sur sa performance, ou sur les améliorations
+éventuelles à apporter. Cependant, les difficultés mentionées tout au long de ce rapport mettent en évidence les détails suivants:\\}
+\begin{itemize}
+        \item Les initiatives prises au niveau du parsing mettent en évidence un problème de parsing qui pourrait être corrigé.
+        \item TODO ?
+\end{itemize}
+\paragraph{De plus, et ce malgré les apports demandés par le sujet et nos initiatives personnelles, le langage Rat reste très limité. Voici les différentes 
+fonctionnalités que nous aurions désiré implémenter mais n'avons pas pu, faute de temps:}
+\begin{itemize}
+        \item Fonctions d'ordre supérieur
+        \item Pointeurs en type de retour
+        \item TODO ?
+\end{itemize}
+\paragraph{Enfin, et ce au niveau du compilateur en lui-même, il aurait été intéressant d'aborder l'optimisation de compilation, à travers par exemple la
+suppression de code mort (toute instruction après un retour dans un même bloc).
+}
 \end{document}
