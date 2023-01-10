@@ -25,8 +25,8 @@ let%test_unit "testPtrConstante"=
     in raise ErreurNonDetectee
     with RefInterdite -> ()
 let%test_unit "testPtrFonction"= 
-    try
-        let _ = compiler (pathFichiersRat^"testPtrFonction.rat")
-    in raise ErreurNonDetectee
+    (*try*)
+        let _ = compiler (pathFichiersRat^"testPtrFonction.rat") in ()
+    (*in raise ErreurNonDetectee
     with
-        | MauvaiseUtilisationIdentifiant "f" -> ()
+        | MauvaiseUtilisationIdentifiant "f" -> ()*)

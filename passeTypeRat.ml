@@ -92,7 +92,7 @@ let rec analyse_type_expression (e,(ctx:contexte)) = match e with
     else afficher_erreur (TypeInattendu (te1, (Bool,Neant))) ctx
   | AstTds.AppelFonction (f, l) -> 
     match f with
-      |(InfoFun((n,Neant),lp'), Neant) -> (* Vérification du bon nombre d'arguments *)
+      |(InfoFun((n,m),lp'), Neant) -> (* Vérification du bon nombre d'arguments *)
           let nl = List.map (fun x -> analyse_type_expression (x,ctx)) l in
           let type_params = List.map snd nl in
           let rec resolveType lp = (match lp with
@@ -102,8 +102,8 @@ let rec analyse_type_expression (e,(ctx:contexte)) = match e with
               let lt' = List.map (fun (x,(_,y)) -> (x,y)) lt in
               (* Test des types ET marqueurs *)
               if (Type.est_compatible_list lt' type_params) then
-                let f' = (InfoFun((n,Type.Neant), [(t,lt)]), Type.Neant) in
-                (AstType.AppelFonction (f', List.map fst nl), (t,Type.Neant))
+                let f' = (InfoFun((n,m), [(t,lt)]), Type.Neant) in
+                (AstType.AppelFonction (f', List.map fst nl), (t,m))
               else
                   resolveType q)
           in resolveType lp'
@@ -160,8 +160,8 @@ let rec analyse_type_instruction (i,(ctx:contexte)) =
     (* Erreur a adapté pour ajouter les ptrs *)
   | AstTds.Retour (e,iast) ->
     let (ne, te) = analyse_type_expression (e,ctx) 
-    and t = type_of_info iast in
-    if (Type.est_compatible (t,Neant) te) then (AstType.Retour(ne, iast))
+    and (t,m) = getTypexMarkOfIast iast in
+    if (Type.est_compatible (t,m) te) then (AstType.Retour(ne, iast))
     else afficher_erreur (TypeInattendu(te, (t,Neant))) ctx
     (* Erreur a adapté pour ajouter les ptrs *)
   | AstTds.Empty -> AstType.Empty

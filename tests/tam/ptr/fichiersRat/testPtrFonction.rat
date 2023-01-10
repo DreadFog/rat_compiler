@@ -1,0 +1,10 @@
+int* f(int *a) {
+  return a;
+}
+
+test{
+  int a = 42;
+  int *x = &a;
+  int *y = call f(x);
+  print *y;
+}

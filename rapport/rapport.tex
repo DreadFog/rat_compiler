@@ -95,18 +95,9 @@
 
 \maketitle
 
-% Transversale (?)
-% !! Penser a traiter les évolutions des AST !!
-% Justifications pertinentes et complètes sur l'evolution de la structure des AST.
-% Comparaison avec d'autres choix de conception
-% Effacer les lignes de ce message UNIQUEMENT lorsque qu'elles ont été traitées
-
 \section{Introduction}
-% Bonne description du sujet et des points abordés dans la suite du rapport
-% pas de copier/coller du sujet !!
-% Effacer les lignes de ce message UNIQUEMENT lorsque qu'elles ont été traitées
-\paragraph*{Dans la continuité des cours / TDs / TPs effectués en rapport avec le concept de Traduction des Langages, un projet de développement de compilateur
-a été réalisé. Le langage d'origine choisi fut le Rat, car étant largement limité en termes d'opérations réalisables dans un programme.\\
+\paragraph*{Dans la continuité des cours / TDs / TPs effectués en cours de Traduction des Langages, un projet de développement de compilateur
+a été réalisé. Le langage d'origine choisi fut le Rat, un langage très limité en nombre d'instructions différentes réalisables.\\
 Le langage cible, quand à lui était un pseudo langage assembleur pouvant être exécuté directement à travers un programme spécialisé.}
 \paragraph*{Comme nous allons le voir tout au long de ce rapport, une grande variété de fonctionnalités ont été ajoutées au langage Rat,
 avec comme objectif de le rendre plus complet, et plus proche des langages bas niveau manipulés aujourd'hui (Rust, C).\\
@@ -130,9 +121,10 @@ Notamment, voici les différentes fonctionnalités implémentées et opérationn
 \paragraph*{La première étape avant de se lancer sur le projet était de modifier \emph{tds.ml} afin de ne plus le modifier,
 même si par la suite nous voulions modifier notre raisonnement, comme par exemple ce qui est arrivé sur les pointeurs (cf 3.Pointeurs).}
 \subparagraph*{\emph{mtds.ml} a donc pour but de généraliser \emph{tds.ml}. Nous sommes donc passés d'Identifiants \emph{string}
-en un type paramétré \emph{'a}, ce qui explicite l'aspect monadique de la tds sans pour contraindre le module, ce qui aurait été un apport négligeable en OCaml 4.
+en un type paramétré \emph{'a}, ce qui explicite l'aspect monadique de la tds sans pour autant contraindre le module, ce qui aurait été un apport négligeable en OCaml 4
+pour le cadre dans lequel nous avons codé (pas de gestion très poussée des exceptions ou de foncteurs).
 Par ailleurs, dans le cas où nous voulions plus tard modifier notre langage rat il aurait été intéressant d'avoir parétrer \emph{tds.ml} pour ajouter, par exemple,
-des casts de type ou si nous voulions donner la possibilité au codeur d'expliciter les kinds de ses types s'ils étaient implémentés.}
+des casts de type s'ils étaient implémentés.} % ou si nous voulions donner la possibilité au codeur d'expliciter les kinds de ses types 
 
 \section{Pointeurs}
 \paragraph*{Le choix lié au traitement des pointeurs revient a se demander comment nous considérons les mots \emph{int * a}.
@@ -211,10 +203,10 @@ pas parvenus à déterminer l'origine de ces conflits, empêchant un fonctionnem
 \end{center}
 \paragraph{Pour éviter cette erreur, nous avons fait le choix de modifier la grammaire d'une telle manière que les règles d'écriture d'une boucle ne pourraient
 plus êtres ambiguês pour Menhir. Ainsi, voici comment nous avons choisi qu'une boucle nommée devait s'écrire: } % TODO: ça s'affiche pas mdr
-\begin{lstlisting}
+\begin{lstlisting}[language=ratcode]
         define l : loop {bloc};
 \end{lstlisting}
-\paragraph{Par l'ajout du mot-clé DEFINE en début de règle, et d'un point virgule en fin, l'ambiguîté semble alors levée, et le compilateur fonctionne 
+\paragraph{Par l'ajout du mot-clé \texttt{define} en début de règle, et d'un point virgule en fin, l'ambiguîté est alors levée, et le compilateur fonctionne 
 correctement.}
 \paragraph*{Comme nous allons le voir, toute la complexité des boucles à la rust est liée à la gestion des labels, qui est exclusivement gérée par la passe de gestion d'identifiants.\\
 Tout d'abord, il a été choisi de créer un nouveau type de données insérable dans la table des symboles.}
@@ -277,29 +269,21 @@ Ce choix, bien que semblant fonctionner, peut poser des problèmes de pile. En e
 Dans le cas où nous sommes en haut de la pile, ce \emph{print} va donc load dans le tas ou échouer, ce qui n'aurait pas eu lieu avec une pile mieux gérée.}
 
 \section{Surcharge de fonctions}
-% Explications pertinentes et complètes sur leur traitement (sans...). Comparaison avec d’autres choix de conception.
-% Effacer les lignes de ce message UNIQUEMENT lorsque qu'elles ont été traitées
-% Changement dans mtds -> InfoFun devient un 'a x ... list list pour gérer la surcharge
-% PasseTds : changements dans la gestion des déclarations : on lève double déclaration QUE si les types sont =
-% PasseType : résolution de surcharge sur les fonctions
-\paragraph{Nous avons décidé d'implémenter en plus dans notre projet une notion évoquée lors de l'examen écrit de TDL: la surcharge de fonctions.
+\paragraph{Nous avons décidé d'implémenter en plus dans notre projet une notion évoquée lors de l'examen écrit de TDL~: la surcharge de fonctions.
 Ce concept autorise l'existence dans un même programme de fonctions ayant le même nom, mais une signature différente au niveau des paramètres.}
 \paragraph{Pour pouvoir accepter la surcharge de fonctions, il a tout d'abord fallu modifier le type InfoFun, dans la mesure où l'on devait connaître 
 toutes les différentes signatures qui pouvaient êtres associées à un nom. Ainsi, une InfoFun contient désormais une liste de signatures, chacunes représentées sous
-la forme d'une liste de paramètres.}
-\paragraph{Ce changement implique le fait de modifier l'analyse de gestion des identifiants des fonctions dans la passe associée: L'exception DoubleDéclaration
+la forme d'une liste de paramètres/retour.}
+\paragraph{Ce changement implique le fait de modifier l'analyse de gestion des identifiants des fonctions dans la passe associée~: l'exception DoubleDéclaration
 ne doit désormais être levée que si l'on essaie de définir une fonction avec le même nom et les mêmes types de paramêtres.}
 \paragraph{La dernière modification à effectuer sur le compilateur consiste en la résolution de surcharge lors de l'appel d'une fonction. Cela est réalisé
 dans la passe de Typage, où les types des paramètres utilisés sont comparés aux différentes signatures connues de la fonction appelée. Ainsi, la surcharge
 de fonction est belle et bien fonctionnelle.}
+
 \section{Incréments}
-% réécrire la partie sur le compteur ?
-% Explications pertinentes et complètes sur leur traitement (sans...). Comparaison avec d’autres choix de conception.
-% Ne pas oublier les jugements de typage !
-% Effacer les lignes de ce message UNIQUEMENT lorsque qu'elles ont été traitées
 \paragraph*{Il a été choisi d'implémenter dans le langage Rat de nouvelles fonctionnalités qui puissent êtres traitées au niveau du parseur. C'est pourquoi
 l'incrémentation comme en C (variable++ et ++variable) a été partiellement ajoutée~: contrairement à C, ces deux éléments sont considérés comme
-des instructions à part entière, ce qui limite leur intérét à celui d'un compteur. Voici les lignes associées dans le fichier Parser~:}
+des instructions à part entière et ne peut être utilisé dans une expression. Voici les lignes associées dans le fichier Parser~:}
 \,
 \begin{lstlisting}
 | PLUS PLUS n=r PV 
@@ -338,24 +322,22 @@ un contexte,une exception et son numéro de ligne, et l'affichant comme montré 
 \section{Conclusion}
 % Bon recul sur les difficultés rencontrées et améliorations éventuelles
 % Améliorations éventuelles :
-% On n'autorise pas les fonctions d'ordre supérieur avec les pointeurs mais
-% attention a gérer le LB !!
 % On autorise les pointeurs dans les paramètres mais pas en retour
 % Effacer les lignes de ce message UNIQUEMENT lorsque qu'elles ont été traitées
-\paragraph{Puisqu'étant notre premier compilateur, il est difficile d'avoir un avis objectif sur sa performance, ou sur les améliorations
-éventuelles à apporter. Cependant, les difficultés mentionées tout au long de ce rapport mettent en évidence les détails suivants:\\}
+\paragraph*{Différentes améliorations pourraient être apporté à ce compilateur.
+Au-delà du fait que nous ne traitons pas le cas de l'optimisation du code source, les difficultés mentionées tout au long de ce rapport mettent en évidence les améliorations possibles suivantes~:
 \begin{itemize}
-        \item Les initiatives prises au niveau du parsing mettent en évidence un problème de parsing qui pourrait être corrigé.
-        \item TODO ?
-\end{itemize}
-\paragraph{De plus, et ce malgré les apports demandés par le sujet et nos initiatives personnelles, le langage Rat reste très limité. Voici les différentes 
-fonctionnalités que nous aurions désiré implémenter mais n'avons pas pu, faute de temps:}
+        \item Les initiatives prises au niveau du parsing mettent en évidence un problème qui pourrait être corrigé.
+        \item Les pointeurs ne sont effectif que sur des variables et retours. Il peut pourtant être très
+        intéressant d'avoir des pointeurs sur fonction qui impliqueraient une gestion du LB part le code assembleur mais permettrait
+        de faire facilement des fonctions d'ordres "supérieurs" (dans l'absolu on gèrerait des pointeurs et non des fonctions).
+\end{itemize}}
+\paragraph*{De plus, et ce malgré les apports demandés par le sujet et nos initiatives personnelles, le langage Rat reste très limité. Voici les différentes 
+fonctionnalités que nous aurions désiré implémenter mais n'avons pas pu, faute de temps~:
 \begin{itemize}
         \item Fonctions d'ordre supérieur
-        \item Pointeurs en type de retour
-        \item TODO ?
-\end{itemize}
-\paragraph{Enfin, et ce au niveau du compilateur en lui-même, il aurait été intéressant d'aborder l'optimisation de compilation, à travers par exemple la
-suppression de code mort (toute instruction après un retour dans un même bloc).
-}
+        \item Les modules
+\end{itemize}}
+\paragraph*{Enfin, et ce au niveau du compilateur en lui-même, il aurait été intéressant d'aborder l'optimisation de compilation, à travers par exemple la
+suppression de code mort (toute instruction après un retour dans un même bloc).}
 \end{document}

@@ -72,14 +72,13 @@ let rec analyse_tds_expression tds e = match e with
   | AstSyntax.Booleen b -> AstTds.Booleen b
   | AstSyntax.Binaire (op, e1, e2) ->
     AstTds.Binaire (op, analyse_tds_expression tds e1, analyse_tds_expression tds e2)
-  | AstSyntax.AppelFonction ((f,_), l) ->
+  | AstSyntax.AppelFonction ((f,m), l) ->
     let f_tds = chercherGlobalementUnsafeIdent tds f in
     (* On vérifie qu'on appel bien une fonction *)
     (match f_tds with
-      InfoFun((_,Neant), _) -> AstTds.AppelFonction ( (f_tds,Neant) 
-      (* f_tds est une infofun ayant toutes les signatures possibles (surcharge) *)
-                                                    , List.map (analyse_tds_expression tds) l)
-      |_ -> raise (MauvaiseUtilisationIdentifiant (print_ident f)));
+      | InfoFun _ -> AstTds.AppelFonction ((f_tds,m),List.map (analyse_tds_expression tds) l)
+      | _ -> raise (MauvaiseUtilisationIdentifiant f))
+      (* f_tds est une infofun ayant toutes les signatures possibles (surcharge) *)                      
   | AstSyntax.Unaire (op, e) ->
     AstTds.Unaire (op, analyse_tds_expression tds e) 
   | AstSyntax.NULL -> AstTds.NULL

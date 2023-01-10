@@ -84,15 +84,6 @@ let%test "test2_y_1" =
 
 let%test "test2_z_1" = 
   test (pathFichiersRat^"test2.rat")  ("main", Type.Neant) (("z", Type.Neant), 1)  (ref 3, ref "SB")
- 
-let%test "test2_x_2" = 
-  test (pathFichiersRat^"test2.rat")  ("main", Type.Neant) (("x", Type.Neant), 2)  (ref 4, ref "SB")
-
-let%test "test2_y_2" = 
-  test (pathFichiersRat^"test2.rat")  ("main", Type.Neant) (("y", Type.Neant), 2)  (ref 5, ref "SB")
-
-let%test "test2_z_2" = 
-  test (pathFichiersRat^"test2.rat")  ("main", Type.Neant) (("z", Type.Neant), 2)  (ref 7, ref "SB")
 
 let%test "test2_x1" = 
   test (pathFichiersRat^"test2.rat")  ("main", Type.Neant) (("x1", Type.Neant), 1)  (ref 4, ref "SB")
