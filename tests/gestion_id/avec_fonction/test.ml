@@ -69,14 +69,14 @@ let%test_unit "testUtilisation4" =
     let _ = compiler (pathFichiersRat^"testUtilisation4.rat")
     in raise ErreurNonDetectee
   with
-  | MauvaiseUtilisationIdentifiant("add") -> ()
+  | MauvaiseUtilisationIdentifiant("add@Int@Int") -> ()
 
 let%test_unit "testUtilisation5" = 
   try 
     let _ = compiler (pathFichiersRat^"testUtilisation5.rat")
     in raise ErreurNonDetectee
   with
-  | MauvaiseUtilisationIdentifiant("add") -> ()
+  | MauvaiseUtilisationIdentifiant("add@Int@Int") -> ()
 
 let%test_unit "testUtilisation6" = 
   let _ = compiler (pathFichiersRat^"testUtilisation6.rat") in ()

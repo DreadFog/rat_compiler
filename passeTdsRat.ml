@@ -47,7 +47,7 @@ let rec analyse_tds_expression tds e = match e with
         (
         match info_ast_found with 
           | InfoConst(_,i) -> AstTds.Entier i
-          | InfoFun((f,_), _) ->
+          | InfoFun(((f,_),_,_)::_) ->
              raise (MauvaiseUtilisationIdentifiant (print_ident f));
           | InfoVar(_) ->
             AstTds.Identifiant (info_ast_found, Neant)
@@ -203,13 +203,13 @@ let rec analyse_tds_instruction tds oia optBoucle i num_inst ctx =
       begin
       (* On récupère l'information associée à la fonction à laquelle le return est associée *)
       match oia with
-        (* Il n'y a pas d'information -> l'instruction est dans le bloc principal : erreur *)
-      | None -> raise RetourDansMain
-        (* Il y a une information -> l'instruction est dans une fonction *)
-      | Some ia ->
-        (* Analyse de l'expression *)
-        let ne = analyse_tds_expression tds e in
-        ((AstTds.Retour (ne,ia), ctx), num_inst+1)
+          (* Il n'y a pas d'information -> l'instruction est dans le bloc principal : erreur *)
+        | None -> raise RetourDansMain
+          (* Il y a une information -> l'instruction est dans une fonction *)
+        | Some ia ->
+          (* Analyse de l'expression *)
+          let ne = analyse_tds_expression tds e in
+          ((AstTds.Retour (ne,ia), ctx), num_inst+1)
       end
   (* Boucles à la Rust *)
   | AstSyntax.Boucle(nOpt, li) -> 
@@ -336,17 +336,17 @@ let analyse_tds_fonction maintds (AstSyntax.Fonction(t,(id,m),l_param,l_inst)) n
    * candidates pour gérer la surcharge *)
   let prevDeclared =
     (match chercherGlobalement maintds id with
-    (* Infofun -> [(typeRetour, [liste_type_params]), autres] *)
+    (* Infofun -> [((id * mark), typeRetour, [liste_type_params]), autres] *)
       |None -> [] (* Aucune fonction n'existe avec ce nom. *)
-      |Some (InfoFun (_,lp)) -> 
-        let lp' = List.map snd lp in
+      |Some (InfoFun l) ->
+        let lp = List.map (fun (_,_,p) -> p) l in
         let getTypexMark = List.map (fun (t, (_,m)) -> (t,m)) in
         (* On vérifie si la fonction n'est pas déjà déclarée. *)
         let fun_compatible params = 
           Type.est_compatible_list (getTypexMark l_param) (getTypexMark params) in
           (* fun_is_found renvoie vrai si une des signatures déjà existantes matche *)
-        let fun_is_found = List.fold_left (||) false (List.map fun_compatible lp') in
-        if fun_is_found then raise (DoubleDeclaration id) else lp
+        let fun_is_found = List.fold_left (||) false (List.map fun_compatible lp) in
+        if fun_is_found then raise (DoubleDeclaration id) else l
       |Some _ -> raise (DoubleDeclaration id)
     ) in
   
@@ -369,11 +369,13 @@ let analyse_tds_fonction maintds (AstSyntax.Fonction(t,(id,m),l_param,l_inst)) n
   List.fold_right ajouter_parametre l_param_tds' ();
   
   (* ajout de la fonction dans la tds mère
-   * On conserve aussi l'identifiant bien que ça ne soit pas nécessaire *)
-  ajouter maintds id ((InfoFun ((id,m), (t, l_param)::prevDeclared)));
+   * On modifie l'id pour la gestion des labels a la passeCodeRatToTam *)
+  let concatParam = fun (tparam,(_,m)) nom -> nom^"@"^(Type.string_of_type_mark (tparam, m)) in
+  let idSurcharge = List.fold_right concatParam l_param id in
+  ajouter maintds id ((InfoFun (((idSurcharge,m), t, l_param)::prevDeclared)));
 
   (* liste des ASTTds instructions *)
-  let (l_inst_tds, nb) = analyse_tds_bloc tds_fille (Some (InfoFun((id, m), [(t,l_param)]))) None l_inst nb_lignes [(id, 0)] in
+  let (l_inst_tds, nb) = analyse_tds_bloc tds_fille (Some (InfoFun([(idSurcharge, m),t,l_param]))) None l_inst nb_lignes [(id, 0)] in
   let id_tds = chercherGlobalementUnsafeIdent tds_fille id in
   let get_typexinfo (t, id) = (t, chercherGlobalementUnsafeIdent tds_fille (fst id)) in
   let l' = List.map get_typexinfo l_param in

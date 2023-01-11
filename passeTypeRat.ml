@@ -17,7 +17,7 @@ type t2 = Ast.AstType.programme
  *   : on est pas censé appeler cette fonction *)
 let getTypexMarkOfIast iast = match iast with
   InfoVar((_,m),t,_,_) -> (!t, m)
-  |InfoFun((_,m),[t,_]) -> (t, m)
+  |InfoFun([(_,m),t,_]) -> (t, m)
   |InfoConst(_) -> (Int, Type.Neant)
   | _ -> raise ErreurInterne
 
@@ -92,17 +92,17 @@ let rec analyse_type_expression (e,(ctx:contexte)) = match e with
     else afficher_erreur (TypeInattendu (te1, (Bool,Neant))) ctx
   | AstTds.AppelFonction (f, l) -> 
     match f with
-      |(InfoFun((n,m),lp'), Neant) -> (* Vérification du bon nombre d'arguments *)
+      |(InfoFun(lp'), Neant) -> (* Vérification du bon nombre d'arguments *)
           let nl = List.map (fun x -> analyse_type_expression (x,ctx)) l in
           let type_params = List.map snd nl in
           let rec resolveType lp = (match lp with
             [] -> afficher_erreur SurchargeImpossible ctx
-            |(t,lt)::q -> 
+            |((n,m),t,lt)::q -> 
               (* check if all params have a correct type *)
               let lt' = List.map (fun (x,(_,y)) -> (x,y)) lt in
               (* Test des types ET marqueurs *)
               if (Type.est_compatible_list lt' type_params) then
-                let f' = (InfoFun((n,m), [(t,lt)]), Type.Neant) in
+                let f' = (InfoFun([(n,m),t,lt]), Type.Neant) in
                 (AstType.AppelFonction (f', List.map fst nl), (t,m))
               else
                   resolveType q)

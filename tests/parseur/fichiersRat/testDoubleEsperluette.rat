@@ -1,4 +1,0 @@
-test{
-  int a = 42;
-  int **x = &&a;
-}

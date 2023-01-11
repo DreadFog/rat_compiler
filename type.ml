@@ -7,7 +7,7 @@ type mark = Neant | Pointeur of mark
  * transforme un typ en chaîne de caractère *)
 let rec string_of_type_mark (t,m) = 
   match t, m  with
-  | _, Pointeur dsk -> string_of_type_mark (t,dsk)^"*" 
+  | _, Pointeur dsk -> string_of_type_mark (t,dsk)^"Ptr" 
   | Bool, _ ->  "Bool"
   | Int, _  ->  "Int"
   | Rat, _  ->  "Rat"

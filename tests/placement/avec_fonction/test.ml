@@ -70,51 +70,51 @@ let%test "test8_z1" =
   test (pathFichiersRat^"test8.rat" )("main", Type.Neant) (("z1", Type.Neant),1)  (ref 7, ref "SB")
 
 let%test "test8_f_x_1" = 
-  test (pathFichiersRat^"test8.rat")  ("f", Type.Neant) (("x", Type.Neant),1)  (ref 3, ref "LB")
+  test (pathFichiersRat^"test8.rat")  ("f@Int", Type.Neant) (("x", Type.Neant),1)  (ref 3, ref "LB")
     
 let%test "test8_f_y_1" = 
-  test (pathFichiersRat^"test8.rat")  ("f", Type.Neant) (("y", Type.Neant),1)  (ref 4, ref "LB")
+  test (pathFichiersRat^"test8.rat")  ("f@Int", Type.Neant) (("y", Type.Neant),1)  (ref 4, ref "LB")
     
 let%test "test8_f_z_1" = 
-  test (pathFichiersRat^"test8.rat")  ("f", Type.Neant) (("z", Type.Neant),1)  (ref 6, ref "LB")
+  test (pathFichiersRat^"test8.rat")  ("f@Int", Type.Neant) (("z", Type.Neant),1)  (ref 6, ref "LB")
   
 let%test "test8_f_x_2" = 
-  test (pathFichiersRat^"test8.rat")  ("f", Type.Neant) (("x", Type.Neant),2)  (ref 7, ref "LB")
+  test (pathFichiersRat^"test8.rat")  ("f@Int", Type.Neant) (("x", Type.Neant),2)  (ref 7, ref "LB")
     
 let%test "test8_f_y_2" = 
-  test (pathFichiersRat^"test8.rat")  ("f", Type.Neant) (("y", Type.Neant),2)  (ref 8, ref "LB")
+  test (pathFichiersRat^"test8.rat")  ("f@Int", Type.Neant) (("y", Type.Neant),2)  (ref 8, ref "LB")
     
 let%test "test8_f_z_2" = 
-  test (pathFichiersRat^"test8.rat")  ("f", Type.Neant) (("z", Type.Neant),2)  (ref 10, ref "LB")
+  test (pathFichiersRat^"test8.rat")  ("f@Int", Type.Neant) (("z", Type.Neant),2)  (ref 10, ref "LB")
   
 let%test "test8_f_x1" = 
-  test (pathFichiersRat^"test8.rat")  ("f", Type.Neant) (("x1", Type.Neant),1)  (ref 7, ref "LB")
+  test (pathFichiersRat^"test8.rat")  ("f@Int", Type.Neant) (("x1", Type.Neant),1)  (ref 7, ref "LB")
     
 let%test "test8_f_y1" = 
-  test (pathFichiersRat^"test8.rat")  ("f", Type.Neant) (("y1", Type.Neant),1)  (ref 8, ref "LB")
+  test (pathFichiersRat^"test8.rat")  ("f@Int", Type.Neant) (("y1", Type.Neant),1)  (ref 8, ref "LB")
     
 let%test "test8_f_z1" = 
-  test (pathFichiersRat^"test8.rat")  ("f", Type.Neant) (("z1", Type.Neant),1)  (ref 10, ref "LB")
+  test (pathFichiersRat^"test8.rat")  ("f@Int", Type.Neant) (("z1", Type.Neant),1)  (ref 10, ref "LB")
     
 let%test "test8_f_a" = 
-  test (pathFichiersRat^"test8.rat")  ("f", Type.Neant) (("a", Type.Neant),1)  (ref (-1), ref "LB")
+  test (pathFichiersRat^"test8.rat")  ("f@Int", Type.Neant) (("a", Type.Neant),1)  (ref (-1), ref "LB")
     
 let%test "test9_f_a" = 
-  test (pathFichiersRat^"test9.rat")  ("f", Type.Neant) (("a", Type.Neant),1)  (ref (-1), ref "LB")
+  test (pathFichiersRat^"test9.rat")  ("f@Int", Type.Neant) (("a", Type.Neant),1)  (ref (-1), ref "LB")
 
 let%test "test10_f_a" = 
-  test (pathFichiersRat^"test10.rat")  ("f", Type.Neant) (("a", Type.Neant),1)  (ref (-2), ref "LB")
+  test (pathFichiersRat^"test10.rat")  ("f@Rat", Type.Neant) (("a", Type.Neant),1)  (ref (-2), ref "LB")
 
 let%test "test11_f_a" = 
-  test (pathFichiersRat^"test11.rat")  ("f", Type.Neant) (("a", Type.Neant),1)  (ref (-1), ref "LB")
+  test (pathFichiersRat^"test11.rat")  ("f@Bool", Type.Neant) (("a", Type.Neant),1)  (ref (-1), ref "LB")
     
 let%test "test12_f_b" = 
-  test (pathFichiersRat^"test12.rat")  ("f", Type.Neant) (("b", Type.Neant),1)  (ref (-4), ref "LB")
+  test (pathFichiersRat^"test12.rat")  ("f@Int@Rat@Bool", Type.Neant) (("b", Type.Neant),1)  (ref (-4), ref "LB")
     
 let%test "test12_f_r" = 
-  test (pathFichiersRat^"test12.rat")  ("f", Type.Neant) (("r", Type.Neant),1)  (ref (-3), ref "LB")
+  test (pathFichiersRat^"test12.rat")  ("f@Int@Rat@Bool", Type.Neant) (("r", Type.Neant),1)  (ref (-3), ref "LB")
     
 let%test "test12_f_i" = 
-  test (pathFichiersRat^"test12.rat")  ("f", Type.Neant) (("i", Type.Neant),1)  (ref (-1), ref "LB")
+  test (pathFichiersRat^"test12.rat")  ("f@Int@Rat@Bool", Type.Neant) (("i", Type.Neant),1)  (ref (-1), ref "LB")
   
 

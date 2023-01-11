@@ -79,7 +79,7 @@ let rec ast_to_tam_expression e = match e with
     )
   | AstType.AppelFonction (f, l) ->
     (match f with
-    | (InfoFun ((name,_), _),_) ->
+    | (InfoFun ([(name,_),_,_]),_) ->
       List.fold_left (fun acc e -> acc ^ ast_to_tam_expression e) "" l
       ^ call "ST" name
     | _ -> raise ErreurInterne 
@@ -240,8 +240,8 @@ and ast_to_tam_bloc (l_inst, taille_bloc) =
 let ast_to_tam_fonction (AstPlacement.Fonction(iast,_,l_inst)) =
   (* Rq : On n'autorise pas les fonctions auxillaires *)
   match iast with 
-  | InfoFun ((nom,_), _) -> label nom ^ ast_to_tam_bloc l_inst
-  | _ -> raise ErreurInterne
+    | InfoFun (((nom,_),_,_)::_) -> label nom ^ ast_to_tam_bloc l_inst
+    | _ -> raise ErreurInterne
   
 (* analyser : AstPlacement.programme -> string
   * Paramètre : le programme à analyser

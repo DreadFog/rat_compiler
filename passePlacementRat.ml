@@ -20,7 +20,7 @@ let rec analyse_placement_instruction reg depl (i,(_:contexte)) =
   | AstType.Declaration (iast, e) ->
     let mt = (match iast with
                   InfoVar((_,m),t,_,_) -> (!t),m
-                  |InfoFun((_,m),[t,_]) -> t,m
+                  |InfoFun([(_,m),t,_]) -> t,m
                   |_ -> raise ErreurInterne) in
     let taille = Type.getTaille mt in
      modifier_adresse_variable depl reg iast;
@@ -44,7 +44,7 @@ let rec analyse_placement_instruction reg depl (i,(_:contexte)) =
     (AstPlacement.TantQue (e, nb), depl)
   | AstType.Retour (e,iast) ->
     (match iast with
-      InfoFun((_,m), [(ty, param_t)]) ->
+      InfoFun([(_,m), ty, param_t]) ->
         let getSeconds = List.map (fun (c,b) -> (c, snd b)) in
         let add_tailles = (fun param taille -> Type.getTaille param + taille) in
         (*let param_t' = List.map fst param_t in*)
@@ -79,7 +79,7 @@ and analyse_placement_bloc reg depl b =
  * Renvoie le type et le marquage de l'info_ast *)
 let getTypexMarkOfIast iast = match iast with
   InfoVar((_,m),t,_,_) -> (!t, m)
-  |InfoFun((_,m),[t,_]) -> (t, m)
+  |InfoFun([(_,m),t,_]) -> (t, m)
   |InfoConst(_) -> (Type.Int, Type.Neant)
   |_ -> raise ErreurInterne
 

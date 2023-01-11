@@ -6,7 +6,7 @@ open Exceptions_non_parametrees
 type 'a info =
   | InfoConst of string * int (* pas de marqueur pour les constantes *)
   | InfoVar of 'a * typ ref * int ref * string ref (* identifiant x type x déplacement x registre *)
-  | InfoFun of 'a * (typ * (typ*'a) list) list (* liste de liste pour la surcharge *)
+  | InfoFun of ('a * typ * (typ*'a) list) list (* liste de liste pour la surcharge *)
   | InfoBoucle of (string * string) list (* Les étiquettes de début et fin de boucle *)
 
 (* Table des symboles hiérarchique
@@ -123,7 +123,7 @@ let type_of_info iast =
   match iast with
     |InfoConst(_,_) -> Int
     |InfoVar(_,t,_,_) -> !t
-    |InfoFun(_,[t,_]) -> t
+    |InfoFun([_,t,_]) -> t
     |_ -> raise ErreurInterne
 
 (* ajouter_liste_boucle : 'a info -> string -> string -> 'b info
