@@ -196,21 +196,6 @@ dans la mesure où la valeur mise en sommet de pile est celle de l'une des deux 
 \paragraph*{Les loop à la Rust sont une extension du langage Rat qui permet de créer des boucles infinies,
 avec la possibilité d'en sortir à l'aide du mot clé \texttt{break} 
 et de terminer prématurément une itération à l'aide du mot clé \texttt{continue}.}
-\paragraph{Face aux difficultés que celle-ci a pu nous poser, il nous a semblé important de commenter nos choix effectués pour obtenir une grammaire cohérente.
-En effet, en reprenant la syntaxe du sujet pour les boucles nommées (l : loop{bloc}), des problèmes d'ambiguïté empêchaient Menhir de comprendre correctement la grammaire.
-Comme le montre la capture d'écran ci-après, l'erreur ne nous indiquait pas la source de l'ambiguïté. Mais même en analysant les logs de compilation, nous ne sommes
-pas parvenus à déterminer l'origine de ces conflits, empêchant un fonctionnement de notre compilateur:\\}
-\begin{center}
-        \includegraphics[scale=0.5]{shift_reduce.png}
-\end{center}
-\paragraph{Pour éviter cette erreur, nous avons fait le choix de modifier la grammaire d'une telle manière que les règles d'écriture d'une boucle ne pourraient
-plus êtres ambiguês pour Menhir. Ainsi, voici comment nous avons choisi qu'une boucle nommée devait s'écrire: }
-\,
-\begin{lstlisting}[language=ratcode]
-        l : loop {bloc}
-\end{lstlisting}
-\paragraph{Par l'ajout du mot-clé \texttt{define} en début de règle, et d'un point virgule en fin, l'ambiguîté est alors levée, et le compilateur fonctionne 
-correctement.}
 \paragraph*{Comme nous allons le voir, toute la complexité des boucles à la Rust est liée à la gestion des labels, qui est exclusivement gérée par la passe de gestion d'identifiants.\\
 Un choix a été fait de ne pas autoriser un même nom de variable et de boucle en même temps.
 Tout d'abord, il a été choisi de créer un nouveau type de données insérable dans la table des symboles.}
