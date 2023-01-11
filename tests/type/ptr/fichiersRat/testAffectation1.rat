@@ -1,4 +1,4 @@
 test{
-  int *b = new (int);
-  int c = **b;
+  int (*b) = new (int);
+  int c = (**b);
 }

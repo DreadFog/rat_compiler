@@ -2,12 +2,12 @@ main {
     bool x = true;
     rat y = [2/3];
     int z = 4;
-    define test : loop {
+    test : loop {
        bool x = true;
        rat y = [5/8];
        int z = 9;
        if (x) { break test; }
-    };
+    }
     bool x1 = true;
     rat y1 = [0/1];
     int z1 = 0;

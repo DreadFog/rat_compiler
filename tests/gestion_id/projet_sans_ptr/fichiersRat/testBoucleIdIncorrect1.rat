@@ -1,7 +1,7 @@
 test {
     int id = 5;
-    define id : loop {
+    id : loop {
         print id;
         break;
-    };
+    }
 }

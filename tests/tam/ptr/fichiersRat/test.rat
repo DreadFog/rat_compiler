@@ -1,12 +1,12 @@
 main{
-    int **px = new (int*);
+    int (**px) = new (int*);
     int a = 1;
-    *px = &a;
+    (*px) = &a;
     int x = 2;
     while (x < 3){
         x = (x + 1);
-        *px = &x;
-        int y = **px;
+        (*px) = &x;
+        int y = (**px);
     }
-    print **px;
+    print (**px);
 }

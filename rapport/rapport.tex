@@ -72,7 +72,7 @@
         }
 \newcommand{\jugementLoopId}{
         \dfrac{id::\sigma, \tau_r \vdash \text{BLOC} : \text{void}}
-              {\sigma, \tau_r \vdash \text{define id : loop} \text{ BLOC} : \text{void}, []}
+              {\sigma, \tau_r \vdash \text{id : loop} \text{ BLOC} : \text{void}, []}
         }
 
 \newcommand{\jugementIncrementPost}{
@@ -149,7 +149,7 @@ Par exemple, est possible~:}
 \,
 \begin{lstlisting}[language=ratcode]
 int a = 5;
-int *b = &a;
+int (*b) = &a;
 \end{lstlisting}
 
 \section{Bloc else optionnel}
@@ -207,7 +207,7 @@ pas parvenus à déterminer l'origine de ces conflits, empêchant un fonctionnem
 plus êtres ambiguês pour Menhir. Ainsi, voici comment nous avons choisi qu'une boucle nommée devait s'écrire: }
 \,
 \begin{lstlisting}[language=ratcode]
-        define l : loop {bloc};
+        l : loop {bloc}
 \end{lstlisting}
 \paragraph{Par l'ajout du mot-clé \texttt{define} en début de règle, et d'un point virgule en fin, l'ambiguîté est alors levée, et le compilateur fonctionne 
 correctement.}
@@ -257,15 +257,15 @@ l'exemple suivant~:}
 \begin{lstlisting}[language=ratcode]
 main {
     int x = 3;
-    define l : loop {
+    l : loop {
         x++;
         loop {
                 int y = 5;
                 break l;
                 bool z = true;
-        };
+        }
         Rat r = [3/2];
-    };
+    }
 }
 \end{lstlisting}
 \paragraph*{Ici, il faudrait se rappeler au niveau du \texttt{break} l que cela revient à pop 1, et pas 2 ou 3 qui serait obtenu si on prenait toutes les déclarations réalisées.\\

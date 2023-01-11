@@ -1,11 +1,11 @@
 test{
   int x = 2;
-  define test : loop {
+  test : loop {
     x = (x + 1);
     if (10 < x) {
         break;
     }
-  };
+  }
   break test;
   print x;
 }

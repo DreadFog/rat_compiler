@@ -1,7 +1,6 @@
 open Rat
 open Compilateur
 open Passe
-open Type
 
 (* Return la liste des adresses des variables d'un programme RAT *)
 let getListeDep ratfile =
@@ -44,13 +43,14 @@ let pathFichiersRat = "../../../../../tests/placement/ptr/fichiersRat/"
 (**********)
 (*  TESTS *)
 (**********)
-(* Remarque : dans notre TDS, a la déclaration de int **px; seul px est mis en clé mais pour le test les
-   identifiants de la déclarations sont utilisés : nom de la variable + marqueur. *)
 let%test "test1_px" = 
-  test (pathFichiersRat^"test.rat")  ("main", Neant) (("px", Pointeur(Pointeur(Neant))), 1) (ref 0, ref "SB")
+  test (pathFichiersRat^"test.rat") "main" ("px", 1) ( 0,  "SB")
+
 let%test "test1_a" = 
-  test (pathFichiersRat^"test.rat")  ("main", Neant) (("a", Neant), 1) (ref 1, ref "SB")
+  test (pathFichiersRat^"test.rat") "main" ("a", 1) ( 1,  "SB")
+
 let%test "test1_x" = 
-  test (pathFichiersRat^"test.rat")  ("main", Neant) (("x", Neant), 1) (ref 2, ref "SB")
+  test (pathFichiersRat^"test.rat") "main" ("x", 1) ( 2,  "SB")
+
 let%test "test1_y" = 
-  test (pathFichiersRat^"test.rat")  ("main", Neant) (("y", Neant), 1) (ref 3, ref "SB")
+  test (pathFichiersRat^"test.rat") "main" ("y", 1) ( 3,  "SB")

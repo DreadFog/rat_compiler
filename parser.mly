@@ -45,7 +45,6 @@ open List
 %token QMARK
 %token COLON
 (* boucles *)
-%token DEFINE
 %token LOOP
 %token BREAK
 %token CONTINUE
@@ -71,16 +70,18 @@ main : lfi=prog EOF     {lfi}
 prog : lf=fonc* ID li=bloc  {Programme (lf,li)}
 
 r :
-|ladr=MULT* ident=ID     {(ident, fold_left (fun x _ -> Pointeur(x)) Neant ladr)}        
+|PO MULT ladr=MULT+ ident=ID PF     {(ident, Pointeur (fold_left (fun x _ -> Pointeur(x)) Neant ladr))}
+|ident=ID                           {(ident, Neant)}
+|PO MULT r=r PF                     {(fst r, Pointeur(snd r))}
 
-fonc : t=typ n=r PO lp=param* PF li=bloc {Fonction(t,n,lp,li)}
+fonc : t=typ ladr=MULT* ident=ID PO lp=param* PF li=bloc {Fonction(t,(ident, fold_left (fun x _ -> Pointeur(x)) Neant ladr),lp,li)}
 
 param : t=typ n=r  {(t,n)}
 
 bloc : AO li=i* AF      {li}
 
 idC :
-| DEFINE n=ID COLON     {n}
+| n=ID COLON     {n}
 
 i :
 | t=typ n=r EQUAL e1=e PV           {Declaration (t,n,e1)}
@@ -98,7 +99,7 @@ i :
 | PLUS PLUS n=r PV                  {Affectation (n,Binaire (Plus,Identifiant n,Entier 1))}
 | n=r PLUS PLUS PV                  {Affectation (n,Binaire (Plus,Identifiant n,Entier 1))}
 (* Instructions pour les boucles *)
-| n=idC? LOOP li=bloc PV            {Boucle(n,li)}
+| n=idC? LOOP li=bloc               {Boucle(n,li)}
 | BREAK n=ID? PV                    {Break(n)}
 | CONTINUE n=ID? PV                 {Continue(n)}
 

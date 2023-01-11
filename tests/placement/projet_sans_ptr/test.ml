@@ -50,46 +50,46 @@ let pathFichiersRat = "../../../../../tests/placement/projet_sans_ptr/fichiersRa
 (**********)
 
 let%test "test1_x_1" = 
-  test (pathFichiersRat^"test1.rat")  ("main", Type.Neant) (("x", Type.Neant), 1)  (ref 0, ref "SB")
+  test (pathFichiersRat^"test1.rat")  "main" ("x", 1)  ( 0,  "SB")
 
 let%test "test1_y_1" = 
-  test (pathFichiersRat^"test1.rat")  ("main", Type.Neant) (("y", Type.Neant), 1)  (ref 1, ref "SB")
+  test (pathFichiersRat^"test1.rat")  "main" ("y", 1)  ( 1,  "SB")
 
 let%test "test1_z_1" = 
-  test (pathFichiersRat^"test1.rat")  ("main", Type.Neant) (("z", Type.Neant), 1)  (ref 3, ref "SB")
+  test (pathFichiersRat^"test1.rat")  "main" ("z", 1)  ( 3,  "SB")
 
 let%test "test1_x_2" = 
-  test (pathFichiersRat^"test1.rat")  ("main", Type.Neant) (("x", Type.Neant), 2)  (ref 4, ref "SB")
+  test (pathFichiersRat^"test1.rat")  "main" ("x", 2)  ( 4,  "SB")
 
 let%test "test1_y_2" = 
-  test (pathFichiersRat^"test1.rat")  ("main", Type.Neant) (("y", Type.Neant), 2)  (ref 5, ref "SB")
+  test (pathFichiersRat^"test1.rat")  "main" ("y", 2)  ( 5,  "SB")
   
 let%test "test1_z_2" = 
-  test (pathFichiersRat^"test1.rat")  ("main", Type.Neant) (("z", Type.Neant), 2)  (ref 7, ref "SB")
+  test (pathFichiersRat^"test1.rat")  "main" ("z", 2)  ( 7,  "SB")
 
 let%test "test1_x1" = 
-  test (pathFichiersRat^"test1.rat")  ("main", Type.Neant) (("x1", Type.Neant), 1)  (ref 4, ref "SB")
+  test (pathFichiersRat^"test1.rat")  "main" ("x1", 1)  ( 4,  "SB")
 
 let%test "test1_y1" = 
-  test (pathFichiersRat^"test1.rat")  ("main", Type.Neant) (("y1", Type.Neant), 1)  (ref 5, ref "SB")
+  test (pathFichiersRat^"test1.rat")  "main" ("y1", 1)  ( 5,  "SB")
 
 let%test "test1_z1" = 
-  test (pathFichiersRat^"test1.rat")  ("main", Type.Neant) (("z1", Type.Neant), 1)  (ref 7, ref "SB")
+  test (pathFichiersRat^"test1.rat")  "main" ("z1", 1)  ( 7,  "SB")
 
 let%test "test2_x_1" = 
-  test (pathFichiersRat^"test2.rat")  ("main", Type.Neant) (("x", Type.Neant), 1)  (ref 0, ref "SB")
+  test (pathFichiersRat^"test2.rat")  "main" ("x", 1)  ( 0,  "SB")
 
 let%test "test2_y_1" = 
-  test (pathFichiersRat^"test2.rat")  ("main", Type.Neant) (("y", Type.Neant), 1)  (ref 1, ref "SB")
+  test (pathFichiersRat^"test2.rat")  "main" ("y", 1)  ( 1,  "SB")
 
 let%test "test2_z_1" = 
-  test (pathFichiersRat^"test2.rat")  ("main", Type.Neant) (("z", Type.Neant), 1)  (ref 3, ref "SB")
+  test (pathFichiersRat^"test2.rat")  "main" ("z", 1)  ( 3,  "SB")
 
 let%test "test2_x1" = 
-  test (pathFichiersRat^"test2.rat")  ("main", Type.Neant) (("x1", Type.Neant), 1)  (ref 4, ref "SB")
+  test (pathFichiersRat^"test2.rat")  "main" ("x1", 1)  ( 4,  "SB")
 
 let%test "test2_y1" = 
-  test (pathFichiersRat^"test2.rat")  ("main", Type.Neant) (("y1", Type.Neant), 1)  (ref 5, ref "SB")
+  test (pathFichiersRat^"test2.rat")  "main" ("y1", 1)  ( 5,  "SB")
 
 let%test "test2_z1" = 
-  test (pathFichiersRat^"test2.rat")  ("main", Type.Neant) (("z1", Type.Neant), 1)  (ref 7, ref "SB")
+  test (pathFichiersRat^"test2.rat")  "main" ("z1", 1)  ( 7,  "SB")
